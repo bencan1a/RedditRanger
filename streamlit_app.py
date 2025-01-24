@@ -13,6 +13,13 @@ def load_css():
     with open('static/style.css') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
+def get_risk_class(risk_score):
+    if risk_score > 70:
+        return "high-risk"
+    elif risk_score > 40:
+        return "medium-risk"
+    return "low-risk"
+
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user and return their analysis results."""
     try:
@@ -43,7 +50,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
 def main():
     st.set_page_config(
-        page_title="Reddit Account Analyzer | Arrakis",
+        page_title="Fake Reddit User Detector | Arrakis",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
@@ -51,7 +58,7 @@ def main():
     load_css()
 
     # Title section with Dune-inspired description
-    st.title("Reddit Account Analysis Tool")
+    st.title("Fake Reddit User Detector")
     st.markdown("""
     <div class='intro-text'>
     Like the Bene Gesserit's ability to detect truth, this tool analyzes Reddit accounts 
@@ -78,25 +85,25 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Display detailed analysis
-                    col1, col2 = st.columns(2)
+                    # Display risk score prominently
+                    risk_class = get_risk_class(result['risk_score'])
+                    st.markdown(f"""
+                        <div class='risk-score {risk_class}'>
+                            {result['risk_score']:.1f}% Risk
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    # Account overview and feedback
+                    col1, col2 = st.columns([1, 2])
 
                     with col1:
-                        st.subheader("Account Overview")
+                        st.markdown("""
+                        <div class='account-overview'>
+                            <h3>Account Overview</h3>
+                            <div class='overview-content'>
+                        """, unsafe_allow_html=True)
                         st.write(f"Account Age: {result['account_age']}")
-                        st.write(f"Total Karma: {result['karma']}")
-
-                        st.subheader("Risk Analysis")
-
-                        # Traditional Score
-                        st.write("Traditional Metrics Score:")
-                        st.progress(1 - result['traditional_risk_score']/100)
-                        st.write(f"{result['traditional_risk_score']:.1f}% risk based on traditional metrics")
-
-                        # ML-based Score
-                        st.write("Machine Learning Score:")
-                        st.progress(1 - result['ml_risk_score']/100)
-                        st.write(f"{result['ml_risk_score']:.1f}% risk based on ML analysis")
+                        st.write(f"Total Karma: {result['karma']:,}")
 
                         # Feedback section
                         st.subheader("Provide Feedback")
@@ -108,18 +115,27 @@ def main():
                                 is_legitimate=True
                             )
                             st.success("Thank you for your feedback! This will help improve our detection model.")
+                        st.markdown("</div></div>", unsafe_allow_html=True)
 
-                        st.plotly_chart(create_score_radar_chart(result['component_scores']))
+                    # Charts section
+                    st.markdown("<div class='charts-grid'>", unsafe_allow_html=True)
 
-                    with col2:
-                        st.subheader("Activity Patterns")
-                        st.plotly_chart(create_activity_heatmap(result['activity_patterns']['activity_hours']))
-                        st.plotly_chart(create_subreddit_distribution(result['activity_patterns']['top_subreddits']))
+                    # Radar Chart
+                    st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                    st.plotly_chart(create_score_radar_chart(result['component_scores']), use_container_width=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                        st.subheader("Text Analysis")
-                        st.write(f"Vocabulary Size: {result['text_metrics']['vocab_size']}")
-                        st.write(f"Average Word Length: {result['text_metrics']['avg_word_length']:.2f}")
-                        st.write("Common Words:", result['text_metrics']['common_words'])
+                    # Activity Heatmap
+                    st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                    st.plotly_chart(create_activity_heatmap(result['activity_patterns']['activity_hours']), use_container_width=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                    # Subreddit Distribution
+                    st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                    st.plotly_chart(create_subreddit_distribution(result['activity_patterns']['top_subreddits']), use_container_width=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                    st.markdown("</div>", unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"Error analyzing account: {str(e)}")
@@ -149,9 +165,7 @@ def main():
                         'Username': r.get('username'),
                         'Account Age': r.get('account_age', 'N/A') if 'error' not in r else 'N/A',
                         'Total Karma': r.get('karma', 'N/A') if 'error' not in r else 'N/A',
-                        'ML Risk Score': f"{r.get('ml_risk_score', 'N/A'):.1f}%" if 'error' not in r else 'N/A',
-                        'Traditional Risk': f"{r.get('traditional_risk_score', 'N/A'):.1f}%" if 'error' not in r else 'N/A',
-                        'Overall Risk': f"{r.get('risk_score', 'N/A'):.1f}%" if 'error' not in r else 'N/A',
+                        'Risk Score': f"{r.get('risk_score', 'N/A'):.1f}%" if 'error' not in r else 'N/A',
                         'Status': 'Success' if 'error' not in r else f"Error: {r['error']}"
                     } for r in results
                 ])

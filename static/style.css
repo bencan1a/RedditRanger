@@ -15,10 +15,39 @@ h1, h2, h3 {
 }
 
 h1 {
-    font-size: 2.5rem;
+    font-size: 2rem !important;
     text-transform: uppercase;
     border-bottom: 2px solid #ff9800;
     padding-bottom: 1rem;
+    white-space: nowrap;
+}
+
+/* Risk Score Display */
+.risk-score {
+    font-size: 4rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 2rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.risk-score.high-risk {
+    background: rgba(255, 68, 68, 0.1);
+    color: #ff4444;
+    border: 1px solid #ff4444;
+}
+
+.risk-score.medium-risk {
+    background: rgba(255, 170, 51, 0.1);
+    color: #ffaa33;
+    border: 1px solid #ffaa33;
+}
+
+.risk-score.low-risk {
+    background: rgba(68, 170, 68, 0.1);
+    color: #44aa44;
+    border: 1px solid #44aa44;
 }
 
 /* Cards and containers */
@@ -61,24 +90,14 @@ h1 {
     font-family: 'IBM Plex Mono', monospace !important;
 }
 
-/* Plots */
-.js-plotly-plot {
+/* Charts container */
+.chart-container {
     background-color: rgba(45, 45, 45, 0.7) !important;
     border: 1px solid #ff9800 !important;
     border-radius: 8px !important;
     padding: 1rem !important;
-}
-
-/* Metrics */
-.stMetric {
-    background-color: rgba(45, 45, 45, 0.7) !important;
-    border: 1px solid #ff9800 !important;
-    border-radius: 8px !important;
-    padding: 1rem !important;
-}
-
-.stMetric label {
-    color: #E6D5B8 !important;
+    margin: 1rem 0;
+    width: 100%;
 }
 
 /* DataFrames */
@@ -94,4 +113,21 @@ h1 {
 /* Custom spacing */
 .block-container {
     padding: 3rem 2rem !important;
+}
+
+/* Account overview card */
+.account-overview {
+    background: rgba(45, 45, 45, 0.7);
+    border: 1px solid #ff9800;
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+/* Charts grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
 }
