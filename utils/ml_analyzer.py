@@ -16,8 +16,53 @@ class MLAnalyzer:
         )
         self.scaler = StandardScaler()
         self.is_trained = False
-        # Initialize with some basic rules for untrained model
         self._setup_basic_rules()
+
+        # Initialize training data storage
+        self.training_features = []
+        self.training_labels = []
+
+    def add_training_example(self, user_data: Dict, activity_patterns: Dict, 
+                           text_metrics: Dict, is_legitimate: bool = True):
+        """Add a new training example to improve the model."""
+        try:
+            features = self.extract_features(user_data, activity_patterns, text_metrics)
+            self.training_features.append(features[0])  # Remove the batch dimension
+            self.training_labels.append(0 if is_legitimate else 1)  # 0 for legitimate, 1 for suspicious
+
+            # Retrain model if we have enough examples
+            if len(self.training_labels) >= 5:  # Minimum examples before training
+                self._train_model()
+
+            logger.info(f"Added new training example. Total examples: {len(self.training_labels)}")
+            return True
+        except Exception as e:
+            logger.error(f"Error adding training example: {str(e)}")
+            return False
+
+    def _train_model(self):
+        """Train the model with collected examples."""
+        try:
+            if len(self.training_features) < 5:
+                logger.warning("Not enough training examples to train model")
+                return False
+
+            # Convert lists to numpy arrays
+            X = np.array(self.training_features)
+            y = np.array(self.training_labels)
+
+            # Fit the scaler
+            X_scaled = self.scaler.fit_transform(X)
+
+            # Train the model
+            self.model.fit(X_scaled, y)
+            self.is_trained = True
+
+            logger.info("Model successfully trained")
+            return True
+        except Exception as e:
+            logger.error(f"Error training model: {str(e)}")
+            return False
 
     def _setup_basic_rules(self):
         """Set up basic rules for risk assessment when model is untrained."""
