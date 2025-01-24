@@ -50,7 +50,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
 def main():
     st.set_page_config(
-        page_title="Fake Reddit User Detector | Arrakis",
+        page_title="Reddit Thinking Machine Detector | Arrakis",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
@@ -58,11 +58,11 @@ def main():
     load_css()
 
     # Title section with Dune-inspired description
-    st.title("Fake Reddit User Detector")
+    st.title("Thinking Machine Detector")
     st.markdown("""
     <div class='intro-text'>
-    Like the Bene Gesserit's ability to detect truth, this tool analyzes Reddit accounts 
-    to identify patterns and anomalies. The spice must flow, but bot accounts must not.
+    Like the Bene Gesserit's ability to detect truth, this tool uses Abominable Intelligence 
+    to identify Thinking Machines among Reddit users. The spice must flow, but the machines must not prevail.
     </div>
     """, unsafe_allow_html=True)
 
@@ -72,13 +72,13 @@ def main():
     account_scorer = AccountScorer()
 
     # Analysis mode selection
-    analysis_mode = st.radio("Analysis Mode:", ["Single User", "Bulk Analysis"])
+    analysis_mode = st.radio("Analysis Mode:", ["Single Account", "Bulk Detection"])
 
-    if analysis_mode == "Single User":
+    if analysis_mode == "Single Account":
         username = st.text_input("Enter Reddit Username:", "")
         if username:
             try:
-                with st.spinner('Analyzing account...'):
+                with st.spinner('Analyzing through Abominable Intelligence...'):
                     result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
 
                     if 'error' in result:
@@ -89,7 +89,7 @@ def main():
                     risk_class = get_risk_class(result['risk_score'])
                     st.markdown(f"""
                         <div class='risk-score {risk_class}'>
-                            {result['risk_score']:.1f}% Risk
+                            {result['risk_score']:.1f}% Thinking Machine Probability
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -106,15 +106,15 @@ def main():
                         st.write(f"Total Karma: {result['karma']:,}")
 
                         # Feedback section
-                        st.subheader("Provide Feedback")
-                        if st.button("Mark as Legitimate Account"):
+                        st.subheader("Improve the Abominable Intelligence")
+                        if st.button("Mark as Human Account"):
                             account_scorer.ml_analyzer.add_training_example(
                                 result['user_data'],
                                 result['activity_patterns'],
                                 result['text_metrics'],
                                 is_legitimate=True
                             )
-                            st.success("Thank you for your feedback! This will help improve our detection model.")
+                            st.success("Thank you for your feedback! This will help our Abominable Intelligence become more accurate.")
                         st.markdown("</div></div>", unsafe_allow_html=True)
 
                     # Charts section
@@ -146,7 +146,7 @@ def main():
             # Parse usernames
             usernames = [u.strip() for u in usernames.replace(',', '\n').split('\n') if u.strip()]
 
-            if st.button(f"Analyze {len(usernames)} Accounts"):
+            if st.button(f"Analyze {len(usernames)} Accounts for Thinking Machines"):
                 results = []
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -165,7 +165,7 @@ def main():
                         'Username': r.get('username'),
                         'Account Age': r.get('account_age', 'N/A') if 'error' not in r else 'N/A',
                         'Total Karma': r.get('karma', 'N/A') if 'error' not in r else 'N/A',
-                        'Risk Score': f"{r.get('risk_score', 'N/A'):.1f}%" if 'error' not in r else 'N/A',
+                        'Thinking Machine Probability': f"{r.get('risk_score', 'N/A'):.1f}%" if 'error' not in r else 'N/A',
                         'Status': 'Success' if 'error' not in r else f"Error: {r['error']}"
                     } for r in results
                 ])
@@ -178,7 +178,7 @@ def main():
                 st.download_button(
                     label="Download Results as CSV",
                     data=csv,
-                    file_name="reddit_analysis_results.csv",
+                    file_name="thinking_machine_analysis.csv",
                     mime="text/csv"
                 )
 
