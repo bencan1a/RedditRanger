@@ -23,6 +23,12 @@ class TextAnalyzer:
                     logger.info(f"Downloading NLTK package: {package}")
                     nltk.download(package, quiet=True)
 
+            # Explicitly load punkt
+            try:
+                nltk.data.find('tokenizers/punkt')
+            except LookupError:
+                nltk.download('punkt', quiet=True)
+
             self.stop_words = set(stopwords.words('english'))
             self.vectorizer = TfidfVectorizer()
             logger.info("NLTK initialization complete")
