@@ -36,7 +36,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "streamlit run streamlit_app.py --server.port 5000"
-waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Reddit Analyzer API"
@@ -51,7 +50,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-waitForPort = 5001
 
 [[ports]]
 localPort = 5000

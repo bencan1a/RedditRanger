@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +20,6 @@ app.add_middleware(
 )
 
 # Initialize analyzers
-reddit_analyzer = RedditAnalyzer()
 text_analyzer = TextAnalyzer()
 account_scorer = AccountScorer()
 
@@ -31,6 +31,9 @@ class AnalysisResponse(BaseModel):
 @app.get("/analyze/{username}")
 async def analyze_user(username: str):
     try:
+        # Create a new RedditAnalyzer instance for each request
+        reddit_analyzer = RedditAnalyzer()
+
         # Fetch and analyze data
         user_data, comments_df = reddit_analyzer.get_user_data(username)
         activity_patterns = reddit_analyzer.analyze_activity_patterns(comments_df)
