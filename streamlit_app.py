@@ -9,6 +9,10 @@ from utils.visualizations import (
 )
 import pandas as pd
 
+def load_css():
+    with open('static/style.css') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user and return their analysis results."""
     try:
@@ -25,7 +29,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(v for k, v in component_scores.items() if k != 'ml_risk_score') 
-                                     / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
+                                      / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -38,13 +42,22 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         }
 
 def main():
-    st.set_page_config(page_title="Reddit Account Analyzer", layout="wide")
+    st.set_page_config(
+        page_title="Reddit Account Analyzer | Arrakis",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
 
+    load_css()
+
+    # Title section with Dune-inspired description
     st.title("Reddit Account Analysis Tool")
     st.markdown("""
-    This tool analyzes Reddit accounts to detect potential bots or purchased accounts.
-    Enter usernames to begin the analysis. For bulk analysis, enter multiple usernames separated by commas or newlines.
-    """)
+    <div class='intro-text'>
+    Like the Bene Gesserit's ability to detect truth, this tool analyzes Reddit accounts 
+    to identify patterns and anomalies. The spice must flow, but bot accounts must not.
+    </div>
+    """, unsafe_allow_html=True)
 
     # Initialize analyzers
     reddit_analyzer = RedditAnalyzer()

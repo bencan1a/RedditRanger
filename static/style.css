@@ -1,0 +1,97 @@
+/* Dune-inspired styling */
+
+/* Main container */
+.main {
+    padding: 2rem;
+    background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+/* Headers */
+h1, h2, h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.1em;
+    color: #E6D5B8;
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid #ff9800;
+    padding-bottom: 1rem;
+}
+
+/* Cards and containers */
+.stCard {
+    background: rgba(45, 45, 45, 0.7) !important;
+    border: 1px solid #ff9800 !important;
+    backdrop-filter: blur(10px);
+    padding: 1.5rem !important;
+    border-radius: 8px !important;
+    margin: 1rem 0;
+}
+
+/* Progress bars */
+.stProgress > div > div {
+    background-color: #ff9800 !important;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #ff9800 !important;
+    color: #1a1a1a !important;
+    border: none !important;
+    padding: 0.5rem 2rem !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton > button:hover {
+    background-color: #ffa726 !important;
+    transform: translateY(-2px);
+}
+
+/* Text inputs */
+.stTextInput > div > div > input {
+    background-color: #2d2d2d !important;
+    border: 1px solid #ff9800 !important;
+    color: #E6D5B8 !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+
+/* Plots */
+.js-plotly-plot {
+    background-color: rgba(45, 45, 45, 0.7) !important;
+    border: 1px solid #ff9800 !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+}
+
+/* Metrics */
+.stMetric {
+    background-color: rgba(45, 45, 45, 0.7) !important;
+    border: 1px solid #ff9800 !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+}
+
+.stMetric label {
+    color: #E6D5B8 !important;
+}
+
+/* DataFrames */
+.dataframe {
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+
+.dataframe th {
+    background-color: #ff9800 !important;
+    color: #1a1a1a !important;
+}
+
+/* Custom spacing */
+.block-container {
+    padding: 3rem 2rem !important;
+}

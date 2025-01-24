@@ -1,4 +1,17 @@
+[theme]
+# Desert sand base
+primaryColor = "#ff9800"  # Spice orange
+backgroundColor = "#1a1a1a"  # Deep dark background
+secondaryBackgroundColor = "#2d2d2d"  # Slightly lighter background
+textColor = "#E6D5B8"  # Sand colored text
+
+# Font
+font = "IBM Plex Mono"
+
 [server]
 headless = true
 address = "0.0.0.0"
 port = 5000
+
+[browser]
+gatherUsageStats = false
