@@ -1,23 +1,65 @@
 .user-score-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     margin-left: 5px;
     padding: 2px 6px;
     border-radius: 12px;
     font-size: 11px;
     font-weight: bold;
+    cursor: help;
+    transition: all 0.2s ease;
 }
 
 .high-risk {
-    background-color: #ff4444;
-    color: white;
+    background-color: rgba(255, 68, 68, 0.1);
+    color: #ff4444;
+    border: 1px solid #ff4444;
 }
 
 .medium-risk {
-    background-color: #ffaa33;
-    color: white;
+    background-color: rgba(255, 170, 51, 0.1);
+    color: #ffaa33;
+    border: 1px solid #ffaa33;
 }
 
 .low-risk {
-    background-color: #44aa44;
-    color: white;
+    background-color: rgba(68, 170, 68, 0.1);
+    color: #44aa44;
+    border: 1px solid #44aa44;
+}
+
+.user-score-tooltip {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    max-width: 300px;
+    font-size: 12px;
+}
+
+.user-score-badge:hover .user-score-tooltip {
+    display: block;
+}
+
+.tooltip-section {
+    margin-bottom: 8px;
+}
+
+.tooltip-section:last-child {
+    margin-bottom: 0;
+}
+
+.tooltip-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.score-metric {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
 }
