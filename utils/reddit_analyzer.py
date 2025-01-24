@@ -22,12 +22,12 @@ class RedditAnalyzer:
                 client_id=client_id,
                 client_secret=client_secret,
                 user_agent="script:reddit-analyzer:v1.0 (by /u/RedditAnalyzerBot)",
-                check_for_async=False
+                check_for_async=False,
+                read_only=True  # Explicitly set read_only mode
             )
-            # Verify connection
-            self.reddit.read_only = True
             logger.info("Verifying Reddit API connection...")
-            _ = self.reddit.user.me()
+            # Use a simpler verification that doesn't require authentication
+            self.reddit.subreddit('announcements').id
             logger.info("Reddit API connection successful")
         except ResponseException as e:
             logger.error(f"Reddit API error: {str(e)}")
