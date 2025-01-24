@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from prawcore.exceptions import ResponseException, OAuthException
 import logging
+from typing import Optional, Dict, Union, Tuple
 
 # Configure logging
 logging.basicConfig(
@@ -13,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, client_id: str = None, client_secret: str = None):
+    def __init__(self, client_id: Optional[str] = None, client_secret: Optional[str] = None):
         """
         Initialize RedditAnalyzer with optional credentials.
         If not provided, will attempt to get from environment variables.

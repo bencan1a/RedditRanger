@@ -8,8 +8,17 @@ import uvicorn
 from pydantic import BaseModel
 from datetime import datetime
 from config import get_settings, Settings
+import logging
 
-app = FastAPI(title="Reddit Ranger API")
+# Configure application logger
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="Reddit Ranger API",
+    version=get_settings().VERSION,
+    description="Reddit account analysis API with ML-powered credibility insights"
+)
+
 settings = get_settings()
 
 # Configure CORS with settings
@@ -35,19 +44,27 @@ class HealthResponse(BaseModel):
     version: str
     timestamp: str
 
+@app.on_event("startup")
+async def startup_event():
+    """Log application startup and configuration"""
+    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
+    logger.info(f"Server running on {settings.HOST}:{settings.PORT}")
+
 @app.get("/health")
 async def health_check():
-    """
-    Health check endpoint to verify API status
-    """
+    """Health check endpoint to verify API status"""
+    logger.debug("Health check requested")
     return HealthResponse(
         status="healthy",
-        version="1.0.0",
+        version=settings.VERSION,
         timestamp=datetime.utcnow().isoformat()
     )
 
 @app.get("/api/v1/analyze/{username}")
 async def analyze_user(username: str, settings: Settings = Depends(get_settings)):
+    """Analyze Reddit user account"""
+    logger.info(f"Analyzing user: {username}")
     try:
         # Create a new RedditAnalyzer instance for each request using settings
         reddit_analyzer = RedditAnalyzer(
@@ -63,7 +80,7 @@ async def analyze_user(username: str, settings: Settings = Depends(get_settings)
             user_data, activity_patterns, text_metrics
         )
 
-        return AnalysisResponse(
+        response = AnalysisResponse(
             username=username,
             probability=(1 - final_score) * 100,
             summary={
@@ -72,7 +89,10 @@ async def analyze_user(username: str, settings: Settings = Depends(get_settings)
                 "scores": component_scores
             }
         )
+        logger.info(f"Successfully analyzed user {username}")
+        return response
     except Exception as e:
+        logger.error(f"Error analyzing user {username}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
@@ -80,5 +100,6 @@ if __name__ == "__main__":
         "main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=True
+        reload=True,
+        log_level=settings.LOG_LEVEL.lower()
     )

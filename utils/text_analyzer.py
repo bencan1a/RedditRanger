@@ -12,23 +12,12 @@ logger = logging.getLogger(__name__)
 
 class TextAnalyzer:
     def __init__(self):
-        # Download required NLTK data
         try:
             logger.info("Initializing NLTK resources...")
-            nltk_packages = ['punkt', 'stopwords']
-            for package in nltk_packages:
-                try:
-                    nltk.data.find(f'tokenizers/{package}')
-                except LookupError:
-                    logger.info(f"Downloading NLTK package: {package}")
-                    nltk.download(package, quiet=True)
+            # Download all required NLTK data
+            nltk.download(['punkt', 'stopwords'], quiet=True)
 
-            # Explicitly load punkt
-            try:
-                nltk.data.find('tokenizers/punkt')
-            except LookupError:
-                nltk.download('punkt', quiet=True)
-
+            # Initialize tokenizer using punkt
             self.stop_words = set(stopwords.words('english'))
             self.vectorizer = TfidfVectorizer()
             logger.info("NLTK initialization complete")

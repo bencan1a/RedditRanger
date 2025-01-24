@@ -1,16 +1,15 @@
 [theme]
-# Desert sand base
-primaryColor = "#ff9800"  # Spice orange
-backgroundColor = "#1a1a1a"  # Deep dark background
-secondaryBackgroundColor = "#2d2d2d"  # Slightly lighter background
-textColor = "#E6D5B8"  # Sand colored text
-font = "monospace"  # Changed from IBM Plex Mono to a supported value
+primaryColor = "#ff9800"
+backgroundColor = "#1a1a1a"
+secondaryBackgroundColor = "#2d2d2d"
+textColor = "#E6D5B8"
+font = "monospace"
 
 [server]
 headless = true
 address = "0.0.0.0"
-enableCORS = true  # Changed to true to resolve XSRF protection conflict
-enableXsrfProtection = false  # Disabled XSRF protection since we're using CORS
+enableCORS = true
+enableXsrfProtection = false
 enableWebsocketCompression = false
 port = 5000
 
