@@ -2,7 +2,7 @@ import praw
 from datetime import datetime, timezone
 import pandas as pd
 import os
-from prawcore.exceptions import ResponseException, OAuthException, RateLimitExceeded
+from prawcore.exceptions import ResponseException, OAuthException
 import logging
 
 # Configure logging
@@ -29,13 +29,15 @@ class RedditAnalyzer:
             logger.info("Verifying Reddit API connection...")
             _ = self.reddit.user.me()
             logger.info("Reddit API connection successful")
-        except RateLimitExceeded:
-            logger.error("Rate limit exceeded. Please try again later.")
-            raise Exception("Rate limit exceeded. Please try again in a few minutes.")
-        except (ResponseException, OAuthException) as e:
-            logger.error(f"Reddit API authentication error: {str(e)}")
-            if isinstance(e, ResponseException) and e.response.status_code == 401:
+        except ResponseException as e:
+            logger.error(f"Reddit API error: {str(e)}")
+            if e.response.status_code == 429:
+                raise Exception("Rate limit exceeded. Please try again in a few minutes.")
+            elif e.response.status_code == 401:
                 raise Exception("Invalid Reddit API credentials. Please check your Client ID and Client Secret.")
+            raise Exception(f"Reddit API error: {str(e)}")
+        except OAuthException as e:
+            logger.error(f"Reddit API authentication error: {str(e)}")
             raise Exception(f"Reddit API authentication error: {str(e)}")
         except Exception as e:
             logger.error(f"Error initializing Reddit client: {str(e)}")
@@ -80,6 +82,9 @@ class RedditAnalyzer:
             elif e.response.status_code == 403:
                 logger.error(f"Access to user '{username}' data is forbidden")
                 raise Exception(f"Access to user '{username}' data is forbidden. The account might be private or suspended.")
+            elif e.response.status_code == 429:
+                logger.error("Rate limit exceeded")
+                raise Exception("Rate limit exceeded. Please try again in a few minutes.")
             logger.error(f"Error fetching user data: {str(e)}")
             raise Exception(f"Error fetching user data: {str(e)}")
         except Exception as e:
