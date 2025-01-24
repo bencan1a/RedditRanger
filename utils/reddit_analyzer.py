@@ -6,24 +6,31 @@ from prawcore.exceptions import ResponseException, OAuthException
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self):
-        client_id = os.environ.get('REDDIT_CLIENT_ID')
-        client_secret = os.environ.get('REDDIT_CLIENT_SECRET')
+    def __init__(self, client_id: str = None, client_secret: str = None):
+        """
+        Initialize RedditAnalyzer with optional credentials.
+        If not provided, will attempt to get from environment variables.
+        """
+        self.client_id = client_id or os.environ.get('REDDIT_CLIENT_ID')
+        self.client_secret = client_secret or os.environ.get('REDDIT_CLIENT_SECRET')
 
-        if not client_id or not client_secret:
-            raise ValueError("Reddit API credentials not found in environment variables")
+        if not self.client_id or not self.client_secret:
+            raise ValueError("Reddit API credentials not found in parameters or environment variables")
 
         try:
             self.reddit = praw.Reddit(
-                client_id=client_id,
-                client_secret=client_secret,
+                client_id=self.client_id,
+                client_secret=self.client_secret,
                 user_agent="script:reddit-analyzer:v1.0 (by /u/RedditAnalyzerBot)",
                 check_for_async=False,
-                read_only=True  # Explicitly set read_only mode
+                read_only=True
             )
             logger.info("Verifying Reddit API connection...")
             # Use a simpler verification that doesn't require authentication
