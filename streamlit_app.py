@@ -10,8 +10,24 @@ from utils.visualizations import (
 import pandas as pd
 
 def load_css():
-    with open('static/style.css') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    # Add custom CSS to reduce risk score size and style charts
+    st.markdown("""
+        <style>
+        .risk-score {
+            font-size: 2.1rem !important;  /* Reduced by ~30% from default 3rem */
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+        .chart-container {
+            margin: 0.5rem 0;
+        }
+        .high-risk { background-color: rgba(255, 0, 0, 0.1); }
+        .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
+        .low-risk { background-color: rgba(0, 255, 0, 0.1); }
+        </style>
+    """, unsafe_allow_html=True)
 
 def get_risk_class(risk_score):
     if risk_score > 70:
@@ -85,7 +101,7 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Display risk score prominently
+                    # Display risk score prominently with reduced size (CSS handles this)
                     risk_class = get_risk_class(result['risk_score'])
                     st.markdown(f"""
                         <div class='risk-score {risk_class}'>
@@ -117,25 +133,35 @@ def main():
                             st.success("Thank you for your feedback! This will help our Abominable Intelligence become more accurate.")
                         st.markdown("</div></div>", unsafe_allow_html=True)
 
-                    # Charts section
-                    st.markdown("<div class='charts-grid'>", unsafe_allow_html=True)
+                    # Create three equal columns for charts
+                    chart1, chart2, chart3 = st.columns(3)
 
                     # Radar Chart
-                    st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                    st.plotly_chart(create_score_radar_chart(result['component_scores']), use_container_width=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    with chart1:
+                        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                        st.plotly_chart(
+                            create_score_radar_chart(result['component_scores']), 
+                            use_container_width=True
+                        )
+                        st.markdown("</div>", unsafe_allow_html=True)
 
                     # Activity Heatmap
-                    st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                    st.plotly_chart(create_activity_heatmap(result['activity_patterns']['activity_hours']), use_container_width=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    with chart2:
+                        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                        st.plotly_chart(
+                            create_activity_heatmap(result['activity_patterns']['activity_hours']), 
+                            use_container_width=True
+                        )
+                        st.markdown("</div>", unsafe_allow_html=True)
 
                     # Subreddit Distribution
-                    st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                    st.plotly_chart(create_subreddit_distribution(result['activity_patterns']['top_subreddits']), use_container_width=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    with chart3:
+                        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                        st.plotly_chart(
+                            create_subreddit_distribution(result['activity_patterns']['top_subreddits']), 
+                            use_container_width=True
+                        )
+                        st.markdown("</div>", unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"Error analyzing account: {str(e)}")
