@@ -1,3 +1,4 @@
+
 [theme]
 # Desert sand base
 primaryColor = "#ff9800"  # Spice orange
@@ -11,6 +12,8 @@ font = "IBM Plex Mono"
 [server]
 headless = true
 address = "0.0.0.0"
+enableCORS = false
+enableWebsocketCompression = false
 port = 5000
 
 [browser]
