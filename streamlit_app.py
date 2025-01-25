@@ -353,8 +353,6 @@ def main():
                             <div class="grid-item half-width">
                                 <div class="feedback-section">
                                     <div style="display: flex; gap: 1rem;">
-                                        <button id="human-account-btn" class="stButton">Mark as Human Account</button>
-                                        <button id="bot-account-btn" class="stButton">Mark as Bot Account</button>
                                     </div>
                                 </div>
                             </div>
