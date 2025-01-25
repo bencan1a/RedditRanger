@@ -12,6 +12,8 @@ import time
 import itertools
 import threading
 from queue import Queue
+import queue #Import queue module explicitly
+
 
 # Mentat Sapho Juice Litany
 MENTAT_LITANY = [
@@ -110,14 +112,15 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             try:
                 # Check if result is available
                 try:
-                    status, result = result_queue.get_nowait()
+                    status, result = result_queue.get(block=False)  # Non-blocking get
                     if status == 'error':
                         st.session_state.analysis_error = result
                     else:
                         st.session_state.analysis_result = result
                     st.session_state.analysis_complete = True
                     break
-                except Queue.Empty:
+                except queue.Empty:  # Use queue.Empty instead of Queue.Empty
+                    # No result yet, continue with animation
                     pass
 
                 # Update loading animation
@@ -129,7 +132,9 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                     </div>
                 """, unsafe_allow_html=True)
                 time.sleep(1)
-            except:
+            except Exception as e:
+                st.session_state.analysis_error = f"Error during analysis: {str(e)}"
+                st.session_state.analysis_complete = True
                 break
 
         # Clear loading animation
@@ -501,6 +506,7 @@ def load_css():
         </script>
     """,
         unsafe_allow_html=True)
+
 
 
 def get_risk_class(risk_score):
