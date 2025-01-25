@@ -19,6 +19,7 @@ def load_css():
             flex-wrap: wrap;
             margin: 0 -0.5rem;
             padding: 1rem 0;
+            width: 100%;
         }
         .section {
             padding: 1rem;
@@ -26,33 +27,34 @@ def load_css():
             border-radius: 5px;
             margin: 0.5rem;
             box-sizing: border-box;
+            flex-grow: 0;
+            flex-shrink: 0;
         }
         .full-width {
-            flex: 0 0 calc(100% - 1rem);
-            width: calc(100% - 1rem);
+            flex-basis: calc(100% - 1rem);
+            max-width: calc(100% - 1rem);
         }
         .half-width {
-            flex: 0 0 calc(50% - 1rem);
-            width: calc(50% - 1rem);
+            flex-basis: calc(50% - 1rem);
+            max-width: calc(50% - 1rem);
         }
         .quarter-width {
-            flex: 0 0 calc(25% - 1rem);
-            width: calc(25% - 1rem);
-        }
-        .divider {
-            width: 100%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 2rem 0;
+            flex-basis: calc(25% - 1rem);
+            max-width: calc(25% - 1rem);
         }
         .risk-score {
             font-size: 2.1rem !important;
             text-align: center;
             padding: 1rem;
             border-radius: 10px;
-            margin: 1rem 0;
-            position: relative;
-            display: inline-block;
+            margin: 0;
+            display: block;
+        }
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 2rem 0;
         }
         .info-icon {
             font-size: 1rem;
@@ -196,52 +198,46 @@ def main():
                         return
 
                     # Row 2: Probabilities
-                    st.markdown("""
-                        <div class="grid-row">
-                            <div class="section half-width">
-                    """, unsafe_allow_html=True)
-
                     risk_class = get_risk_class(result['risk_score'])
-                    st.markdown(f"""
-                        <div class='risk-score {risk_class}'>
-                            {result['risk_score']:.1f}% Thinking Machine Probability
-                            <span class='info-icon'>ⓘ
-                                <span class='tooltip'>
-                                • Account age, karma & activity (25%)
-                                • Posting patterns & subreddit diversity (25%)
-                                • Comment analysis & vocabulary (25%)
-                                • ML-based behavior assessment (25%)
-
-                                Higher score = more bot-like patterns
-                                </span>
-                            </span>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-                    st.markdown("""
-                        <div class="section half-width">
-                    """, unsafe_allow_html=True)
                     bot_prob = result['bot_probability']
-                    risk_class = get_risk_class(bot_prob)
-                    st.markdown(f"""
-                        <div class='risk-score {risk_class}'>
-                            {bot_prob:.1f}% Bot Probability
-                            <span class='info-icon'>ⓘ
-                                <span class='tooltip'>
-                                Bot Probability Score is calculated using:
-                                • Repetitive phrase patterns
-                                • Template response detection
-                                • Timing analysis
-                                • Language complexity
-                                • Suspicious behavior patterns
+                    bot_risk_class = get_risk_class(bot_prob)
 
-                                Higher score = more bot-like patterns
+                    st.markdown(f"""
+                    <div class="grid-row">
+                        <div class="section half-width">
+                            <div class="risk-score {risk_class}">
+                                {result['risk_score']:.1f}% Thinking Machine Probability
+                                <span class="info-icon">ⓘ
+                                    <span class="tooltip">
+                                    • Account age, karma & activity (25%)
+                                    • Posting patterns & subreddit diversity (25%)
+                                    • Comment analysis & vocabulary (25%)
+                                    • ML-based behavior assessment (25%)
+
+                                    Higher score = more bot-like patterns
+                                    </span>
                                 </span>
-                            </span>
+                            </div>
                         </div>
+                        <div class="section half-width">
+                            <div class="risk-score {bot_risk_class}">
+                                {bot_prob:.1f}% Bot Probability
+                                <span class="info-icon">ⓘ
+                                    <span class="tooltip">
+                                    Bot Probability Score is calculated using:
+                                    • Repetitive phrase patterns
+                                    • Template response detection
+                                    • Timing analysis
+                                    • Language complexity
+                                    • Suspicious behavior patterns
+
+                                    Higher score = more bot-like patterns
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                     """, unsafe_allow_html=True)
-                    st.markdown("</div></div>", unsafe_allow_html=True)
 
                     # Row 3: Overview sections
                     st.markdown("""
