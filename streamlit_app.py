@@ -18,8 +18,10 @@ def load_css():
             display: flex;
             gap: 20px;
             width: 100%;
+            min-width: min-content;
             align-items: stretch; /* Ensure items in a row have same height */
             margin-bottom: 20px;
+            overflow-x: auto; /* Allow horizontal scrolling if needed */
         }
         .grid-item {
             background: rgba(255, 255, 255, 0.05);
