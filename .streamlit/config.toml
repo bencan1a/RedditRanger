@@ -11,7 +11,7 @@ address = "0.0.0.0"
 enableCORS = true
 enableXsrfProtection = false
 enableWebsocketCompression = false
-port = 5002
+port = 5000
 
 [browser]
 gatherUsageStats = false
