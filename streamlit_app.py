@@ -121,35 +121,19 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer,
             user_data, activity_patterns, text_metrics)
 
         return {
-            'username':
-            username,
-            'account_age':
-            user_data['created_utc'].strftime('%Y-%m-%d'),
-            'karma':
-            user_data['comment_karma'] + user_data['link_karma'],
+            'username': username,
+            'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
+            'karma': user_data['comment_karma'] + user_data['link_karma'],
             'risk_score': (1 - final_score) * 100,
-            'ml_risk_score':
-            component_scores.get('ml_risk_score', 0.5) * 100,
-            'traditional_risk_score':
-            (1 -
-             sum(v
-                 for k, v in component_scores.items() if k != 'ml_risk_score')
-             / len([k
-                    for k in component_scores if k != 'ml_risk_score'])) * 100,
-            'user_data':
-            user_data,
-            'activity_patterns':
-            activity_patterns,
-            'text_metrics':
-            text_metrics,
-            'component_scores':
-            component_scores,
-            'comments_df':
-            comments_df,
-            'submissions_df':
-            submissions_df,
-            'bot_probability':
-            text_metrics.get('bot_probability', 0) * 100
+            'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
+            'traditional_risk_score': (1 - sum(v for k, v in component_scores.items() if k != 'ml_risk_score') / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
+            'user_data': user_data,
+            'activity_patterns': activity_patterns,
+            'text_metrics': text_metrics,
+            'component_scores': component_scores,
+            'comments_df': comments_df,
+            'submissions_df': submissions_df,
+            'bot_probability': text_metrics.get('bot_probability', 0) * 100
         }
     except Exception as e:
         return {'username': username, 'error': str(e)}
@@ -225,54 +209,41 @@ def main():
                     activity_data = create_monthly_activity_table(
                         result['comments_df'], result['submissions_df'])
 
-                    # Create charts
-                    activity_chart = create_monthly_activity_chart(activity_data)
-                    score_radar = create_score_radar_chart(result['component_scores'])
-                    bot_chart = create_bot_analysis_chart(
-                        result['text_metrics'], result['activity_patterns'])
+                    # Overview sections
+                    st.markdown("""
+                        <div class="grid-container">
+                            <div class="grid-item quarter-width">
+                                <h3>Account Overview</h3>
+                                <p>Account Age: {result['account_age']}</p>
+                                <p>Total Karma: {result['karma']:,}</p>
+                            </div>
+                            <div class="grid-item quarter-width">
+                                <h3>Top Subreddits</h3>
+                                {''.join(f"<p>{subreddit}: {count} posts</p>"
+                                       for subreddit, count in result['activity_patterns']['top_subreddits'].items())}
+                            </div>
+                            <div class="grid-item quarter-width">
+                                <h3>Activity Overview</h3>
+                            </div>
+                            <div class="grid-item quarter-width">
+                                <h3>Risk Analysis</h3>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-                    # Convert charts to HTML
-                    activity_html = activity_chart.to_html(
-                        full_html=False,
-                        include_plotlyjs='cdn',
-                        config={'displayModeBar': False}
-                    )
-                    radar_html = score_radar.to_html(
-                        full_html=False,
-                        include_plotlyjs='cdn',
-                        config={'displayModeBar': False}
-                    )
-                    bot_html = bot_chart.to_html(
-                        full_html=False,
-                        include_plotlyjs='cdn',
-                        config={'displayModeBar': False}
-                    )
+                    # Add charts after HTML structure
+                    col3, col4 = st.columns(2)
+                    with col3:
+                        st.plotly_chart(
+                            create_monthly_activity_chart(activity_data),
+                            use_container_width=True,
+                            config={'displayModeBar': False})
 
-                    # Combine data into a single markdown call with embedded charts
-                    overview_html = f"""
-                    <div class="grid-container">
-                        <div class="grid-item quarter-width">
-                            <h3>Account Overview</h3>
-                            <p>Account Age: {result['account_age']}</p>
-                            <p>Total Karma: {result['karma']:,}</p>
-                        </div>
-                        <div class="grid-item quarter-width">
-                            <h3>Top Subreddits</h3>
-                            {''.join(f"<p>{subreddit}: {count} posts</p>"
-                                   for subreddit, count in result['activity_patterns']['top_subreddits'].items())}
-                        </div>
-                        <div class="grid-item quarter-width">
-                            <h3>Activity Overview</h3>
-                            <div class="chart-container">{activity_html}</div>
-                        </div>
-                        <div class="grid-item quarter-width">
-                            <h3>Risk Analysis</h3>
-                            <div class="chart-container">{radar_html}</div>
-                        </div>
-                    </div>
-                    """
-
-                    st.markdown(overview_html, unsafe_allow_html=True)
+                    with col4:
+                        st.plotly_chart(
+                            create_score_radar_chart(result['component_scores']),
+                            use_container_width=True,
+                            config={'displayModeBar': False})
 
                     # Detailed Analysis Header - Single markdown call
                     st.markdown("""
@@ -283,29 +254,31 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # Bot analysis section with embedded chart
-                    bot_analysis_html = f"""
-                    <div class="grid-container">
-                        <div class="grid-item half-width">
-                            <h3>Bot Behavior Analysis</h3>
-                            <div class='help-text'>
-                                This chart shows three key aspects of potential automated behavior:
-                                <ul>
-                                    <li>Text Patterns: How repetitive and template-like the writing is</li>
-                                    <li>Timing Patterns: If posting follows suspicious timing patterns</li>
-                                    <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
-                                </ul>
-                                Higher scores (closer to 1.0) indicate more bot-like characteristics.
+                    # Bot analysis section
+                    st.markdown("""
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
+                                <h3>Bot Behavior Analysis</h3>
+                                <div class='help-text'>
+                                    This chart shows three key aspects of potential automated behavior:
+                                    <ul>
+                                        <li>Text Patterns: How repetitive and template-like the writing is</li>
+                                        <li>Timing Patterns: If posting follows suspicious timing patterns</li>
+                                        <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
+                                    </ul>
+                                    Higher scores (closer to 1.0) indicate more bot-like characteristics.
+                                </div>
+                            </div>
+                            <div class="grid-item half-width">
                             </div>
                         </div>
-                        <div class="grid-item half-width">
-                            <div class="chart-container">{bot_html}</div>
-                        </div>
-                    </div>
-                    """
+                    """, unsafe_allow_html=True)
 
-                    st.markdown(bot_analysis_html, unsafe_allow_html=True)
-
+                    st.plotly_chart(
+                        create_bot_analysis_chart(result['text_metrics'],
+                                                result['activity_patterns']),
+                        use_container_width=True,
+                        config={'displayModeBar': False})
 
                     # Row 6: Suspicious Patterns - Single markdown call
                     suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
@@ -396,7 +369,7 @@ def main():
                     status_text.text(
                         f"Analyzing {username}... ({i+1}/{len(usernames)})")
                     result = analyze_single_user(username, reddit_analyzer,
-                                                 text_analyzer, account_scorer)
+                                                text_analyzer, account_scorer)
                     results.append(result)
                     progress_bar.progress((i + 1) / len(usernames))
 
