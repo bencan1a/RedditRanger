@@ -480,15 +480,23 @@ def main():
         if analysis_mode == "Single Account":
             username = st.text_input("Enter Reddit Username:", "")
 
+            # Create a placeholder for results
+            results_container = st.empty()
+
             # Reset state when username changes
             if username != st.session_state.previous_username:
                 reset_analysis_state()
                 st.session_state.previous_username = username
+                # Clear previous results
+                results_container.empty()
 
             # Start new analysis if needed
             if username and not st.session_state.analysis_started and not st.session_state.analysis_complete:
                 try:
                     st.session_state.analysis_started = True
+                    # Clear any previous results while loading
+                    results_container.empty()
+
                     result_queue = Queue()
 
                     # Start analysis in background thread
@@ -500,7 +508,7 @@ def main():
                     analysis_thread.start()
 
                     # Show loading animation while analysis runs
-                    placeholder = st.empty()
+                    loading_placeholder = st.empty()
                     litany = cycle_litany()
                     start_time = time.time()
 
@@ -514,14 +522,14 @@ def main():
                                 else:
                                     st.session_state.analysis_result = result
                                 st.session_state.analysis_complete = True
-                                placeholder.empty()  # Clear loading animation
+                                loading_placeholder.empty()  # Clear loading animation
                                 break
                             except Empty:
                                 pass  # No result yet
 
                             # Update loading animation
                             litany_text = next(litany)
-                            placeholder.markdown(f"""
+                            loading_placeholder.markdown(f"""
                                 <div class="mentat-litany visible">
                                     {litany_text}
                                 </div>
@@ -545,17 +553,18 @@ def main():
 
             # Display results if analysis is complete
             if st.session_state.analysis_complete:
-                if st.session_state.analysis_error:
-                    st.error(f"Error analyzing account: {st.session_state.analysis_error}")
-                    if st.button("Retry Analysis"):
-                        reset_analysis_state()
-                        st.experimental_rerun()
-                elif st.session_state.analysis_result:
-                    display_analysis_results(st.session_state.analysis_result)
-                    if st.button("Analyze Another Account"):
-                        reset_analysis_state()
-                        st.session_state.previous_username = None
-                        st.experimental_rerun()
+                with results_container:
+                    if st.session_state.analysis_error:
+                        st.error(f"Error analyzing account: {st.session_state.analysis_error}")
+                        if st.button("Retry Analysis"):
+                            reset_analysis_state()
+                            st.experimental_rerun()
+                    elif st.session_state.analysis_result:
+                        display_analysis_results(st.session_state.analysis_result)
+                        if st.button("Analyze Another Account"):
+                            reset_analysis_state()
+                            st.session_state.previous_username = None
+                            st.experimental_rerun()
 
         else:  # Bulk Analysis
             usernames = st.text_area(
