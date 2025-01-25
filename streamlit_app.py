@@ -346,15 +346,9 @@ def main():
                     # Row 8: Feedback - Single markdown call
                     st.markdown("""
                         <div class="grid-container">
-                            <div class="grid-item half-width">
+                            <div class="grid-item full-width">
                                 <span class="section-heading">Improve the Abominable Intelligence</span>
                                 <p>Help us improve our detection capabilities by providing feedback on the account classification.</p>
-                            </div>
-                            <div class="grid-item half-width">
-                                <div class="feedback-section">
-                                    <div style="display: flex; gap: 1rem;">
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
