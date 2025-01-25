@@ -68,7 +68,8 @@ def create_monthly_activity_chart(comments_df, submissions_df):
         date_range = pd.date_range(
             start=eleven_months_ago.replace(day=1),  # Start from first day of month
             end=now + pd.offsets.MonthEnd(0),  # Ensure current month is included
-            freq='ME'  # Monthly frequency
+            freq='ME',  # Monthly frequency
+            tz='UTC'  # Ensure timezone awareness
         )
 
         # Create an empty DataFrame with all months
@@ -93,16 +94,12 @@ def create_monthly_activity_chart(comments_df, submissions_df):
             return monthly_template
 
         # Group by month and count
-        monthly = (
-            filtered
-            .groupby(filtered['created_utc'].dt.to_period('M'))
-            .size()
-            .reset_index()
-        )
+        monthly = filtered.groupby(pd.Grouper(
+            key='created_utc',
+            freq='ME',
+            conv_key_tz='UTC'
+        )).size().reset_index()
         monthly.columns = ['month', 'count']
-
-        # Convert Period to timestamp for merging
-        monthly['month'] = monthly['month'].dt.to_timestamp()
 
         # Merge with template to ensure all months are present
         monthly = pd.merge(
