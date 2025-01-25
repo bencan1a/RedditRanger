@@ -77,50 +77,63 @@ class AccountScorer:
 
     def calculate_score(self, user_data, activity_patterns, text_metrics):
         try:
-            # Initialize scores dictionary
+            # Initial debug logging
+            logger.info("=== Starting score calculation ===")
+            logger.debug(f"Input user_data type: {type(user_data)}")
+            logger.debug(f"Input user_data keys: {user_data.keys() if isinstance(user_data, dict) else 'Not a dict'}")
+
             scores = {}
 
-            # Sanitize user data
-            sanitized_data = self._sanitize_user_data(user_data)
-            if not sanitized_data:
-                logger.error("Invalid user data format")
-                return 0.5, {'error': 'Invalid user data format'}
-
-            # Apply each heuristic with safe data access and store only numeric scores
-            heuristic_scores = {}
+            # Log before processing each heuristic
+            logger.info("Processing heuristics...")
 
             for heuristic_name, heuristic in self.heuristics.items():
                 try:
-                    result = heuristic.analyze(sanitized_data)
+                    logger.debug(f"Running {heuristic_name} heuristic...")
+                    result = heuristic.analyze(user_data)
+
+                    # Log the raw result
+                    logger.debug(f"{heuristic_name} raw result: {result}")
+
                     if isinstance(result, dict):
-                        # Extract only numeric values from the result
                         for key, value in result.items():
+                            # Log each key-value pair being processed
+                            logger.debug(f"Processing {heuristic_name} - {key}: {type(value)} = {value}")
+
                             if isinstance(value, (int, float)) and key != 'metrics':
                                 scores[f"{heuristic_name}_{key}"] = float(value)
-                            elif key == 'metrics' and isinstance(value, dict):
+                                logger.debug(f"Added score {heuristic_name}_{key}: {value}")
+                            elif key == 'metrics':
                                 scores[f"{heuristic_name}_metrics"] = value
+                                logger.debug(f"Added metrics for {heuristic_name}")
                 except Exception as e:
-                    logger.error(f"Error in {heuristic_name} heuristic: {str(e)}")
+                    logger.error(f"Error in {heuristic_name} heuristic: {str(e)}", exc_info=True)
                     continue
 
-            # Get ML-based risk score
+            # Log all accumulated scores before ML analysis
+            logger.debug("=== Accumulated scores before ML analysis ===")
+            for key, value in scores.items():
+                logger.debug(f"Score: {key} = {type(value)} : {value}")
+
             try:
+                logger.debug("Starting ML analysis...")
                 ml_risk_score, feature_importance = self.ml_analyzer.analyze_account(
-                    sanitized_data, activity_patterns, text_metrics
+                    user_data, activity_patterns, text_metrics
                 )
                 if isinstance(ml_risk_score, (int, float)):
                     scores['ml_risk_score'] = float(ml_risk_score)
+                    logger.debug(f"Added ML risk score: {ml_risk_score}")
                 if feature_importance:
                     scores['feature_importance'] = feature_importance
             except Exception as e:
-                logger.error(f"Error in ML analysis: {str(e)}")
+                logger.error(f"Error in ML analysis: {str(e)}", exc_info=True)
                 scores['ml_risk_score'] = 0.5
 
             # Calculate final weighted score
+            logger.info("=== Starting weighted score calculation ===")
             final_score = 0.0
             weight_sum = 0.0
 
-            # Define weights for different components
             weights = {
                 'account_age_age_score': 0.10,
                 'karma_karma_score': 0.10,
@@ -137,34 +150,46 @@ class AccountScorer:
                 'linguistic_style_score': 0.05
             }
 
-            logger.debug("Scores before weighted calculation:")
+            # Log all available scores before calculation
+            logger.info("=== Available scores before weighted calculation ===")
             for score_name, score in scores.items():
-                if score_name in weights:
-                    logger.debug(f"{score_name}: {score}")
+                logger.info(f"Score {score_name}: type={type(score)}, value={score}")
 
+            # Process each weight with detailed logging
             for score_name, weight in weights.items():
+                logger.debug(f"\nProcessing weighted score: {score_name}")
+                logger.debug(f"Weight: {weight}")
+
                 if score_name in scores:
-                    try:
-                        score_value = scores[score_name]
-                        if isinstance(score_value, (int, float)):
-                            score = float(score_value)
-                            final_score += score * weight
-                            weight_sum += weight
-                        else:
-                            logger.warning(f"Non-numeric score found for {score_name}: {type(score_value)}")
-                    except Exception as e:
-                        logger.error(f"Error processing score {score_name}: {str(e)}")
+                    score_value = scores[score_name]
+                    logger.debug(f"Found score value: type={type(score_value)}, value={score_value}")
+
+                    if not isinstance(score_value, (int, float)):
+                        logger.warning(f"Invalid score type for {score_name}: {type(score_value)}")
                         continue
+
+                    try:
+                        contribution = float(score_value) * weight
+                        final_score += contribution
+                        weight_sum += weight
+                        logger.debug(f"Added contribution: {contribution}")
+                        logger.debug(f"Running totals - final_score: {final_score}, weight_sum: {weight_sum}")
+                    except Exception as e:
+                        logger.error(f"Error calculating weighted score for {score_name}: {str(e)}", exc_info=True)
+                        continue
+                else:
+                    logger.debug(f"Score {score_name} not found in scores dictionary")
 
             if weight_sum == 0:
                 logger.warning("No valid scores found for weighted calculation")
-                return 0.5, scores  # Return moderate risk if no scores available
+                return 0.5, scores
 
-            # Normalize final score
+            # Calculate final normalized score
             final_score = final_score / weight_sum
+            logger.info(f"=== Final normalized score: {final_score} ===")
 
             return final_score, scores
 
         except Exception as e:
-            logger.error(f"Error calculating score: {str(e)}")
-            return 0.5, {}  # Return moderate risk score in case of error
+            logger.error(f"Error calculating score: {str(e)}", exc_info=True)
+            return 0.5, {}
