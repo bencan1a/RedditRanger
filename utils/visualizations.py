@@ -63,11 +63,12 @@ def create_monthly_activity_chart(comments_df, submissions_df):
     eleven_months_ago = now - pd.DateOffset(months=11)  # Changed from 12 to 11 to include current month
 
     def process_activity(df, activity_type):
+        """Process activity data for either comments or submissions."""
         # Create a date range covering current month plus prior 11 months
         date_range = pd.date_range(
             start=eleven_months_ago.replace(day=1),  # Start from first day of month
             end=now + pd.offsets.MonthEnd(0),  # Ensure current month is included
-            freq='M'  # Monthly frequency
+            freq='ME'  # Monthly frequency
         )
 
         # Create an empty DataFrame with all months
@@ -91,13 +92,17 @@ def create_monthly_activity_chart(comments_df, submissions_df):
         if filtered.empty:
             return monthly_template
 
+        # Group by month and count
         monthly = (
             filtered
-            .resample('M', on='created_utc')  # Monthly frequency
+            .groupby(filtered['created_utc'].dt.to_period('M'))
             .size()
             .reset_index()
         )
         monthly.columns = ['month', 'count']
+
+        # Convert Period to timestamp for merging
+        monthly['month'] = monthly['month'].dt.to_timestamp()
 
         # Merge with template to ensure all months are present
         monthly = pd.merge(
@@ -106,11 +111,13 @@ def create_monthly_activity_chart(comments_df, submissions_df):
             on='month',
             how='left'
         )
+
         # Use the count from actual data where available, otherwise keep 0
         monthly['count'] = monthly['count_y'].fillna(monthly['count_x'])
         monthly = monthly[['month', 'count']]
 
-        logger.info("Monthly {} data:".format(activity_type))
+        # Debug logging
+        logger.info(f"Monthly {activity_type} data:")
         for _, row in monthly.iterrows():
             logger.info(f"Month: {row['month']}, Count: {row['count']}")
 
