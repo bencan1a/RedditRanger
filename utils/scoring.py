@@ -147,6 +147,7 @@ class AccountScorer:
             for score_name, weight in weights.items():
                 if score_name not in scores:
                     logger.debug(f"Score {score_name} not found in scores dictionary")
+                    scores[score_name] = 0.5  # Add default score
                     continue
 
                 try:
@@ -158,17 +159,18 @@ class AccountScorer:
                     logger.debug(f"Added contribution: {contribution}, running total: {final_score}")
                 except Exception as e:
                     logger.error(f"Error calculating weighted score for {score_name}: {str(e)}", exc_info=True)
+                    scores[score_name] = 0.5  # Add default score on error
                     continue
 
             if weight_sum == 0:
                 logger.warning("No valid scores found for weighted calculation")
-                return 0.5, metrics
+                return 0.5, scores
 
             # Calculate final normalized score
             final_score = final_score / weight_sum
-            logger.info(f"=== Final normalized score: {final_score} ===")
+            logger.info(f"=== Final normalized score: {final_score:.5f} ===")
 
-            return final_score, metrics
+            return final_score, scores
 
         except Exception as e:
             logger.error(f"Error calculating score: {str(e)}", exc_info=True)

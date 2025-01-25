@@ -13,11 +13,14 @@ def create_score_radar_chart(scores):
     logger.debug(f"Creating radar chart with scores: {scores}")
 
     # Filter out non-score keys and format names
-    score_items = {k: v for k, v in scores.items() if isinstance(v, (int, float)) and k != 'metrics'}
+    score_items = {k.replace('_score', ''): v 
+                  for k, v in scores.items() 
+                  if k.endswith('_score') and isinstance(v, (int, float))}
+
     logger.debug(f"Filtered score items: {score_items}")
 
-    # Remove "_score" suffix from category names
-    categories = [cat.replace('_score', '') for cat in score_items.keys()]
+    # Get categories and values
+    categories = list(score_items.keys())
     values = list(score_items.values())
 
     logger.debug(f"Radar chart categories: {categories}")
