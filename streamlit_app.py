@@ -11,7 +11,7 @@ import pandas as pd
 import time
 import itertools
 import threading
-from queue import Queue
+from queue import Queue, Empty  # Import both Queue and Empty
 
 # Initialize analyzers at the module level
 try:
@@ -125,7 +125,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                         st.session_state.analysis_result = result
                     st.session_state.analysis_complete = True
                     break
-                except queue.Empty:  # Use queue.Empty instead of Queue.Empty
+                except Empty:  # Use the imported Empty exception
                     # No result yet, continue with animation
                     pass
 
@@ -512,6 +512,7 @@ def load_css():
         </script>
     """,
         unsafe_allow_html=True)
+
 
 
 def get_risk_class(risk_score):
