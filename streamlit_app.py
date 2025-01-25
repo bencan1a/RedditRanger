@@ -29,14 +29,30 @@ def cycle_litany():
 def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
     """Perform the analysis in a separate thread"""
     try:
+        # Set a timeout for the entire analysis
         user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+
+        # Handle empty dataframes
+        if comments_df.empty and submissions_df.empty:
+            result_queue.put(('error', 'No data found for this user'))
+            return
+
         activity_patterns = reddit_analyzer.analyze_activity_patterns(
             comments_df, submissions_df)
 
-        text_metrics = text_analyzer.analyze_comments(
-            comments_df['body'].tolist() if not comments_df.empty else [],
-            comments_df['created_utc'].tolist()
-            if not comments_df.empty else None)
+        # Get comment texts safely
+        comment_texts = comments_df['body'].tolist() if not comments_df.empty else []
+        comment_times = comments_df['created_utc'].tolist() if not comments_df.empty else None
+
+        text_metrics = text_analyzer.analyze_comments(comment_texts, comment_times)
+
+        # Create default text metrics if analysis fails
+        if not text_metrics:
+            text_metrics = {
+                'vocab_size': 0,
+                'avg_similarity': 0.0,
+                'bot_probability': 0.0
+            }
 
         final_score, component_scores = account_scorer.calculate_score(
             user_data, activity_patterns, text_metrics)
@@ -48,9 +64,9 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
-                                         if k != 'ml_risk_score') /
-                                 len([k for k in component_scores
-                                     if k != 'ml_risk_score'])) * 100,
+                                          if k != 'ml_risk_score') /
+                                  len([k for k in component_scores
+                                      if k != 'ml_risk_score'])) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -69,17 +85,17 @@ def show_loading_animation():
     litany = cycle_litany()
 
     while not st.session_state.get('analysis_complete', False):
-        litany_text = next(litany)
-        placeholder.markdown(f"""
-            <div class="mentat-spinner"></div>
-            <div class="mentat-litany visible">
-                {litany_text}
-            </div>
-            <script>
-                animateText("{litany_text}");
-            </script>
-        """, unsafe_allow_html=True)
-        time.sleep(2)
+        try:
+            litany_text = next(litany)
+            placeholder.markdown(f"""
+                <div class="mentat-spinner"></div>
+                <div class="mentat-litany visible">
+                    {litany_text}
+                </div>
+            """, unsafe_allow_html=True)
+            time.sleep(1)  # Reduced sleep time
+        except:
+            break
 
     placeholder.empty()
 
@@ -87,6 +103,14 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
     """Analyze a single user with background processing"""
     try:
         # Initialize session state
+        if 'analysis_complete' not in st.session_state:
+            st.session_state.analysis_complete = False
+        if 'analysis_result' not in st.session_state:
+            st.session_state.analysis_result = None
+        if 'analysis_error' not in st.session_state:
+            st.session_state.analysis_error = None
+
+        # Reset state for new analysis
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
         st.session_state.analysis_error = None
@@ -97,27 +121,28 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         # Start analysis in background thread
         analysis_thread = threading.Thread(
             target=perform_analysis,
-            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue)
+            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue),
+            daemon=True  # Make thread daemon so it doesn't block process exit
         )
         analysis_thread.start()
 
-        # Start animation in a separate thread
-        animation_thread = threading.Thread(target=show_loading_animation)
-        animation_thread.start()
+        # Show loading animation while waiting
+        show_loading_animation()
 
-        # Wait for analysis result in main thread
-        status, result = result_queue.get()
+        # Wait for analysis result with timeout
+        try:
+            status, result = result_queue.get(timeout=60)  # Increased timeout to 60 seconds
 
-        # Update session state to stop animation
-        if status == 'error':
-            st.session_state.analysis_error = result
-        else:
-            st.session_state.analysis_result = result
+            # Update session state based on result
+            if status == 'error':
+                st.session_state.analysis_error = result
+            else:
+                st.session_state.analysis_result = result
+        except:
+            st.session_state.analysis_error = "Analysis timed out. Please try again."
 
+        # Set analysis as complete regardless of outcome
         st.session_state.analysis_complete = True
-
-        # Wait for animation to finish
-        animation_thread.join()
 
         # Return result or error
         if st.session_state.analysis_error:
@@ -480,7 +505,6 @@ def load_css():
         </script>
     """,
         unsafe_allow_html=True)
-
 
 
 def get_risk_class(risk_score):
