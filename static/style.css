@@ -60,26 +60,154 @@ h1 {
     margin: 1rem 0;
 }
 
-/* Progress bars */
-.stProgress > div > div {
-    background-color: #ff9800 !important;
+/* Grid layout */
+.grid-container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    align-items: stretch;
+    margin-bottom: 20px;
+    flex-direction: row;
 }
 
-/* Buttons */
+.grid-item {
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    border: 1px solid rgba(255, 152, 0, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
+    backdrop-filter: blur(8px);
+}
+
+.grid-item.half-width { flex: 0 0 50%; }
+.grid-item.full-width { flex: 0 0 100%; }
+.grid-item.quarter-width { flex: 0 0 25%; }
+
+/* Info tooltip */
+.info-icon {
+    font-size: 1rem;
+    color: #FFB74D;
+    margin-left: 8px;
+    cursor: help;
+    display: inline-block;
+    position: relative;
+}
+
+.tooltip {
+    visibility: hidden;
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+    color: #FFB74D;
+    text-align: left;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    position: absolute;
+    z-index: 1;
+    width: 280px;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -140px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    transform: translateY(10px);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.info-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Loading animation */
+.mentat-litany {
+    font-size: 1.2rem;
+    color: #FFB74D;
+    text-align: center;
+    padding: 2rem;
+    margin: 1rem 0;
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    border: 1px solid rgba(255, 152, 0, 0.1);
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.mentat-litany.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Text styles */
+.intro-text {
+    color: #FFB74D;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin: 1rem 0;
+}
+
+/* Section headings */
+.section-heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #FFB74D;
+    letter-spacing: 0.1em;
+    display: block;
+    text-transform: uppercase;
+}
+
+/* Streamlit overrides */
 .stButton > button {
-    background-color: #ff9800 !important;
-    color: #1a1a1a !important;
-    border: none !important;
-    padding: 0.5rem 2rem !important;
-    font-family: 'IBM Plex Mono', monospace !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.1em !important;
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95)) !important;
+    color: #FFB74D !important;
+    border: 1px solid rgba(255, 152, 0, 0.2) !important;
+    letter-spacing: 0.05em !important;
     transition: all 0.3s ease !important;
 }
 
 .stButton > button:hover {
-    background-color: #ffa726 !important;
-    transform: translateY(-2px);
+    background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95)) !important;
+    border-color: rgba(255, 152, 0, 0.4) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Pattern table */
+.pattern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pattern-table th,
+.pattern-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 152, 0, 0.1);
+}
+
+.pattern-table th {
+    color: #FFB74D;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Layout adjustments */
+.block-container {
+    padding: 3rem 2rem !important;
+}
+
+/* Dark theme compatibility */
+.stApp {
+    background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
+}
+
+/* Progress bars */
+.stProgress > div > div {
+    background-color: #ff9800 !important;
 }
 
 /* Text inputs */
@@ -108,11 +236,6 @@ h1 {
 .dataframe th {
     background-color: #ff9800 !important;
     color: #1a1a1a !important;
-}
-
-/* Custom spacing */
-.block-container {
-    padding: 3rem 2rem !important;
 }
 
 /* Account overview card */
