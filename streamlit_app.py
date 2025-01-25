@@ -250,6 +250,15 @@ def load_css():
             letter-spacing: 0.05em;
         }
 
+        .score-help {
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #FFB74D;
+            margin-top: 0.5rem;
+        }
+
+
         .info-icon {
             font-size: 1rem;
             color: #FFB74D;
@@ -656,33 +665,37 @@ def main():
                         col1, col2 = st.columns(2)
                         with col1:
                             risk_class = get_risk_class(result['risk_score'])
-                            st.metric(
-                                "Thinking Machine Probability",
-                                f"{result['risk_score']:.1f}%",
-                                help="""
-                                Score breakdown:
-                                • Account age, karma & activity (25%)
-                                • Posting patterns & subreddit diversity (25%)
-                                • Comment analysis & vocabulary (25%)
-                                • ML-based behavior assessment (25%)
-                                """
-                            )
+                            st.markdown(f"""
+                                <div class="risk-score {risk_class}">
+                                    {result['risk_score']:.1f}% Thinking Machine Probability
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("""
+                                <div class="score-help">
+                                    • Account age, karma & activity (25%)
+                                    • Posting patterns & subreddit diversity (25%)
+                                    • Comment analysis & vocabulary (25%)
+                                    • ML-based behavior assessment (25%)
+                                </div>
+                            """, unsafe_allow_html=True)
 
                         with col2:
                             bot_prob = result['bot_probability']
                             bot_risk_class = get_risk_class(bot_prob)
-                            st.metric(
-                                "Bot Probability",
-                                f"{bot_prob:.1f}%",
-                                help="""
-                                Based on:
-                                • Repetitive phrase patterns
-                                • Template response detection
-                                • Timing analysis
-                                • Language complexity
-                                • Suspicious behavior patterns
-                                """
-                            )
+                            st.markdown(f"""
+                                <div class="risk-score {bot_risk_class}">
+                                    {bot_prob:.1f}% Bot Probability
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("""
+                                <div class="score-help">
+                                    • Repetitive phrase patterns
+                                    • Template response detection
+                                    • Timing analysis
+                                    • Language complexity
+                                    • Suspicious behavior patterns
+                                </div>
+                            """, unsafe_allow_html=True)
 
                         # Account Overview section
                         st.subheader("Account Overview")
@@ -750,6 +763,41 @@ def main():
                                 st.metric(
                                     pattern.replace('_', ' ').title(),
                                     f"{count}%"
+                                )
+
+                        # Mentat Feedback Section
+                        st.markdown("---")
+                        st.subheader("Improve the Mentat")
+                        st.markdown("""
+                            Help us improve our detection capabilities by providing feedback 
+                            on the account classification.
+                        """)
+
+                        feedback_col1, feedback_col2 = st.columns(2)
+                        with feedback_col1:
+                            if st.button("Mark as Human Account", key="human-account-btn"):
+                                account_scorer.ml_analyzer.add_training_example(
+                                    result['user_data'],
+                                    result['activity_patterns'],
+                                    result['text_metrics'],
+                                    is_legitimate=True
+                                )
+                                st.success(
+                                    "Thank you for marking this as a human account! "
+                                    "This feedback helps improve our detection."
+                                )
+
+                        with feedback_col2:
+                            if st.button("Mark as Bot Account", key="bot-account-btn"):
+                                account_scorer.ml_analyzer.add_training_example(
+                                    result['user_data'],
+                                    result['activity_patterns'],
+                                    result['text_metrics'],
+                                    is_legitimate=False
+                                )
+                                st.success(
+                                    "Thank you for marking this as a bot account! "
+                                    "This feedback helps improve our detection."
                                 )
 
                     except Exception as e:
