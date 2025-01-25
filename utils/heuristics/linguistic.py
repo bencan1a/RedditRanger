@@ -27,7 +27,7 @@ class LinguisticHeuristic(BaseHeuristic):
             ]
         }
 
-    def analyze(self, data: Dict[str, Any]) -> Dict[str, float]:
+    def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         try:
             comments = data.get('comments', [])
             if not comments:
@@ -37,33 +37,57 @@ class LinguisticHeuristic(BaseHeuristic):
             if not comment_texts:
                 return self._get_default_scores()
 
+            # Initialize scores dictionary
             scores = {}
 
-            # Analyze text similarity
-            scores['similarity_score'] = self._analyze_similarity(comment_texts)
+            # Calculate individual scores
+            similarity_score = self._analyze_similarity(comment_texts)
+            complexity_score = self._analyze_complexity(comment_texts)
+            pattern_score = self._analyze_patterns(comment_texts)
+            style_score = self._analyze_style(comment_texts)
 
-            # Analyze text complexity
-            scores['complexity_score'] = self._analyze_complexity(comment_texts)
+            # Store scores as float values
+            scores['similarity_score'] = float(similarity_score)
+            scores['complexity_score'] = float(complexity_score)
+            scores['pattern_score'] = float(pattern_score)
+            scores['style_score'] = float(style_score)
 
-            # Analyze suspicious patterns
-            scores['pattern_score'] = self._analyze_patterns(comment_texts)
-
-            # Analyze writing style consistency
-            scores['style_score'] = self._analyze_style(comment_texts)
+            # Store metrics separately
+            scores['metrics'] = {
+                'total_comments': float(len(comment_texts)),
+                'avg_comment_length': float(sum(len(t) for t in comment_texts) / max(1, len(comment_texts))),
+                'pattern_matches': float(self._count_pattern_matches(comment_texts))
+            }
 
             return scores
 
         except Exception as e:
             return self._get_default_scores()
 
-    def _get_default_scores(self) -> Dict[str, float]:
+    def _get_default_scores(self) -> Dict[str, Any]:
         """Return neutral default scores"""
         return {
             'similarity_score': 0.8,
             'complexity_score': 0.8,
             'pattern_score': 0.8,
-            'style_score': 0.8
+            'style_score': 0.8,
+            'metrics': {
+                'total_comments': 0.0,
+                'avg_comment_length': 0.0,
+                'pattern_matches': 0.0
+            }
         }
+
+    def _count_pattern_matches(self, texts: List[str]) -> int:
+        """Count total pattern matches across all texts"""
+        count = 0
+        for text in texts:
+            text_lower = str(text).lower()
+            for pattern_list in self.suspicious_patterns.values():
+                for pattern in pattern_list:
+                    if re.search(pattern, text_lower):
+                        count += 1
+        return count
 
     def _analyze_similarity(self, texts: List[str]) -> float:
         """Analyze similarity between comments"""
@@ -150,20 +174,9 @@ class LinguisticHeuristic(BaseHeuristic):
             return 0.8
 
         try:
-            pattern_matches = 0
+            pattern_matches = self._count_pattern_matches(texts)
             total_patterns = len(self.suspicious_patterns['template_phrases']) + \
                            len(self.suspicious_patterns['promotional_language'])
-
-            for text in texts:
-                text_lower = str(text).lower()
-                # Check template phrases
-                for pattern in self.suspicious_patterns['template_phrases']:
-                    if re.search(pattern, text_lower):
-                        pattern_matches += 1
-                # Check promotional language
-                for pattern in self.suspicious_patterns['promotional_language']:
-                    if re.search(pattern, text_lower):
-                        pattern_matches += 1
 
             if total_patterns == 0:
                 return 0.8
