@@ -51,14 +51,23 @@ def create_score_radar_chart(scores):
     return fig
 
 def create_monthly_activity_chart(comments_df):
-    # Get date range for last 12 months
-    now = pd.Timestamp.now()
+    """Create a monthly activity chart from comments dataframe."""
+    # Ensure we're working with UTC timestamps
+    now = pd.Timestamp.now(tz='UTC')
     one_year_ago = now - pd.DateOffset(months=12)
 
-    # Filter comments for last 12 months and resample by month
-    comments_df['created_utc'] = pd.to_datetime(comments_df['created_utc'])
+    # Convert created_utc to datetime if it isn't already
+    if not pd.api.types.is_datetime64_any_dtype(comments_df['created_utc']):
+        comments_df['created_utc'] = pd.to_datetime(comments_df['created_utc'], utc=True)
+
+    # Filter and resample
     mask = (comments_df['created_utc'] >= one_year_ago) & (comments_df['created_utc'] <= now)
-    monthly_activity = comments_df[mask].resample('M', on='created_utc').size().reset_index()
+    monthly_activity = (
+        comments_df[mask]
+        .resample('M', on='created_utc')
+        .size()
+        .reset_index()
+    )
     monthly_activity.columns = ['month', 'count']
 
     # Create the figure
