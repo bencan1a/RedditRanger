@@ -10,10 +10,7 @@ from utils.heuristics import (
     EngagementHeuristic,
     LinguisticHeuristic
 )
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
 logger = logging.getLogger(__name__)
 
 class AccountScorer:
@@ -47,6 +44,7 @@ class AccountScorer:
         return 0.0
 
     def calculate_score(self, user_data, activity_patterns, text_metrics):
+        """Calculate final score for the account"""
         try:
             # Initial debug logging
             logger.info("=== Starting score calculation ===")

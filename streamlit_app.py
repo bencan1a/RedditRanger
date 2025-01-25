@@ -550,27 +550,11 @@ def main():
         if username:
             try:
                 result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
-
                 if 'error' in result:
                     import traceback
-                    import sys
-
-                    try:
-                        # Check if result['error'] is already an exception
-                        if isinstance(result['error'], BaseException):
-                            raise result['error']
-                        else:
-                            # Wrap non-exception errors in a generic Exception
-                            raise Exception(f"Error details: {result['error']}")
-                    except Exception:
-                        # Capture the original traceback
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        error_details = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-
-                        # Display the full traceback in Streamlit
-                        st.error(f"Error analyzing account:\n{error_details}")
-                        return
-
+                    error_details = f"Error analyzing account: {result['error']}\n{traceback.format_exc()}"
+                    st.error(error_details)
+                    return
 
                 risk_class = get_risk_class(result['risk_score'])
                 bot_prob = result['bot_probability']
@@ -750,7 +734,7 @@ def main():
                         )
 
             except Exception as e:
-                st.error(f"Error analyzing account2: {str(e)}")
+                st.error(f"Error analyzing account: {str(e)}")
 
     else:  # Bulk Analysis
         usernames = st.text_area(
