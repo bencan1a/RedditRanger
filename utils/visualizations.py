@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 import pandas as pd
 
 def create_score_radar_chart(scores):
-    categories = list(scores.keys())
+    # Remove "_score" suffix from category names
+    categories = [cat.replace('_score', '') for cat in scores.keys()]
     values = list(scores.values())
 
     fig = go.Figure()
@@ -31,11 +32,13 @@ def create_score_radar_chart(scores):
                 range=[0, 1],
                 tickformat='.0%',
                 gridcolor='rgba(255, 255, 255, 0.1)',
-                linecolor='rgba(255, 255, 255, 0.1)'
+                linecolor='rgba(255, 255, 255, 0.1)',
+                tickfont=dict(color='#E6D5B8')  # Match the theme text color
             ),
             angularaxis=dict(
                 gridcolor='rgba(255, 255, 255, 0.1)',
-                linecolor='rgba(255, 255, 255, 0.1)'
+                linecolor='rgba(255, 255, 255, 0.1)',
+                tickfont=dict(color='#E6D5B8')  # Match the theme text color
             ),
             bgcolor='rgba(0, 0, 0, 0)'
         ),
@@ -51,9 +54,14 @@ def create_monthly_activity_chart(comments_df):
     if comments_df.empty:
         return go.Figure()
 
-    # Resample data by month and count
+    # Get current date and date 12 months ago
+    now = datetime.now(timezone.utc)
+    twelve_months_ago = now.replace(year=now.year - 1)
+
+    # Filter for last 12 months and resample by month
     monthly_activity = (
-        comments_df.set_index('created_utc')
+        comments_df[comments_df['created_utc'] >= twelve_months_ago]
+        .set_index('created_utc')
         .resample('M')
         .size()
         .reset_index()
@@ -78,7 +86,7 @@ def create_monthly_activity_chart(comments_df):
 
     fig.update_layout(
         title={
-            'text': 'Activity Over Time',
+            'text': 'Trailing 12 Month Activity',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -92,14 +100,16 @@ def create_monthly_activity_chart(comments_df):
             nticks=12,
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
-            tickformat="%b %y"  # Format as "Jan 25"
+            tickformat="%b %y",  # Format as "Jan 25"
+            tickfont=dict(color='#E6D5B8')  # Match theme text color
         ),
         yaxis=dict(
             title="Number of Posts",
             showgrid=True,
             gridcolor='rgba(255, 255, 255, 0.1)',
             showline=True,
-            linecolor='rgba(255, 255, 255, 0.2)'
+            linecolor='rgba(255, 255, 255, 0.2)',
+            tickfont=dict(color='#E6D5B8')  # Match theme text color
         ),
         showlegend=False,
         margin=dict(t=50, b=50, l=40, r=20),
@@ -138,7 +148,8 @@ def create_subreddit_distribution(top_subreddits):
             y=-0.3,
             xanchor="center",
             x=0.5,
-            bgcolor='rgba(0,0,0,0)'
+            bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#E6D5B8')  # Match theme text color
         ),
         margin=dict(t=50, b=80, l=20, r=20),
         paper_bgcolor='rgba(0,0,0,0)',
