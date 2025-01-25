@@ -179,7 +179,6 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                 # Update loading animation
                 litany_text = next(litany)
                 placeholder.markdown(f"""
-                    <div class="mentat-spinner"></div>
                     <div class="mentat-litany visible">
                         {litany_text}
                     </div>
@@ -605,15 +604,15 @@ def main():
             username = st.text_input("Enter Reddit Username:", "")
             if username:
                 try:
-                    with st.spinner('Analyzing account...'):
-                        result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
-                        if 'error' in result:
-                            error_msg = result['error']
-                            st.error(f"Error analyzing account: {error_msg}")
-                            # Add an expander for detailed error information
-                            with st.expander("See detailed error information"):
-                                st.code(error_msg)
-                            return
+#                    with st.spinner('Analyzing account...'):
+                    result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
+                    if 'error' in result:
+                        error_msg = result['error']
+                        st.error(f"Error analyzing account: {error_msg}")
+                        # Add an expander for detailed error information
+                        with st.expander("See detailed error information"):
+                            st.code(error_msg)
+                        return
 
                     risk_class = get_risk_class(result['risk_score'])
                     bot_prob = result['bot_probability']

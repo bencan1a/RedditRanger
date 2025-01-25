@@ -1,9 +1,10 @@
 import os
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
+from utils.rate_limiter import RateLimiter
 import uvicorn
 from pydantic import BaseModel
 from datetime import datetime
@@ -30,9 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize analyzers
+# Initialize analyzers and rate limiter
 text_analyzer = TextAnalyzer()
 account_scorer = AccountScorer()
+rate_limiter = RateLimiter(tokens=5, fill_rate=0.1)  # 5 requests per 10 seconds
 
 class AnalysisResponse(BaseModel):
     username: str
@@ -61,8 +63,26 @@ async def health_check():
         timestamp=datetime.utcnow().isoformat()
     )
 
+async def check_rate_limit(request: Request):
+    """Rate limiting dependency"""
+    client_ip = request.client.host
+    allowed, headers = rate_limiter.check_rate_limit(client_ip)
+
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests",
+            headers=headers
+        )
+
+    return headers
+
 @app.get("/api/v1/analyze/{username}")
-async def analyze_user(username: str, settings: Settings = Depends(get_settings)):
+async def analyze_user(
+    username: str,
+    settings: Settings = Depends(get_settings),
+    rate_limit_headers: dict = Depends(check_rate_limit)
+):
     """Analyze Reddit user account"""
     logger.info(f"Analyzing user: {username}")
     try:
@@ -84,15 +104,22 @@ async def analyze_user(username: str, settings: Settings = Depends(get_settings)
 
         response = AnalysisResponse(
             username=username,
-            probability=(1 - final_score) * 100,
+            probability=(1 - final_score) * 100,  # Convert to percentage and invert for bot probability
             summary={
                 "account_age": user_data['created_utc'].strftime('%Y-%m-%d'),
                 "karma": user_data['comment_karma'] + user_data['link_karma'],
-                "scores": component_scores
+                "scores": component_scores,
+                "activity_metrics": activity_patterns,
+                "text_analysis": text_metrics
             }
         )
-        logger.info(f"Successfully analyzed user {username}")
-        return response
+
+        # Add rate limit headers to response
+        return {
+            **response.dict(),
+            "headers": rate_limit_headers
+        }
+
     except Exception as e:
         logger.error(f"Error analyzing user {username}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
