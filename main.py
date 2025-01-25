@@ -73,9 +73,11 @@ async def analyze_user(username: str, settings: Settings = Depends(get_settings)
         )
 
         # Fetch and analyze data
-        user_data, comments_df = reddit_analyzer.get_user_data(username)
-        activity_patterns = reddit_analyzer.analyze_activity_patterns(comments_df)
-        text_metrics = text_analyzer.analyze_comments(comments_df['body'].tolist())
+        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+        activity_patterns = reddit_analyzer.analyze_activity_patterns(comments_df, submissions_df)
+        text_metrics = text_analyzer.analyze_comments(
+            comments_df['body'].tolist() if not comments_df.empty else []
+        )
         final_score, component_scores = account_scorer.calculate_score(
             user_data, activity_patterns, text_metrics
         )
