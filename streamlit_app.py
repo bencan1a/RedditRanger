@@ -1,5 +1,6 @@
 import streamlit as st
 import logging
+import traceback  # Add traceback import
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
@@ -107,10 +108,10 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             'karma': total_karma,
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
-            'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
-                                          if k != 'ml_risk_score') /
-                                  len([k for k in component_scores
-                                      if k != 'ml_risk_score'])) * 100,
+            'traditional_risk_score': (1 - sum(float(v) for k, v in component_scores.items()
+                                       if k != 'ml_risk_score' and isinstance(v, (int, float))) /
+                                   max(1, len([k for k in component_scores
+                                       if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -125,7 +126,8 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         result_queue.put(('success', result))
     except Exception as e:
         logger.error(f"Error in perform_analysis: {str(e)}", exc_info=True)
-        result_queue.put(('error', str(e)))
+        error_details = f"Error during analysis: {str(e)}\nFull traceback: {traceback.format_exc()}"
+        result_queue.put(('error', error_details))
 
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user with background processing"""
@@ -565,6 +567,7 @@ def load_css():
         unsafe_allow_html=True)
 
 
+
 def get_risk_class(risk_score):
     if risk_score > 70:
         return "high-risk"
@@ -602,12 +605,15 @@ def main():
             username = st.text_input("Enter Reddit Username:", "")
             if username:
                 try:
-                    result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
-                    if 'error' in result:
-                        import traceback
-                        error_details = f"Error analyzing account1: {result['error']}\n{traceback.format_exc()}"
-                        st.error(error_details)
-                        return
+                    with st.spinner('Analyzing account...'):
+                        result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
+                        if 'error' in result:
+                            error_msg = result['error']
+                            st.error(f"Error analyzing account: {error_msg}")
+                            # Add an expander for detailed error information
+                            with st.expander("See detailed error information"):
+                                st.code(error_msg)
+                            return
 
                     risk_class = get_risk_class(result['risk_score'])
                     bot_prob = result['bot_probability']
@@ -712,7 +718,7 @@ def main():
 
                     st.plotly_chart(
                         create_bot_analysis_chart(result['text_metrics'],
-                                                 result['activity_patterns']),
+                                                    result['activity_patterns']),
                         use_container_width=True,
                         config={'displayModeBar': False})
 
