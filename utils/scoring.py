@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 class AccountScorer:
     def __init__(self):
         self.ml_analyzer = MLAnalyzer()
-        # Initialize all heuristic analyzers
         self.heuristics = {
             'account_age': AccountAgeHeuristic(),
             'karma': KarmaHeuristic(),
@@ -87,94 +86,30 @@ class AccountScorer:
                 logger.error("Invalid user data format")
                 return 0.5, {'error': 'Invalid user data format'}
 
-            # Apply each heuristic with safe data access
+            # Apply each heuristic with safe data access and store only numeric scores
             heuristic_scores = {}
 
-            try:
-                heuristic_scores['account_age'] = self.heuristics['account_age'].analyze(sanitized_data)
-            except Exception as e:
-                logger.error(f"Error in account_age heuristic: {str(e)}")
-                heuristic_scores['account_age'] = {'age_score': 0.5}
-
-            try:
-                heuristic_scores['karma'] = self.heuristics['karma'].analyze(sanitized_data)
-            except Exception as e:
-                logger.error(f"Error in karma heuristic: {str(e)}")
-                heuristic_scores['karma'] = {'karma_score': 0.5}
-
-            try:
-                heuristic_scores['username'] = self.heuristics['username'].analyze(sanitized_data)
-            except Exception as e:
-                logger.error(f"Error in username heuristic: {str(e)}")
-                heuristic_scores['username'] = {'username_score': 0.5}
-
-            try:
-                posting_data = {
-                    'comments': sanitized_data['comments'],
-                    'submissions': sanitized_data['submissions']
-                }
-                heuristic_scores['posting'] = self.heuristics['posting'].analyze(posting_data)
-            except Exception as e:
-                logger.error(f"Error in posting heuristic: {str(e)}")
-                heuristic_scores['posting'] = {
-                    'frequency_score': 0.5,
-                    'interval_score': 0.5,
-                    'timezone_score': 0.5
-                }
-
-            try:
-                subreddit_data = {
-                    'comments': sanitized_data['comments'],
-                    'submissions': sanitized_data['submissions']
-                }
-                heuristic_scores['subreddit'] = self.heuristics['subreddit'].analyze(subreddit_data)
-            except Exception as e:
-                logger.error(f"Error in subreddit heuristic: {str(e)}")
-                heuristic_scores['subreddit'] = {'diversity_score': 0.5}
-
-            try:
-                engagement_data = {
-                    'comments': sanitized_data['comments'],
-                    'submissions': sanitized_data['submissions']
-                }
-                heuristic_scores['engagement'] = self.heuristics['engagement'].analyze(engagement_data)
-            except Exception as e:
-                logger.error(f"Error in engagement heuristic: {str(e)}")
-                heuristic_scores['engagement'] = {
-                    'interaction_score': 0.5,
-                    'depth_score': 0.5
-                }
-
-            try:
-                linguistic_data = {
-                    'comments': sanitized_data['comments']
-                }
-                heuristic_scores['linguistic'] = self.heuristics['linguistic'].analyze(linguistic_data)
-            except Exception as e:
-                logger.error(f"Error in linguistic heuristic: {str(e)}")
-                heuristic_scores['linguistic'] = {
-                    'similarity_score': 0.5,
-                    'complexity_score': 0.5,
-                    'pattern_score': 0.5,
-                    'style_score': 0.5
-                }
-
-            # Extract primary scores and store detailed metrics
-            for category, result in heuristic_scores.items():
-                if isinstance(result, dict):
-                    for score_name, score in result.items():
-                        if isinstance(score, (int, float)):  # Primary scores
-                            scores[f"{category}_{score_name}"] = float(score)  # Ensure float type
-                        elif isinstance(score, dict) and score_name == 'metrics':
-                            # Store detailed metrics for visualization
-                            scores[f"{category}_metrics"] = score
+            for heuristic_name, heuristic in self.heuristics.items():
+                try:
+                    result = heuristic.analyze(sanitized_data)
+                    if isinstance(result, dict):
+                        # Extract only numeric values from the result
+                        for key, value in result.items():
+                            if isinstance(value, (int, float)) and key != 'metrics':
+                                scores[f"{heuristic_name}_{key}"] = float(value)
+                            elif key == 'metrics' and isinstance(value, dict):
+                                scores[f"{heuristic_name}_metrics"] = value
+                except Exception as e:
+                    logger.error(f"Error in {heuristic_name} heuristic: {str(e)}")
+                    continue
 
             # Get ML-based risk score
             try:
                 ml_risk_score, feature_importance = self.ml_analyzer.analyze_account(
                     sanitized_data, activity_patterns, text_metrics
                 )
-                scores['ml_risk_score'] = float(ml_risk_score)  # Ensure float type
+                if isinstance(ml_risk_score, (int, float)):
+                    scores['ml_risk_score'] = float(ml_risk_score)
                 if feature_importance:
                     scores['feature_importance'] = feature_importance
             except Exception as e:
@@ -187,31 +122,39 @@ class AccountScorer:
 
             # Define weights for different components
             weights = {
-                # Traditional metrics (40%)
                 'account_age_age_score': 0.10,
                 'karma_karma_score': 0.10,
                 'username_username_score': 0.05,
                 'subreddit_diversity_score': 0.15,
-
-                # Behavioral metrics (35%)
                 'posting_frequency_score': 0.10,
                 'posting_interval_score': 0.10,
                 'engagement_interaction_score': 0.05,
                 'engagement_depth_score': 0.05,
                 'posting_timezone_score': 0.05,
-
-                # Content analysis (25%)
                 'linguistic_similarity_score': 0.05,
                 'linguistic_complexity_score': 0.05,
                 'linguistic_pattern_score': 0.10,
                 'linguistic_style_score': 0.05
             }
 
+            logger.debug("Scores before weighted calculation:")
+            for score_name, score in scores.items():
+                if score_name in weights:
+                    logger.debug(f"{score_name}: {score}")
+
             for score_name, weight in weights.items():
-                if score_name in scores and isinstance(scores[score_name], (int, float)):
-                    score = float(scores[score_name])
-                    final_score += score * weight
-                    weight_sum += weight
+                if score_name in scores:
+                    try:
+                        score_value = scores[score_name]
+                        if isinstance(score_value, (int, float)):
+                            score = float(score_value)
+                            final_score += score * weight
+                            weight_sum += weight
+                        else:
+                            logger.warning(f"Non-numeric score found for {score_name}: {type(score_value)}")
+                    except Exception as e:
+                        logger.error(f"Error processing score {score_name}: {str(e)}")
+                        continue
 
             if weight_sum == 0:
                 logger.warning("No valid scores found for weighted calculation")
