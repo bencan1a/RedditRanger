@@ -96,8 +96,7 @@ def create_monthly_activity_chart(comments_df, submissions_df):
         # Group by month and count
         monthly = filtered.groupby(pd.Grouper(
             key='created_utc',
-            freq='ME',
-            conv_key_tz='UTC'
+            freq='ME'  # Month End frequency
         )).size().reset_index()
         monthly.columns = ['month', 'count']
 
