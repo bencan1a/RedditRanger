@@ -4,8 +4,9 @@ from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.visualizations import (
     create_score_radar_chart,
-    create_monthly_activity_table, # Added import for the new table function
-    create_subreddit_distribution
+    create_monthly_activity_table,
+    create_subreddit_distribution,
+    create_monthly_activity_chart # Added import for the new chart function
 )
 import pandas as pd
 
@@ -142,20 +143,16 @@ def main():
                     activity_cols = st.columns(2)
 
                     with activity_cols[0]:
-                        # Display monthly activity table
+                        # Get activity data
                         activity_data = create_monthly_activity_table(
                             result['comments_df'],
                             result['submissions_df']
                         )
-                        st.subheader("Monthly Activity")
-                        st.dataframe(
-                            activity_data,
-                            column_config={
-                                "month": "Month",
-                                "comments": "Comments",
-                                "submissions": "Submissions"
-                            },
-                            hide_index=True
+                        # Create and display the chart
+                        st.plotly_chart(
+                            create_monthly_activity_chart(activity_data),
+                            use_container_width=True,
+                            config={'displayModeBar': False}
                         )
 
                     with activity_cols[1]:

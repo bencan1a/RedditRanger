@@ -54,7 +54,61 @@ def create_score_radar_chart(scores):
 
     return fig
 
-def create_monthly_activity_table(comments_df, submissions_df):
+def create_monthly_activity_chart(activity_data: pd.DataFrame) -> go.Figure:
+    """Create a bar chart showing monthly activity trends."""
+    fig = go.Figure()
+
+    # Add comments bars
+    fig.add_trace(go.Bar(
+        x=activity_data['month'],
+        y=activity_data['comments'],
+        name='Comments',
+        marker_color='#E6D5B8'
+    ))
+
+    # Add submissions bars
+    fig.add_trace(go.Bar(
+        x=activity_data['month'],
+        y=activity_data['submissions'],
+        name='Submissions',
+        marker_color='#ff9800'
+    ))
+
+    # Update layout
+    fig.update_layout(
+        title={
+            'text': 'Monthly Activity',
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(color='#E6D5B8')
+        },
+        barmode='group',
+        xaxis=dict(
+            title="Month",
+            tickangle=45,
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='#E6D5B8')
+        ),
+        yaxis=dict(
+            title="Count",
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='#E6D5B8')
+        ),
+        showlegend=True,
+        legend=dict(
+            font=dict(color='#E6D5B8'),
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(t=50, b=50, l=40, r=20)
+    )
+
+    return fig
+
+def create_monthly_activity_table(comments_df, submissions_df) -> pd.DataFrame:
     """Create a monthly activity table showing comment and submission counts."""
     try:
         # Initialize with current time in UTC
