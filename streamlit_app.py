@@ -4,13 +4,12 @@ from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.visualizations import (
     create_score_radar_chart,
-    create_activity_heatmap,
+    create_monthly_activity_chart,
     create_subreddit_distribution
 )
 import pandas as pd
 
 def load_css():
-    # Add custom CSS to reduce risk score size and style charts
     st.markdown("""
         <style>
         .risk-score {
@@ -21,7 +20,16 @@ def load_css():
             margin: 1rem 0;
         }
         .chart-container {
-            margin: 0.5rem 0;
+            border-radius: 5px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin: 0 0.5rem;
+            height: 100%;
+        }
+        .chart-divider {
+            width: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 0.5rem;
         }
         .high-risk { background-color: rgba(255, 0, 0, 0.1); }
         .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
@@ -56,7 +64,8 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
-            'component_scores': component_scores
+            'component_scores': component_scores,
+            'comments_df': comments_df
         }
     except Exception as e:
         return {
@@ -133,35 +142,44 @@ def main():
                             st.success("Thank you for your feedback! This will help our Abominable Intelligence become more accurate.")
                         st.markdown("</div></div>", unsafe_allow_html=True)
 
-                    # Create three equal columns for charts
-                    chart1, chart2, chart3 = st.columns(3)
+                    # Charts section with proper spacing and dividers
+                    charts_container = st.container()
+                    with charts_container:
+                        col1, div1, col2, div2, col3 = st.columns([6, 0.2, 6, 0.2, 6])
 
-                    # Radar Chart
-                    with chart1:
-                        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                        st.plotly_chart(
-                            create_score_radar_chart(result['component_scores']), 
-                            use_container_width=True
-                        )
-                        st.markdown("</div>", unsafe_allow_html=True)
+                        # Vertical dividers
+                        div1.markdown('<div class="chart-divider"></div>', unsafe_allow_html=True)
+                        div2.markdown('<div class="chart-divider"></div>', unsafe_allow_html=True)
 
-                    # Activity Heatmap
-                    with chart2:
-                        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                        st.plotly_chart(
-                            create_activity_heatmap(result['activity_patterns']['activity_hours']), 
-                            use_container_width=True
-                        )
-                        st.markdown("</div>", unsafe_allow_html=True)
+                        # Radar Chart
+                        with col1:
+                            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                            st.plotly_chart(
+                                create_score_radar_chart(result['component_scores']),
+                                use_container_width=True,
+                                config={'displayModeBar': False}
+                            )
+                            st.markdown('</div>', unsafe_allow_html=True)
 
-                    # Subreddit Distribution
-                    with chart3:
-                        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                        st.plotly_chart(
-                            create_subreddit_distribution(result['activity_patterns']['top_subreddits']), 
-                            use_container_width=True
-                        )
-                        st.markdown("</div>", unsafe_allow_html=True)
+                        # Monthly Activity Timeline
+                        with col2:
+                            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                            st.plotly_chart(
+                                create_monthly_activity_chart(result['comments_df']),
+                                use_container_width=True,
+                                config={'displayModeBar': False}
+                            )
+                            st.markdown('</div>', unsafe_allow_html=True)
+
+                        # Subreddit Distribution
+                        with col3:
+                            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                            st.plotly_chart(
+                                create_subreddit_distribution(result['activity_patterns']['top_subreddits']),
+                                use_container_width=True,
+                                config={'displayModeBar': False}
+                            )
+                            st.markdown('</div>', unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"Error analyzing account: {str(e)}")
