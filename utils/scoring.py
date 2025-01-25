@@ -50,7 +50,9 @@ class AccountScorer:
             logger.debug(f"Input user_data type: {type(user_data)}")
             logger.debug(f"Input user_data keys: {user_data.keys() if isinstance(user_data, dict) else 'Not a dict'}")
 
+            # Initialize containers
             scores = {}
+            metrics = {}
 
             # Ensure user_data has required structure
             required_fields = {
@@ -72,11 +74,6 @@ class AccountScorer:
             sanitized_data['comment_karma'] = self._extract_karma_value(user_data.get('comment_karma', 0))
             sanitized_data['link_karma'] = self._extract_karma_value(user_data.get('link_karma', 0))
 
-            # Log sanitized data structure
-            logger.info("=== Sanitized Data Structure ===")
-            for key, value in sanitized_data.items():
-                logger.debug(f"{key}: {type(value)}")
-
             # Process heuristics
             logger.info("Processing heuristics...")
 
@@ -84,18 +81,18 @@ class AccountScorer:
                 try:
                     logger.debug(f"Running {heuristic_name} heuristic...")
                     result = heuristic.analyze(sanitized_data)
-
-                    # Log the raw result
                     logger.debug(f"{heuristic_name} raw result: {result}")
 
                     if isinstance(result, dict):
-                        # Extract only numeric values from the result
+                        # Separate scores from metrics
                         for key, value in result.items():
-                            if isinstance(value, (int, float)) and key != 'metrics':
-                                scores[f"{heuristic_name}_{key}"] = float(value)
-                                logger.debug(f"Added score {heuristic_name}_{key}: {value}")
-                            elif key == 'metrics' and isinstance(value, dict):
-                                scores[f"{heuristic_name}_metrics"] = value
+                            if key == 'metrics':
+                                metrics[heuristic_name] = value
+                            elif isinstance(value, (int, float)):
+                                key_name = f"{heuristic_name}_{key}"
+                                scores[key_name] = float(value)
+                                logger.debug(f"Added score {key_name}: {value}")
+
                 except Exception as e:
                     logger.error(f"Error in {heuristic_name} heuristic: {str(e)}", exc_info=True)
                     continue
@@ -121,12 +118,12 @@ class AccountScorer:
                 'linguistic_style_score': 0.05
             }
 
-            # Log all available scores before weight calculation
+            # Log available scores
             logger.info("=== Available scores before weighted calculation ===")
             for score_name, score in scores.items():
-                if score_name in weights:
-                    logger.debug(f"Score {score_name}: {type(score)} = {score}")
+                logger.debug(f"Score {score_name}: type={type(score)}, value={score}")
 
+            # Process each weight
             for score_name, weight in weights.items():
                 if score_name not in scores:
                     logger.debug(f"Score {score_name} not found in scores dictionary")
@@ -134,27 +131,24 @@ class AccountScorer:
 
                 try:
                     score_value = scores[score_name]
-                    if not isinstance(score_value, (int, float)):
-                        logger.warning(f"Non-numeric score found for {score_name}: {type(score_value)}")
-                        continue
-
+                    logger.debug(f"Processing {score_name}: {score_value} * {weight}")
                     contribution = float(score_value) * weight
                     final_score += contribution
                     weight_sum += weight
-                    logger.debug(f"Added contribution for {score_name}: {contribution}")
+                    logger.debug(f"Added contribution: {contribution}, running total: {final_score}")
                 except Exception as e:
                     logger.error(f"Error calculating weighted score for {score_name}: {str(e)}", exc_info=True)
                     continue
 
             if weight_sum == 0:
                 logger.warning("No valid scores found for weighted calculation")
-                return 0.5, scores
+                return 0.5, metrics
 
             # Calculate final normalized score
             final_score = final_score / weight_sum
             logger.info(f"=== Final normalized score: {final_score} ===")
 
-            return final_score, scores
+            return final_score, metrics
 
         except Exception as e:
             logger.error(f"Error calculating score: {str(e)}", exc_info=True)
