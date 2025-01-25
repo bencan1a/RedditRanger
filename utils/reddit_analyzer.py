@@ -39,14 +39,7 @@ class RedditAnalyzer:
             logger.info("Reddit API connection successful")
         except ResponseException as e:
             logger.error(f"Reddit API error: {str(e)}")
-            if e.response.status_code == 429:
-                raise Exception("Rate limit exceeded. Please try again in a few minutes.")
-            elif e.response.status_code == 401:
-                raise Exception("Invalid Reddit API credentials. Please check your Client ID and Client Secret.")
             raise Exception(f"Reddit API error: {str(e)}")
-        except OAuthException as e:
-            logger.error(f"Reddit API authentication error: {str(e)}")
-            raise Exception(f"Reddit API authentication error: {str(e)}")
         except Exception as e:
             logger.error(f"Error initializing Reddit client: {str(e)}")
             raise Exception(f"Error initializing Reddit client: {str(e)}")
@@ -55,6 +48,7 @@ class RedditAnalyzer:
         try:
             logger.info(f"Fetching data for user: {username}")
             user = self.reddit.redditor(username)
+
             # Force a simple API call to verify the user exists
             created_utc = user.created_utc
 
@@ -65,18 +59,20 @@ class RedditAnalyzer:
                 'verified_email': user.has_verified_email if hasattr(user, 'has_verified_email') else None,
             }
 
-            # Collect recent comments
+            # Collect recent comments with actual comment count
             comments = []
+            comment_count = 0
             try:
                 logger.info(f"Fetching recent comments for user: {username}")
-                for comment in user.comments.new(limit=100):
+                for comment in user.comments.new():  # Remove limit to get all comments
+                    comment_count += 1
                     comments.append({
                         'body': comment.body,
                         'created_utc': datetime.fromtimestamp(comment.created_utc, tz=timezone.utc),
                         'score': comment.score,
                         'subreddit': str(comment.subreddit)
                     })
-                logger.info(f"Successfully fetched {len(comments)} comments")
+                logger.info(f"Successfully fetched {comment_count} comments")
             except Exception as e:
                 logger.warning(f"Could not fetch comments for user {username}: {str(e)}")
                 if not comments:
@@ -90,9 +86,6 @@ class RedditAnalyzer:
             elif e.response.status_code == 403:
                 logger.error(f"Access to user '{username}' data is forbidden")
                 raise Exception(f"Access to user '{username}' data is forbidden. The account might be private or suspended.")
-            elif e.response.status_code == 429:
-                logger.error("Rate limit exceeded")
-                raise Exception("Rate limit exceeded. Please try again in a few minutes.")
             logger.error(f"Error fetching user data: {str(e)}")
             raise Exception(f"Error fetching user data: {str(e)}")
         except Exception as e:
@@ -109,14 +102,11 @@ class RedditAnalyzer:
                 'top_subreddits': {}
             }
 
-        # Convert to user's local timezone
-        comments_df['hour'] = comments_df['created_utc'].dt.hour
-
         patterns = {
             'total_comments': len(comments_df),
             'unique_subreddits': comments_df['subreddit'].nunique(),
             'avg_score': comments_df['score'].mean(),
-            'activity_hours': comments_df['hour'].value_counts().to_dict(),
+            'activity_hours': comments_df['created_utc'].dt.hour.value_counts().to_dict(),
             'top_subreddits': comments_df['subreddit'].value_counts().head(5).to_dict()
         }
 
