@@ -17,62 +17,48 @@ def load_css():
         .grid-row {
             display: flex;
             flex-wrap: wrap;
-            margin: 0 -0.5rem;
-            padding: 1rem 0;
+            gap: 1rem;
             width: 100%;
+            margin-bottom: 1rem;
         }
         .section {
-            padding: 1rem;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 5px;
-            margin: 0.5rem;
-            box-sizing: border-box;
-            flex-grow: 0;
-            flex-shrink: 0;
-        }
-        .full-width {
-            flex-basis: calc(100% - 1rem);
-            max-width: calc(100% - 1rem);
+            padding: 1rem;
         }
         .half-width {
-            flex-basis: calc(50% - 1rem);
-            max-width: calc(50% - 1rem);
+            flex: 1 1 calc(50% - 0.5rem);
+            min-width: calc(50% - 0.5rem);
+        }
+        .full-width {
+            flex: 1 1 100%;
         }
         .quarter-width {
-            flex-basis: calc(25% - 1rem);
-            max-width: calc(25% - 1rem);
+            flex: 1 1 calc(25% - 0.75rem);
+            min-width: calc(25% - 0.75rem);
         }
         .risk-score {
-            font-size: 2.1rem !important;
+            font-size: 2.1rem;
             text-align: center;
             padding: 1rem;
             border-radius: 10px;
             margin: 0;
-            display: block;
-        }
-        .divider {
-            width: 100%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 2rem 0;
         }
         .info-icon {
             font-size: 1rem;
             color: #E6D5B8;
             margin-left: 8px;
             cursor: help;
-            position: relative;
             display: inline-block;
+            position: relative;
         }
-        .info-icon .tooltip {
+        .tooltip {
             visibility: hidden;
             background-color: rgba(45, 45, 45, 0.95);
             color: #E6D5B8;
             text-align: left;
             padding: 8px 12px;
             border-radius: 6px;
-            font-size: 0.85rem;
-            line-height: 1.4;
             position: absolute;
             z-index: 1;
             width: 280px;
@@ -81,29 +67,12 @@ def load_css():
             margin-left: -140px;
             opacity: 0;
             transition: opacity 0.3s;
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
         .info-icon:hover .tooltip {
             visibility: visible;
             opacity: 1;
-        }
-        .pattern-table {
-            width: 100%;
-            margin: 1rem 0;
-            border-collapse: collapse;
-        }
-        .pattern-table th, .pattern-table td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .pattern-table th {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        .help-text {
-            font-size: 0.9rem;
-            color: #E6D5B8;
-            margin: 0.5rem 0 1rem 0;
-            font-style: italic;
         }
         .high-risk { background-color: rgba(255, 0, 0, 0.1); }
         .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
@@ -197,46 +166,46 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Row 2: Probabilities
+                    # Row 2: Probabilities with proper grid layout
                     risk_class = get_risk_class(result['risk_score'])
                     bot_prob = result['bot_probability']
                     bot_risk_class = get_risk_class(bot_prob)
 
                     st.markdown(f"""
-                    <div class="grid-row">
-                        <div class="section half-width">
-                            <div class="risk-score {risk_class}">
-                                {result['risk_score']:.1f}% Thinking Machine Probability
-                                <span class="info-icon">ⓘ
-                                    <span class="tooltip">
-                                    • Account age, karma & activity (25%)
-                                    • Posting patterns & subreddit diversity (25%)
-                                    • Comment analysis & vocabulary (25%)
-                                    • ML-based behavior assessment (25%)
+                        <div class="grid-row">
+                            <div class="section half-width">
+                                <div class="risk-score {risk_class}">
+                                    {result['risk_score']:.1f}% Thinking Machine Probability
+                                    <span class="info-icon">ⓘ
+                                        <span class="tooltip">
+                                        • Account age, karma & activity (25%)
+                                        • Posting patterns & subreddit diversity (25%)
+                                        • Comment analysis & vocabulary (25%)
+                                        • ML-based behavior assessment (25%)
 
-                                    Higher score = more bot-like patterns
+                                        Higher score = more bot-like patterns
+                                        </span>
                                     </span>
-                                </span>
+                                </div>
+                            </div>
+                            <div class="section half-width">
+                                <div class="risk-score {bot_risk_class}">
+                                    {bot_prob:.1f}% Bot Probability
+                                    <span class="info-icon">ⓘ
+                                        <span class="tooltip">
+                                        Bot Probability Score is calculated using:
+                                        • Repetitive phrase patterns
+                                        • Template response detection
+                                        • Timing analysis
+                                        • Language complexity
+                                        • Suspicious behavior patterns
+
+                                        Higher score = more bot-like patterns
+                                        </span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div class="section half-width">
-                            <div class="risk-score {bot_risk_class}">
-                                {bot_prob:.1f}% Bot Probability
-                                <span class="info-icon">ⓘ
-                                    <span class="tooltip">
-                                    Bot Probability Score is calculated using:
-                                    • Repetitive phrase patterns
-                                    • Template response detection
-                                    • Timing analysis
-                                    • Language complexity
-                                    • Suspicious behavior patterns
-
-                                    Higher score = more bot-like patterns
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
                     """, unsafe_allow_html=True)
 
                     # Row 3: Overview sections
