@@ -192,6 +192,12 @@ def main():
                                     </span>
                                 </div>
                             </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    # Separate markdown for bot probability
+                    st.markdown(f"""
+                        <div class="grid-container">
                             <div class="grid-item half-width">
                                 <div class="risk-score {bot_risk_class}">
                                     {bot_prob:.1f}% Bot Probability
