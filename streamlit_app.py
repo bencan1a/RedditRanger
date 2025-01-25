@@ -10,6 +10,8 @@ from utils.visualizations import (create_score_radar_chart,
 import pandas as pd
 import time
 import itertools
+import threading
+from queue import Queue
 
 # Mentat Sapho Juice Litany
 MENTAT_LITANY = [
@@ -23,6 +25,103 @@ MENTAT_LITANY = [
 def cycle_litany():
     """Creates a cycling iterator of the Mentat litany"""
     return itertools.cycle(MENTAT_LITANY)
+
+def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
+    """Perform the analysis in a separate thread"""
+    try:
+        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+        activity_patterns = reddit_analyzer.analyze_activity_patterns(
+            comments_df, submissions_df)
+
+        text_metrics = text_analyzer.analyze_comments(
+            comments_df['body'].tolist() if not comments_df.empty else [],
+            comments_df['created_utc'].tolist()
+            if not comments_df.empty else None)
+
+        final_score, component_scores = account_scorer.calculate_score(
+            user_data, activity_patterns, text_metrics)
+
+        result = {
+            'username': username,
+            'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
+            'karma': user_data['comment_karma'] + user_data['link_karma'],
+            'risk_score': (1 - final_score) * 100,
+            'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
+            'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
+                                         if k != 'ml_risk_score') /
+                                 len([k for k in component_scores
+                                     if k != 'ml_risk_score'])) * 100,
+            'user_data': user_data,
+            'activity_patterns': activity_patterns,
+            'text_metrics': text_metrics,
+            'component_scores': component_scores,
+            'comments_df': comments_df,
+            'submissions_df': submissions_df,
+            'bot_probability': text_metrics.get('bot_probability', 0) * 100
+        }
+        result_queue.put(('success', result))
+    except Exception as e:
+        result_queue.put(('error', str(e)))
+
+def show_loading_animation():
+    """Display the Mentat litany loading animation"""
+    placeholder = st.empty()
+    litany = cycle_litany()
+
+    while not st.session_state.get('analysis_complete', False):
+        litany_text = next(litany)
+        placeholder.markdown(f"""
+            <div class="mentat-spinner"></div>
+            <div class="mentat-litany visible">
+                {litany_text}
+            </div>
+            <script>
+                animateText("{litany_text}");
+            </script>
+        """, unsafe_allow_html=True)
+        time.sleep(2)
+
+    placeholder.empty()
+
+def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
+    """Analyze a single user with background processing"""
+    try:
+        # Initialize session state
+        if 'analysis_complete' not in st.session_state:
+            st.session_state.analysis_complete = False
+            st.session_state.analysis_result = None
+            st.session_state.analysis_error = None
+
+            # Create a queue for thread communication
+            result_queue = Queue()
+
+            # Start analysis in background thread
+            analysis_thread = threading.Thread(
+                target=perform_analysis,
+                args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue)
+            )
+            analysis_thread.start()
+
+            # Show loading animation while analysis runs
+            show_loading_animation()
+
+            # Get result from queue
+            status, result = result_queue.get()
+
+            if status == 'error':
+                st.session_state.analysis_error = result
+            else:
+                st.session_state.analysis_result = result
+
+            st.session_state.analysis_complete = True
+
+        # Return result or error
+        if st.session_state.analysis_error:
+            return {'username': username, 'error': st.session_state.analysis_error}
+        return st.session_state.analysis_result
+
+    except Exception as e:
+        return {'username': username, 'error': str(e)}
 
 def load_css():
     st.markdown("""
@@ -386,72 +485,6 @@ def get_risk_class(risk_score):
     return "low-risk"
 
 
-def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
-    """Analyze a single user and return their analysis results."""
-    try:
-        litany_placeholder = st.empty()
-        litany_cycle = cycle_litany()
-
-        while True:
-            try:
-                # Show the current litany line with animation
-                litany_text = next(litany_cycle)
-                litany_placeholder.markdown(f"""
-                    <div class="mentat-spinner"></div>
-                    <div class="mentat-litany visible">
-                        {litany_text}
-                    </div>
-                    <script>
-                        animateText("{litany_text}");
-                    </script>
-                """, unsafe_allow_html=True)
-                time.sleep(2)
-
-                user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
-                activity_patterns = reddit_analyzer.analyze_activity_patterns(
-                    comments_df, submissions_df)
-
-                text_metrics = text_analyzer.analyze_comments(
-                    comments_df['body'].tolist() if not comments_df.empty else [],
-                    comments_df['created_utc'].tolist()
-                    if not comments_df.empty else None)
-
-                final_score, component_scores = account_scorer.calculate_score(
-                    user_data, activity_patterns, text_metrics)
-
-                litany_placeholder.empty()
-                return {
-                    'username': username,
-                    'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
-                    'karma': user_data['comment_karma'] + user_data['link_karma'],
-                    'risk_score': (1 - final_score) * 100,
-                    'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
-                    'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
-                                                 if k != 'ml_risk_score') /
-                                         len([k for k in component_scores
-                                             if k != 'ml_risk_score'])) * 100,
-                    'user_data': user_data,
-                    'activity_patterns': activity_patterns,
-                    'text_metrics': text_metrics,
-                    'component_scores': component_scores,
-                    'comments_df': comments_df,
-                    'submissions_df': submissions_df,
-                    'bot_probability': text_metrics.get('bot_probability', 0) * 100
-                }
-            except Exception as e:
-                if 'error' in str(e):
-                    raise e
-                litany_placeholder.markdown(f"""
-                    <div class="mentat-spinner"></div>
-                    <div class="mentat-litany visible">
-                        {next(litany_cycle)}
-                    </div>
-                """, unsafe_allow_html=True)
-                time.sleep(2)
-    except Exception as e:
-        return {'username': username, 'error': str(e)}
-
-
 def main():
     st.set_page_config(
         page_title="Reddit Mentat Detector | Arrakis",
@@ -464,10 +497,10 @@ def main():
     st.markdown("""
         <div class="grid-container">
             <div class="grid-item full-width">
-                <h1>Mentat Detector</h1>
+                <h1>Thinking Machine Detector</h1>
                 <div class='intro-text'>
                 Like the calculations of a Mentat, this tool uses advanced cognitive processes 
-                to identify automated behaviors among Reddit users. The spice must flow, but the machines must not prevail.
+                to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail.
                 </div>
             </div>
         </div>
@@ -484,27 +517,7 @@ def main():
         username = st.text_input("Enter Reddit Username:", "")
         if username:
             try:
-                litany_placeholder = st.empty()
-                litany_cycle = cycle_litany()
-
-                with st.spinner(''):
-                    while True:
-                        try:
-                            result = analyze_single_user(username, reddit_analyzer,
-                                                          text_analyzer, account_scorer)
-                            break
-                        except Exception as e:
-                            if 'error' in str(e):
-                                st.error(f"Error analyzing account: {str(e)}")
-                                return
-                        litany_placeholder.markdown(f"""
-                            <div class="mentat-spinner"></div>
-                            <div class="mentat-litany visible">
-                                {next(litany_cycle)}
-                            </div>
-                        """, unsafe_allow_html=True)
-                        time.sleep(2)
-
+                result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
                 if 'error' in result:
                     st.error(f"Error analyzing account: {result['error']}")
                     return
@@ -737,7 +750,6 @@ def main():
                                    data=csv,
                                    file_name="thinking_machine_analysis.csv",
                                    mime="text/csv")
-
 
 if __name__ == "__main__":
     main()
