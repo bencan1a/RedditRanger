@@ -1,14 +1,14 @@
 import streamlit as st
 import logging
+import traceback  # Add traceback import
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
-from utils.visualizations import (
-    create_score_radar_chart,
-    create_monthly_activity_table,
-    create_monthly_activity_chart,
-    create_bot_analysis_chart
-)
+from utils.visualizations import (create_score_radar_chart,
+                                create_monthly_activity_table,
+                                create_subreddit_distribution,
+                                create_monthly_activity_chart,
+                                create_bot_analysis_chart)
 import pandas as pd
 import time
 import itertools
@@ -22,32 +22,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Cache initializers
-@st.cache_resource
-def get_reddit_analyzer():
-    try:
-        return RedditAnalyzer()
-    except Exception as e:
-        logger.error(f"Failed to initialize Reddit analyzer: {str(e)}")
-        return None
+# Initialize analyzers at the module level
+try:
+    logger.debug("Initializing analyzers...")
+    reddit_analyzer = RedditAnalyzer()
+    text_analyzer = TextAnalyzer()
+    account_scorer = AccountScorer()
+    logger.debug("Analyzers initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize analyzers: {str(e)}", exc_info=True)
+    st.error(f"Failed to initialize analyzers: {str(e)}")
 
-@st.cache_resource
-def get_text_analyzer():
-    try:
-        return TextAnalyzer()
-    except Exception as e:
-        logger.error(f"Failed to initialize text analyzer: {str(e)}")
-        return None
-
-@st.cache_resource
-def get_account_scorer():
-    try:
-        return AccountScorer()
-    except Exception as e:
-        logger.error(f"Failed to initialize account scorer: {str(e)}")
-        return None
-
-# Mentat Sapho Juice Litany - moved to separate file for cleaner main code
+# Mentat Sapho Juice Litany
 MENTAT_LITANY = [
     "It is by will alone I set my mind in motion.",
     "It is by the juice of Sapho that thoughts acquire speed,",
@@ -60,35 +46,28 @@ def cycle_litany():
     """Creates a cycling iterator of the Mentat litany"""
     return itertools.cycle(MENTAT_LITANY)
 
-@st.cache_data(ttl=3600)  # Cache analysis results for 1 hour
-def perform_analysis(username, _result_queue):  # Added underscore to prevent caching of queue
+def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
     """Perform the analysis in a separate thread"""
     try:
-        results_container = st.empty()
-        results_container.empty()
         logger.debug(f"Starting perform_analysis for user: {username}")
-
-        # Get cached analyzers
-        reddit_analyzer = get_reddit_analyzer()
-        text_analyzer = get_text_analyzer()
-        account_scorer = get_account_scorer()
-
-        if not all([reddit_analyzer, text_analyzer, account_scorer]):
-            raise Exception("Failed to initialize analyzers")
 
         # Set a timeout for the entire analysis
         logger.debug("Fetching user data...")
         user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
 
+        logger.debug(f"User data fetched. Type: {type(user_data)}")
+        logger.debug(f"User data contents: {user_data}")
+
         # Handle empty dataframes
         if comments_df.empty and submissions_df.empty:
             logger.warning("No data found for user")
-            _result_queue.put(('error', 'No data found for this user'))
+            result_queue.put(('error', 'No data found for this user'))
             return
 
         logger.debug("Analyzing activity patterns...")
         activity_patterns = reddit_analyzer.analyze_activity_patterns(
             comments_df, submissions_df)
+        logger.debug(f"Activity patterns: {activity_patterns}")
 
         # Get comment texts safely
         comment_texts = comments_df['body'].tolist() if not comments_df.empty else []
@@ -96,9 +75,11 @@ def perform_analysis(username, _result_queue):  # Added underscore to prevent ca
 
         logger.debug("Analyzing comment texts...")
         text_metrics = text_analyzer.analyze_comments(comment_texts, comment_times)
+        logger.debug(f"Text metrics: {text_metrics}")
 
         # Create default text metrics if analysis fails
         if not text_metrics:
+            logger.warning("Text metrics analysis failed, using defaults")
             text_metrics = {
                 'vocab_size': 0,
                 'avg_similarity': 0.0,
@@ -108,9 +89,18 @@ def perform_analysis(username, _result_queue):  # Added underscore to prevent ca
         logger.debug("Calculating final score...")
         final_score, component_scores = account_scorer.calculate_score(
             user_data, activity_patterns, text_metrics)
+        logger.debug(f"Final score: {final_score}")
+        logger.debug(f"Component scores: {component_scores}")
 
-        # Calculate total karma
-        total_karma = int(user_data.get('comment_karma', 0)) + int(user_data.get('link_karma', 0))
+        # Log karma values before calculation
+        comment_karma = user_data.get('comment_karma', 0)
+        link_karma = user_data.get('link_karma', 0)
+        logger.debug(f"Comment karma: {comment_karma} (type: {type(comment_karma)})")
+        logger.debug(f"Link karma: {link_karma} (type: {type(link_karma)})")
+
+        # Calculate total karma with explicit type conversion
+        total_karma = int(comment_karma) + int(link_karma) if isinstance(comment_karma, (int, float)) and isinstance(link_karma, (int, float)) else 0
+        logger.debug(f"Total karma calculated: {total_karma}")
 
         result = {
             'username': username,
@@ -119,9 +109,9 @@ def perform_analysis(username, _result_queue):  # Added underscore to prevent ca
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(float(v) for k, v in component_scores.items()
-                                               if k != 'ml_risk_score' and isinstance(v, (int, float))) /
-                                           max(1, len([k for k in component_scores
-                                               if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
+                                       if k != 'ml_risk_score' and isinstance(v, (int, float))) /
+                                   max(1, len([k for k in component_scores
+                                       if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -132,11 +122,12 @@ def perform_analysis(username, _result_queue):  # Added underscore to prevent ca
         }
 
         logger.debug("Analysis complete, putting success result in queue")
-        _result_queue.put(('success', result))
+        # Set result and mark as complete atomically
+        result_queue.put(('success', result))
     except Exception as e:
         logger.error(f"Error in perform_analysis: {str(e)}", exc_info=True)
-        error_details = f"Error during analysis: {str(e)}"
-        _result_queue.put(('error', error_details))
+        error_details = f"Error during analysis: {str(e)}\nFull traceback: {traceback.format_exc()}"
+        result_queue.put(('error', error_details))
 
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user with background processing"""
@@ -147,7 +138,6 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
         st.session_state.analysis_error = None
-        st.session_state.analysis_started = False
 
         # Create a queue for thread communication
         result_queue = Queue()
@@ -156,7 +146,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         # Start analysis in background thread
         analysis_thread = threading.Thread(
             target=perform_analysis,
-            args=(username, result_queue),
+            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue),
             daemon=True
         )
         analysis_thread.start()
@@ -223,9 +213,359 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         return {'username': username, 'error': str(e)}
 
 def load_css():
-    """Load CSS from external file for better performance"""
-    with open('static/style.css', 'r') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+        .grid-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            align-items: stretch;
+            margin-bottom: 20px;
+            flex-direction: row;
+        }
+        .grid-item {
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+            border: 1px solid rgba(255, 152, 0, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
+            backdrop-filter: blur(8px);
+        }
+        .grid-item.half-width { flex: 0 0 50%; }
+        .grid-item.full-width { flex: 0 0 100%; }
+        .grid-item.quarter-width { flex: 0 0 25%; }
+
+        .risk-score {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.8rem;
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+            letter-spacing: 0.05em;
+        }
+
+        .info-icon {
+            font-size: 1rem;
+            color: #FFB74D;
+            margin-left: 8px;
+            cursor: help;
+            display: inline-block;
+            position: relative;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+            color: #FFB74D;
+            text-align: left;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 152, 0, 0.2);
+            position: absolute;
+            z-index: 1;
+            width: 280px;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateY(10px);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-icon:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .high-risk { 
+            background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
+            border: 1px solid rgba(255, 50, 0, 0.2);
+        }
+        .medium-risk { 
+            background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
+            border: 1px solid rgba(255, 152, 0, 0.2);
+        }
+        .low-risk { 
+            background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
+            border: 1px solid rgba(0, 255, 50, 0.2);
+        }
+
+        .section-heading {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #FFB74D;
+            letter-spacing: 0.1em;
+            display: block;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+        }
+
+        /* Override Streamlit's default button styles */
+        .stButton>button {
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+            color: #FFB74D;
+            border: 1px solid rgba(255, 152, 0, 0.2);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+        }
+
+        .stButton>button:hover {
+            background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95));
+            border-color: rgba(255, 152, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
+        }
+
+        /* Additional Dune-inspired elements */
+        div[data-testid="stHeader"] {
+            background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+            border-bottom: 1px solid rgba(255, 152, 0, 0.1);
+        }
+
+        .intro-text {
+            font-family: 'Space Mono', monospace;
+            color: #FFB74D;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+        }
+
+        #sand-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Add semi-transparent overlay to improve text readability */
+        .stApp {
+            background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
+        }
+
+
+        .mentat-litany {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            color: #FFB74D;
+            text-align: center;
+            padding: 2rem;
+            margin: 1rem 0;
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+            border: 1px solid rgba(255, 152, 0, 0.1);
+            border-radius: 8px;
+            animation: glow 1.5s ease-in-out infinite alternate;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .mentat-litany.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .mentat-litany .char {
+            opacity: 0;
+            animation: typeChar 0.1s ease-in-out forwards;
+        }
+
+        @keyframes typeChar {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #FF9800, 0 0 10px #FF9800;
+                box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+            }
+            to {
+                text-shadow: 0 0 10px #FF9800, 0 0 20px #FF9800;
+                box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
+            }
+        }
+
+        /* Add loading spinner style */
+        .mentat-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 3px solid rgba(255, 152, 0, 0.1);
+            border-top: 3px solid #FF9800;
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+        }
+
+        .mentat-spinner::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 3px solid transparent;
+            border-top: 3px solid rgba(255, 152, 0, 0.3);
+            border-radius: 50%;
+            animation: spin-reverse 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+        </style>
+
+        <script>
+        function animateText(text) {
+            const container = document.querySelector('.mentat-litany');
+            if (!container) return;
+
+            container.innerHTML = '';
+            container.classList.remove('visible');
+
+            // Add characters with delay
+            [...text].forEach((char, i) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                span.className = 'char';
+                span.style.animationDelay = `${i * 50}ms`;
+                container.appendChild(span);
+            });
+
+            // Show container
+            requestAnimationFrame(() => {
+                container.classList.add('visible');
+            });
+        }
+        </script>
+
+        <!-- Add shader code -->
+        <script type="x-shader/x-vertex" id="vertex-shader">
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        </script>
+
+        <script type="x-shader/x-fragment" id="fragment-shader">
+            uniform float time;
+            uniform vec2 resolution;
+            varying vec2 vUv;
+
+            float rand(vec2 n) { 
+                return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+            }
+
+            float noise(vec2 p) {
+                vec2 ip = floor(p);
+                vec2 u = fract(p);
+                u = u*u*(3.0-2.0*u);
+
+                float res = mix(
+                    mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
+                    mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
+                return res*res;
+            }
+
+            void main() {
+                vec2 uv = vUv;
+
+                float nx = noise(uv * 8.0 + time * 0.2);
+                float ny = noise(uv * 8.0 - time * 0.2);
+
+                vec3 sandColor1 = vec3(0.76, 0.45, 0.2);  // Spice orange
+                vec3 sandColor2 = vec3(0.55, 0.35, 0.15); // Dark sand
+
+                vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
+
+                float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
+                color += vec3(sparkle);
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        </script>
+
+        <!-- Add Three.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+        <!-- Add sand effect container -->
+        <div id="sand-background"></div>
+
+        <script>
+        // Initialize sand effect
+        const container = document.getElementById('sand-background');
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+
+        // Set canvas size
+        function resize() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Add to container
+        container.appendChild(renderer.domElement);
+
+        // Create shader material
+        const uniforms = {
+            time: { value: 0 },
+            resolution: { value: new THREE.Vector2() }
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: document.getElementById('vertex-shader').textContent,
+            fragmentShader: document.getElementById('fragment-shader').textContent
+        });
+
+        // Create mesh
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        // Animation loop
+        function animate(time) {
+            uniforms.time.value = time * 0.001;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+        </script>
+    """,
+        unsafe_allow_html=True)
+
+
 
 def get_risk_class(risk_score):
     if risk_score > 70:
@@ -235,202 +575,6 @@ def get_risk_class(risk_score):
     return "low-risk"
 
 
-def display_analysis_results(result):
-    """Display analysis results with proper analyzer references"""
-    risk_class = get_risk_class(result['risk_score'])
-    bot_prob = result['bot_probability']
-    bot_risk_class = get_risk_class(bot_prob)
-
-    st.markdown(f"""
-        <div class="grid-container">
-            <div class="grid-item half-width">
-                <div class="risk-score {risk_class}">
-                    {result['risk_score']:.1f}% Thinking Machine Probability
-                    <span class="info-icon">ⓘ<span class="tooltip">
-                        <ul>
-                            <li>Account age, karma & activity (25%)</li>
-                            <li>Posting patterns & subreddit diversity (25%)</li>
-                            <li>Comment analysis & vocabulary (25%)</li>
-                            <li>ML-based behavior assessment (25%)</li>
-                        </ul>
-                        Higher score = more bot-like patterns
-                    </span></span>
-                </div>
-            </div>
-            <div class="grid-item half-width">
-                <div class="risk-score {bot_risk_class}">
-                    {bot_prob:.1f}% Bot Probability
-                    <span class="info-icon">ⓘ<span class="tooltip">
-                        <ul>
-                            <li>Bot Probability Score is calculated using:</li>
-                            <li>Repetitive phrase patterns</li>
-                            <li>Template response detection</li>
-                            <li>Timing analysis</li>
-                            <li>Language complexity</li>
-                            <li>Suspicious behavior patterns</li>
-                        </ul>
-                        Higher score = more bot-like patterns
-                    </span></span>
-                </div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    overview_html = f"""
-        <div class="grid-container">
-            <div class="grid-item half-width">
-                <span class="section-heading">Account Overview</span>
-                <p>Account Age: {result['account_age']}</p>
-                <p>Total Karma: {result['karma']:,}</p>
-            </div>
-            <div class="grid-item half-width">
-                <span class="section-heading">Top Subreddits</span>
-    """
-
-    for subreddit, count in result['activity_patterns']['top_subreddits'].items():
-        overview_html += f"<p>{subreddit}: {count} posts</p>"
-
-    overview_html += """
-            </div>
-        </div>
-        <div class="grid-container">
-            <div class="grid-item half-width">
-                <span class="section-heading">Activity Overview</span>
-            </div>
-            <div class="grid-item half-width">
-                <span class="section-heading">Risk Analysis</span>
-            </div>
-        </div>
-    """
-
-    st.markdown(overview_html, unsafe_allow_html=True)
-
-    col3, col4 = st.columns(2)
-    with col3:
-        activity_data = create_monthly_activity_table(
-            result['comments_df'], result['submissions_df'])
-        st.plotly_chart(
-            create_monthly_activity_chart(activity_data),
-            use_container_width=True,
-            config={'displayModeBar': False})
-
-    with col4:
-        logger.debug(f"Component scores for radar chart: {result['component_scores']}")
-        radar_chart = create_score_radar_chart(result['component_scores'])
-        st.plotly_chart(
-            radar_chart,
-            use_container_width=True,
-            config={'displayModeBar': False})
-
-    st.markdown("""
-        <div class="grid-container">
-            <div class="grid-item full-width">
-                <span class="section-heading">Bot Behavior Analysis</span>
-                <span class="info-icon">ⓘ<span class="tooltip">
-                    <ul>
-                        <li>Text Patterns: How repetitive and template-like the writing is</li>
-                        <li>Timing Patterns: If posting follows suspicious timing patterns</li>
-                        <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
-                    </ul>
-                    
-                    Higher scores (closer to 1.0) indicate more bot-like characteristics.
-                </span></span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.plotly_chart(
-        create_bot_analysis_chart(result['text_metrics'],
-                                    result['activity_patterns']),
-        use_container_width=True,
-        config={'displayModeBar': False})
-
-    suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
-    patterns_html = "\n".join([
-        f"<tr><td>{pattern.replace('_', ' ').title()}</td><td>{count}%</td></tr>"
-        for pattern, count in suspicious_patterns.items()
-    ])
-
-    st.markdown(f"""
-        <div class="grid-container">
-            <div class="grid-item half-width">
-                <span class="section-heading">Suspicious Patterns Detected</span>
-                <div class='help-text'>
-                Shows the percentage of comments that contain specific patterns often associated with bots:
-                • Identical Greetings: Generic hello/hi messages
-                • URL Patterns: Frequency of link sharing
-                • Promotional Phrases: Marketing-like language
-                • Generic Responses: Very basic/template-like replies
-                </div>
-            </div>
-            <div class="grid-item half-width">
-                <table class='pattern-table'>
-                    <tr>
-                        <th>Pattern Type</th>
-                        <th>Frequency (%)</th>
-                    </tr>
-                    {patterns_html}
-                </table>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-        <div class="grid-container">
-            <div class="grid-item full-width">
-                <div class="divider"></div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-        <div class="grid-container">
-            <div class="grid-item full-width">
-                <span class="section-heading">Improve the Mentat</span>
-                <p>Help us improve our detection capabilities by providing feedback on the account classification.</p>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Mark as Human Account", key="human-account-btn"):
-            scorer = get_account_scorer()
-            if scorer:
-                scorer.ml_analyzer.add_training_example(
-                    result['user_data'],
-                    result['activity_patterns'],
-                    result['text_metrics'],
-                    is_legitimate=True)
-                st.success(
-                    "Thank you for marking this as a human account! This feedback helps improve our detection."
-                )
-            else:
-                st.error("Unable to submit feedback at this time.")
-
-    with col2:
-        if st.button("Mark as Bot Account", key="bot-account-btn"):
-            scorer = get_account_scorer()
-            if scorer:
-                scorer.ml_analyzer.add_training_example(
-                    result['user_data'],
-                    result['activity_patterns'],
-                    result['text_metrics'],
-                    is_legitimate=False)
-                st.success(
-                    "Thank you for marking this as a bot account! This feedback helps improve our detection."
-                )
-            else:
-                st.error("Unable to submit feedback at this time.")
-
-
-def reset_analysis_state():
-    """Reset all analysis-related state variables"""
-    st.session_state.analysis_complete = False
-    st.session_state.analysis_result = None
-    st.session_state.analysis_error = None
-    st.session_state.analysis_started = False
-
 def main():
     try:
         st.set_page_config(
@@ -438,31 +582,7 @@ def main():
             layout="wide",
             initial_sidebar_state="collapsed")
 
-        # Initialize session state variables
-        if 'analysis_complete' not in st.session_state:
-            st.session_state.analysis_complete = False
-            st.session_state.analysis_result = None
-            st.session_state.analysis_error = None
-            st.session_state.analysis_started = False
-            st.session_state.analyzers_initialized = False
-            st.session_state.previous_username = None
-
-        # Initialize analyzers once
-        if not st.session_state.analyzers_initialized:
-            with st.spinner("Initializing analyzers..."):
-                reddit_analyzer = get_reddit_analyzer()
-                text_analyzer = get_text_analyzer()
-                account_scorer = get_account_scorer()
-
-                if all([reddit_analyzer, text_analyzer, account_scorer]):
-                    st.session_state.analyzers_initialized = True
-                else:
-                    st.error("Failed to initialize analyzers. Please refresh the page.")
-                    return
-
-        # Load CSS asynchronously
-        with st.spinner("Initializing interface..."):
-            load_css()
+        load_css()
 
         # Basic title and description
         st.markdown("""
@@ -471,99 +591,209 @@ def main():
                     <h1>Thinking Machine Detector</h1>
                     <div class='intro-text'>
                     Like the calculations of a Mentat, this tool uses advanced cognitive processes 
-                    to identify Abominable Intelligences among Reddit users.
+                    to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail.
                     </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
+
         analysis_mode = st.radio("Analysis Mode:", ["Single Account", "Bulk Detection"])
 
         if analysis_mode == "Single Account":
             username = st.text_input("Enter Reddit Username:", "")
-
-            # Create a placeholder for results
-            results_container = st.empty()
-
-            # Reset state when username changes
-            if username != st.session_state.previous_username:
-                reset_analysis_state()
-                st.session_state.previous_username = username
-
-            # Start new analysis if needed
-            if username and not st.session_state.analysis_started and not st.session_state.analysis_complete:
+            if username:
                 try:
-                    # Clear previous results before starting new analysis
-                    results_container.empty()
-                    st.session_state.analysis_started = True
-                    result_queue = Queue()
+#                    with st.spinner('Analyzing account...'):
+                    result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
+                    if 'error' in result:
+                        error_msg = result['error']
+                        st.error(f"Error analyzing account: {error_msg}")
+                        # Add an expander for detailed error information
+                        with st.expander("See detailed error information"):
+                            st.code(error_msg)
+                        return
 
-                    # Start analysis in background thread
-                    analysis_thread = threading.Thread(
-                        target=perform_analysis,
-                        args=(username, result_queue),
-                        daemon=True
-                    )
-                    analysis_thread.start()
+                    risk_class = get_risk_class(result['risk_score'])
+                    bot_prob = result['bot_probability']
+                    bot_risk_class = get_risk_class(bot_prob)
 
-                    # Show loading animation while analysis runs
-                    loading_placeholder = st.empty()
-                    litany = cycle_litany()
-                    start_time = time.time()
-
-                    while time.time() - start_time < 60 and not st.session_state.analysis_complete:
-                        try:
-                            # Check if result is available (non-blocking)
-                            try:
-                                status, result = result_queue.get_nowait()
-                                if status == 'error':
-                                    st.session_state.analysis_error = result
-                                else:
-                                    st.session_state.analysis_result = result
-                                st.session_state.analysis_complete = True
-                                loading_placeholder.empty()
-                                break
-                            except Empty:
-                                pass  # No result yet
-
-                            # Update loading animation
-                            litany_text = next(litany)
-                            loading_placeholder.markdown(f"""
-                                <div class="mentat-litany visible">
-                                    {litany_text}
+                    st.markdown(f"""
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
+                                <div class="risk-score {risk_class}">
+                                    {result['risk_score']:.1f}% Thinking Machine Probability
+                                    <span class="info-icon">ⓘ<span class="tooltip">
+                                        <ul>
+                                            <li>Account age, karma & activity (25%)</li>
+                                            <li>Posting patterns & subreddit diversity (25%)</li>
+                                            <li>Comment analysis & vocabulary (25%)</li>
+                                            <li>ML-based behavior assessment (25%)</li>
+                                        </ul>
+                                        Higher score = more bot-like patterns
+                                    </span></span>
                                 </div>
-                            """, unsafe_allow_html=True)
-                            time.sleep(0.5)
+                            </div>
+                            <div class="grid-item half-width">
+                                <div class="risk-score {bot_risk_class}">
+                                    {bot_prob:.1f}% Bot Probability
+                                    <span class="info-icon">ⓘ<span class="tooltip">
+                                        <ul>
+                                            <li>Bot Probability Score is calculated using:</li>
+                                            <li>Repetitive phrase patterns</li>
+                                            <li>Template response detection</li>
+                                            <li>Timing analysis</li>
+                                            <li>Language complexity</li>
+                                            <li>Suspicious behavior patterns</li>
+                                        </ul>
+                                        Higher score = more bot-like patterns
+                                    </span></span>
+                                </div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-                        except Exception as e:
-                            logger.error(f"Error during analysis loop: {str(e)}")
-                            st.session_state.analysis_error = f"Error during analysis: {str(e)}"
-                            st.session_state.analysis_complete = True
-                            break
+                    overview_html = f"""
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
+                                <span class="section-heading">Account Overview</span>
+                                <p>Account Age: {result['account_age']}</p>
+                                <p>Total Karma: {result['karma']:,}</p>
+                            </div>
+                            <div class="grid-item half-width">
+                                <span class="section-heading">Top Subreddits</span>
+                    """
 
-                    # Handle timeout
-                    if not st.session_state.analysis_complete:
-                        st.session_state.analysis_error = "Analysis timed out. Please try again."
-                        st.session_state.analysis_complete = True
+                    for subreddit, count in result['activity_patterns']['top_subreddits'].items():
+                        overview_html += f"<p>{subreddit}: {count} posts</p>"
+
+                    overview_html += """
+                            </div>
+                        </div>
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
+                                <span class="section-heading">Activity Overview</span>
+                            </div>
+                            <div class="grid-item half-width">
+                                <span class="section-heading">Risk Analysis</span>
+                            </div>
+                        </div>
+                    """
+
+                    st.markdown(overview_html, unsafe_allow_html=True)
+
+                    col3, col4 = st.columns(2)
+                    with col3:
+                        activity_data = create_monthly_activity_table(
+                            result['comments_df'], result['submissions_df'])
+                        st.plotly_chart(
+                            create_monthly_activity_chart(activity_data),
+                            use_container_width=True,
+                            config={'displayModeBar': False})
+
+                    with col4:
+                        logger.debug(f"Component scores for radar chart: {result['component_scores']}")
+                        radar_chart = create_score_radar_chart(result['component_scores'])
+                        st.plotly_chart(
+                            radar_chart,
+                            use_container_width=True,
+                            config={'displayModeBar': False})
+
+                    st.markdown("""
+                        <div class="grid-container">
+                            <div class="grid-item full-width">
+                                <span class="section-heading">Bot Behavior Analysis</span>
+                                <span class="info-icon">ⓘ<span class="tooltip">
+                                    <ul>
+                                        <li>Text Patterns: How repetitive and template-like the writing is</li>
+                                        <li>Timing Patterns: If posting follows suspicious timing patterns</li>
+                                        <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
+                                    </ul>
+                                    
+                                    Higher scores (closer to 1.0) indicate more bot-like characteristics.
+                                </span></span>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    st.plotly_chart(
+                        create_bot_analysis_chart(result['text_metrics'],
+                                                    result['activity_patterns']),
+                        use_container_width=True,
+                        config={'displayModeBar': False})
+
+                    suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
+                    patterns_html = "\n".join([
+                        f"<tr><td>{pattern.replace('_', ' ').title()}</td><td>{count}%</td></tr>"
+                        for pattern, count in suspicious_patterns.items()
+                    ])
+
+                    st.markdown(f"""
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
+                                <span class="section-heading">Suspicious Patterns Detected</span>
+                                <div class='help-text'>
+                                Shows the percentage of comments that contain specific patterns often associated with bots:
+                                • Identical Greetings: Generic hello/hi messages
+                                • URL Patterns: Frequency of link sharing
+                                • Promotional Phrases: Marketing-like language
+                                • Generic Responses: Very basic/template-like replies
+                                </div>
+                            </div>
+                            <div class="grid-item half-width">
+                                <table class='pattern-table'>
+                                    <tr>
+                                        <th>Pattern Type</th>
+                                        <th>Frequency (%)</th>
+                                    </tr>
+                                    {patterns_html}
+                                </table>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    st.markdown("""
+                        <div class="grid-container">
+                            <div class="grid-item full-width">
+                                <div class="divider"></div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    st.markdown("""
+                        <div class="grid-container">
+                            <div class="grid-item full-width">
+                                <span class="section-heading">Improve the Mentat</span>
+                                <p>Help us improve our detection capabilities by providing feedback on the account classification.</p>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Mark as Human Account", key="human-account-btn"):
+                            account_scorer.ml_analyzer.add_training_example(
+                                result['user_data'],
+                                result['activity_patterns'],
+                                result['text_metrics'],
+                                is_legitimate=True)
+                            st.success(
+                                "Thank you for marking this as a human account! This feedback helps improve our detection."
+                                                        )
+
+                    with col2:
+                        if st.button("Mark as Bot Account", key="bot-account-btn"):
+                            account_scorer.ml_analyzer.add_training_example(
+                                result['user_data'],
+                                result['activity_patterns'],
+                                result['text_metrics'],
+                                is_legitimate=False)
+                            st.success(
+                                "Thank you for marking this as a bot account! This feedback helps improve our detection."
+                            )
 
                 except Exception as e:
                     st.error(f"Error analyzing account: {str(e)}")
-                    st.session_state.analysis_started = False
-
-            # Display results if analysis is complete
-            if st.session_state.analysis_complete:
-                with results_container:
-                    if st.session_state.analysis_error:
-                        st.error(f"Error analyzing account: {st.session_state.analysis_error}")
-                        if st.button("Retry Analysis"):
-                            reset_analysis_state()
-                            st.experimental_rerun()
-                    elif st.session_state.analysis_result:
-                        display_analysis_results(st.session_state.analysis_result)
-                        if st.button("Analyze Another Account"):
-                            reset_analysis_state()
-                            st.session_state.previous_username = None
-                            st.experimental_rerun()
 
         else:  # Bulk Analysis
             usernames = st.text_area(
@@ -584,8 +814,8 @@ def main():
                     for i, username in enumerate(usernames):
                         status_text.text(
                             f"Analyzing {username}... ({i+1}/{len(usernames)})")
-                        result = analyze_single_user(username, get_reddit_analyzer(),
-                                                     get_text_analyzer(), get_account_scorer())
+                        result = analyze_single_user(username, reddit_analyzer,
+                                                     text_analyzer, account_scorer)
                         results.append(result)
                         progress_bar.progress((i + 1) / len(usernames))
 
