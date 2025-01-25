@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import logging
 from functools import lru_cache
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,27 @@ class AnalysisResult(Base):
             )
             db_session.add(instance)
         return instance
+
+    @classmethod
+    def get_all_analysis_stats(cls) -> pd.DataFrame:
+        """Get all analysis results for statistics page"""
+        with SessionLocal() as db:
+            results = db.query(
+                cls.username,
+                cls.last_analyzed,
+                cls.analysis_count,
+                cls.bot_probability
+            ).all()
+
+            return pd.DataFrame([
+                {
+                    'Username': r.username,
+                    'Last Analyzed': r.last_analyzed,
+                    'Analysis Count': r.analysis_count,
+                    'Bot Probability': f"{r.bot_probability:.1f}%"
+                }
+                for r in results
+            ])
 
 def init_db():
     """Initialize the database tables"""
