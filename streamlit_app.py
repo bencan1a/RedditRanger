@@ -483,19 +483,16 @@ def main():
             # Create a placeholder for results
             results_container = st.empty()
 
-            # Reset state when username changes
-            if username != st.session_state.previous_username:
-                reset_analysis_state()
-                st.session_state.previous_username = username
-                # Clear previous results
-                results_container.empty()
-
             # Start new analysis if needed
             if username and not st.session_state.analysis_started and not st.session_state.analysis_complete:
                 try:
                     st.session_state.analysis_started = True
-                    # Clear any previous results while loading
-                    results_container.empty()
+                    loading_placeholder = st.empty()
+
+                    # Only reset previous analysis when starting a new one
+                    if username != st.session_state.previous_username:
+                        reset_analysis_state()
+                        st.session_state.previous_username = username
 
                     result_queue = Queue()
 
@@ -508,7 +505,6 @@ def main():
                     analysis_thread.start()
 
                     # Show loading animation while analysis runs
-                    loading_placeholder = st.empty()
                     litany = cycle_litany()
                     start_time = time.time()
 
