@@ -173,8 +173,7 @@ def main():
 
                     # Probabilities section with proper grid layout
                     risk_class = get_risk_class(result['risk_score'])
-                    bot_prob = result['bot_probability']
-                    bot_risk_class = get_risk_class(bot_prob)
+                    bot_risk_class = get_risk_class(result['bot_probability'])
 
                     st.markdown(f"""
                         <div class="grid-container">
@@ -195,7 +194,7 @@ def main():
                             </div>
                             <div class="grid-item half-width">
                                 <div class="risk-score {bot_risk_class}">
-                                    {bot_prob:.1f}% Bot Probability
+                                    {result['bot_probability']:.1f}% Bot Probability
                                     <span class="info-icon">ⓘ
                                         <span class="tooltip">
                                         Bot Probability Score is calculated using:
