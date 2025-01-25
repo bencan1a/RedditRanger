@@ -21,10 +21,23 @@ def load_css():
             width: 100%;
         }
         .grid-item {
-            flex: 1 1 calc(50% - 10px);
+            flex: 0 0 calc(50% - 10px); /* Fixed width, no growing/shrinking */
+            width: calc(50% - 10px); /* Explicit width calculation */
+            max-width: calc(50% - 10px); /* Prevent overflow */
             background: rgba(255, 255, 255, 0.05);
             border-radius: 5px;
             padding: 20px;
+            box-sizing: border-box; /* Include padding in width calc */
+        }
+        .grid-item.full-width {
+            flex: 0 0 100%;
+            width: 100%;
+            max-width: 100%;
+        }
+        .grid-item.quarter-width {
+            flex: 0 0 calc(25% - 15px);
+            width: calc(25% - 15px);
+            max-width: calc(25% - 15px);
         }
         .risk-score {
             font-size: 2.1rem;
