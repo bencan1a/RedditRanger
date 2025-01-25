@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from utils.ml_analyzer import MLAnalyzer
 from utils.heuristics import (
@@ -9,7 +10,6 @@ from utils.heuristics import (
     EngagementHeuristic,
     LinguisticHeuristic
 )
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -27,22 +27,47 @@ class AccountScorer:
             'linguistic': LinguisticHeuristic()
         }
 
+    def _extract_karma_value(self, karma_data):
+        """Safely extract karma value from potentially nested data"""
+        if isinstance(karma_data, (int, float)):
+            return float(karma_data)
+        elif isinstance(karma_data, dict):
+            # If it's a dictionary, try to find a numeric value
+            for key in ['value', 'score', 'count']:
+                if key in karma_data and isinstance(karma_data[key], (int, float)):
+                    return float(karma_data[key])
+        elif isinstance(karma_data, str):
+            # Try to convert string to float
+            try:
+                return float(karma_data.replace(',', ''))
+            except (ValueError, TypeError):
+                pass
+        return 0.0
+
     def _sanitize_user_data(self, user_data):
         """Sanitize user data to ensure proper types"""
         if not isinstance(user_data, dict):
+            logger.error("User data is not a dictionary")
             return None
 
         sanitized = {}
         try:
-            # Ensure basic fields exist with proper types
+            # Log the raw karma values for debugging
+            logger.debug(f"Raw comment_karma: {user_data.get('comment_karma')}")
+            logger.debug(f"Raw link_karma: {user_data.get('link_karma')}")
+
+            # Extract karma values safely
+            comment_karma = self._extract_karma_value(user_data.get('comment_karma', 0))
+            link_karma = self._extract_karma_value(user_data.get('link_karma', 0))
+
+            logger.debug(f"Extracted comment_karma: {comment_karma}")
+            logger.debug(f"Extracted link_karma: {link_karma}")
+
+            # Build sanitized data structure
             sanitized['username'] = str(user_data.get('username', ''))
             sanitized['created_utc'] = user_data.get('created_utc', datetime.now(timezone.utc))
-
-            # Convert karma values to integers
-            sanitized['comment_karma'] = int(float(str(user_data.get('comment_karma', 0)).replace(',', '')))
-            sanitized['link_karma'] = int(float(str(user_data.get('link_karma', 0)).replace(',', '')))
-
-            # Ensure lists exist
+            sanitized['comment_karma'] = comment_karma
+            sanitized['link_karma'] = link_karma
             sanitized['comments'] = list(user_data.get('comments', []))
             sanitized['submissions'] = list(user_data.get('submissions', []))
 
@@ -156,6 +181,10 @@ class AccountScorer:
                 logger.error(f"Error in ML analysis: {str(e)}")
                 scores['ml_risk_score'] = 0.5
 
+            # Calculate final weighted score
+            final_score = 0.0
+            weight_sum = 0.0
+
             # Define weights for different components
             weights = {
                 # Traditional metrics (40%)
@@ -178,16 +207,9 @@ class AccountScorer:
                 'linguistic_style_score': 0.05
             }
 
-            # Calculate weighted score
-            final_score = 0.0
-            weight_sum = 0.0
-
             for score_name, weight in weights.items():
                 if score_name in scores and isinstance(scores[score_name], (int, float)):
                     score = float(scores[score_name])
-                    # Apply dampening to reduce false positives
-                    if score < 0.3:  # Low scores get reduced further
-                        score = score * 0.5
                     final_score += score * weight
                     weight_sum += weight
 
