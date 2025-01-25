@@ -1,4 +1,3 @@
-```python
 import time
 from collections import defaultdict
 from typing import Dict, Tuple
@@ -46,7 +45,7 @@ class RateLimiter:
         """
         bucket = self.buckets[key]
         allowed = bucket.consume()
-        
+
         # Calculate reset time
         tokens_needed = 1 if allowed else 1 - bucket.tokens
         reset_after = tokens_needed / bucket.fill_rate
@@ -62,4 +61,3 @@ class RateLimiter:
             headers['Retry-After'] = str(int(reset_after))
 
         return allowed, headers
-```
