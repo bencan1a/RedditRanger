@@ -14,28 +14,17 @@ import pandas as pd
 def load_css():
     st.markdown("""
         <style>
-        .grid-row {
+        .grid-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 20px;
             width: 100%;
-            margin-bottom: 1rem;
         }
-        .section {
+        .grid-item {
+            flex: 1 1 calc(50% - 10px);
             background: rgba(255, 255, 255, 0.05);
             border-radius: 5px;
-            padding: 1rem;
-        }
-        .half-width {
-            flex: 1 1 calc(50% - 0.5rem);
-            min-width: calc(50% - 0.5rem);
-        }
-        .full-width {
-            flex: 1 1 100%;
-        }
-        .quarter-width {
-            flex: 1 1 calc(25% - 0.75rem);
-            min-width: calc(25% - 0.75rem);
+            padding: 20px;
         }
         .risk-score {
             font-size: 2.1rem;
@@ -136,8 +125,8 @@ def main():
 
     # Row 1: Header
     st.markdown("""
-        <div class="grid-row">
-            <div class="section full-width">
+        <div class="grid-container">
+            <div class="grid-item">
                 <h1>Thinking Machine Detector</h1>
                 <div class='intro-text'>
                 Like the Bene Gesserit's ability to detect truth, this tool uses Abominable Intelligence 
@@ -152,7 +141,6 @@ def main():
     text_analyzer = TextAnalyzer()
     account_scorer = AccountScorer()
 
-    # Analysis mode selection
     analysis_mode = st.radio("Analysis Mode:", ["Single Account", "Bulk Detection"])
 
     if analysis_mode == "Single Account":
@@ -166,14 +154,14 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Row 2: Probabilities with proper grid layout
+                    # Probabilities section with new grid layout
                     risk_class = get_risk_class(result['risk_score'])
                     bot_prob = result['bot_probability']
                     bot_risk_class = get_risk_class(bot_prob)
 
                     st.markdown(f"""
-                        <div class="grid-row">
-                            <div class="section half-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <div class="risk-score {risk_class}">
                                     {result['risk_score']:.1f}% Thinking Machine Probability
                                     <span class="info-icon">ⓘ
@@ -188,7 +176,7 @@ def main():
                                     </span>
                                 </div>
                             </div>
-                            <div class="section half-width">
+                            <div class="grid-item">
                                 <div class="risk-score {bot_risk_class}">
                                     {bot_prob:.1f}% Bot Probability
                                     <span class="info-icon">ⓘ
@@ -210,8 +198,8 @@ def main():
 
                     # Row 3: Overview sections
                     st.markdown("""
-                        <div class="grid-row">
-                            <div class="section quarter-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <h3>Account Overview</h3>
                     """, unsafe_allow_html=True)
                     st.write(f"Account Age: {result['account_age']}")
@@ -219,7 +207,7 @@ def main():
                     st.markdown("</div>", unsafe_allow_html=True)
 
                     st.markdown("""
-                        <div class="section quarter-width">
+                        <div class="grid-item">
                             <h3>Top Subreddits</h3>
                     """, unsafe_allow_html=True)
                     for subreddit, count in result['activity_patterns']['top_subreddits'].items():
@@ -227,7 +215,7 @@ def main():
                     st.markdown("</div>", unsafe_allow_html=True)
 
                     st.markdown("""
-                        <div class="section quarter-width">
+                        <div class="grid-item">
                             <h3>Monthly Activity</h3>
                     """, unsafe_allow_html=True)
                     activity_data = create_monthly_activity_table(
@@ -242,7 +230,7 @@ def main():
                     st.markdown("</div>", unsafe_allow_html=True)
 
                     st.markdown("""
-                        <div class="section quarter-width">
+                        <div class="grid-item">
                             <h3>Risk Analysis</h3>
                     """, unsafe_allow_html=True)
                     st.plotly_chart(
@@ -255,8 +243,8 @@ def main():
 
                     # Row 4: Detailed Analysis Header
                     st.markdown("""
-                        <div class="grid-row">
-                            <div class="section full-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <h2>Detailed Analysis</h2>
                             </div>
                         </div>
@@ -264,8 +252,8 @@ def main():
 
                     # Row 5: Bot Behavior Analysis
                     st.markdown("""
-                        <div class="grid-row">
-                            <div class="section half-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <h3>Bot Behavior Analysis</h3>
                                 <div class='help-text'>
                                 This chart shows three key aspects of potential automated behavior:
@@ -276,7 +264,7 @@ def main():
                                 Higher scores (closer to 1.0) indicate more bot-like characteristics.
                                 </div>
                             </div>
-                            <div class="section half-width">
+                            <div class="grid-item">
                     """, unsafe_allow_html=True)
                     st.plotly_chart(
                         create_bot_analysis_chart(result['text_metrics'], result['activity_patterns']),
@@ -287,8 +275,8 @@ def main():
 
                     # Row 6: Suspicious Patterns
                     st.markdown("""
-                        <div class="grid-row">
-                            <div class="section half-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <h3>Suspicious Patterns Detected</h3>
                                 <div class='help-text'>
                                 Shows the percentage of comments that contain specific patterns often associated with bots:
@@ -298,7 +286,7 @@ def main():
                                 • Generic Responses: Very basic/template-like replies
                                 </div>
                             </div>
-                            <div class="section half-width">
+                            <div class="grid-item">
                     """, unsafe_allow_html=True)
 
                     suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
@@ -316,8 +304,8 @@ def main():
 
                     # Row 7: Divider
                     st.markdown("""
-                        <div class="grid-row">
-                            <div class="section full-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <div class="divider"></div>
                             </div>
                         </div>
@@ -325,12 +313,12 @@ def main():
 
                     # Row 8: Feedback
                     st.markdown("""
-                        <div class="grid-row">
-                            <div class="section half-width">
+                        <div class="grid-container">
+                            <div class="grid-item">
                                 <h3>Improve the Abominable Intelligence</h3>
                                 <p>Help us improve our detection capabilities by marking legitimate human accounts.</p>
                             </div>
-                            <div class="section half-width">
+                            <div class="grid-item">
                     """, unsafe_allow_html=True)
                     if st.button("Mark as Human Account"):
                         account_scorer.ml_analyzer.add_training_example(
