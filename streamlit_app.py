@@ -4,7 +4,7 @@ from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.visualizations import (
     create_score_radar_chart,
-    create_monthly_activity_chart,
+    create_monthly_activity_table, # Added import for the new table function
     create_subreddit_distribution
 )
 import pandas as pd
@@ -64,7 +64,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(v for k, v in component_scores.items() if k != 'ml_risk_score') 
-                                   / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
+                                       / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -142,21 +142,26 @@ def main():
                     activity_cols = st.columns(2)
 
                     with activity_cols[0]:
-                        st.plotly_chart(
-                            create_monthly_activity_chart(
-                                result['comments_df'],
-                                result['submissions_df']
-                            ),
-                            use_container_width=True,
-                            config={'displayModeBar': False}
+                        # Display monthly activity table
+                        activity_data = create_monthly_activity_table(
+                            result['comments_df'],
+                            result['submissions_df']
+                        )
+                        st.subheader("Monthly Activity")
+                        st.dataframe(
+                            activity_data,
+                            column_config={
+                                "month": "Month",
+                                "comments": "Comments",
+                                "submissions": "Submissions"
+                            },
+                            hide_index=True
                         )
 
                     with activity_cols[1]:
-                        st.plotly_chart(
-                            create_subreddit_distribution(result['activity_patterns']['top_subreddits']),
-                            use_container_width=True,
-                            config={'displayModeBar': False}
-                        )
+                        st.subheader("Top Subreddits")
+                        for subreddit, count in result['activity_patterns']['top_subreddits'].items():
+                            st.write(f"{subreddit}: {count} posts")
 
                     # Feedback section
                     feedback_cols = st.columns([2, 1])
