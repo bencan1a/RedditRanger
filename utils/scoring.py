@@ -32,42 +32,102 @@ class AccountScorer:
             # Initialize scores dictionary
             scores = {}
 
-            # Apply each heuristic
-            heuristic_scores = {
-                'account_age': self.heuristics['account_age'].analyze(user_data),
-                'karma': self.heuristics['karma'].analyze(user_data),
-                'username': self.heuristics['username'].analyze(user_data),
-                'posting': self.heuristics['posting'].analyze({
+            # Validate user_data
+            if not isinstance(user_data, dict):
+                logger.error("Invalid user_data format")
+                return 0.5, {'error': 'Invalid user data format'}
+
+            # Ensure required fields exist
+            user_data['comments'] = user_data.get('comments', [])
+            user_data['submissions'] = user_data.get('submissions', [])
+
+            # Apply each heuristic with safe data access
+            heuristic_scores = {}
+
+            try:
+                heuristic_scores['account_age'] = self.heuristics['account_age'].analyze(user_data)
+            except Exception as e:
+                logger.error(f"Error in account_age heuristic: {str(e)}")
+                heuristic_scores['account_age'] = {'age_score': 0.5}
+
+            try:
+                heuristic_scores['karma'] = self.heuristics['karma'].analyze(user_data)
+            except Exception as e:
+                logger.error(f"Error in karma heuristic: {str(e)}")
+                heuristic_scores['karma'] = {'karma_score': 0.5}
+
+            try:
+                heuristic_scores['username'] = self.heuristics['username'].analyze(user_data)
+            except Exception as e:
+                logger.error(f"Error in username heuristic: {str(e)}")
+                heuristic_scores['username'] = {'username_score': 0.5}
+
+            try:
+                heuristic_scores['posting'] = self.heuristics['posting'].analyze({
                     'comments': user_data['comments'],
-                    'submissions': user_data.get('submissions', [])
-                }),
-                'subreddit': self.heuristics['subreddit'].analyze({
+                    'submissions': user_data['submissions']
+                })
+            except Exception as e:
+                logger.error(f"Error in posting heuristic: {str(e)}")
+                heuristic_scores['posting'] = {
+                    'frequency_score': 0.5,
+                    'interval_score': 0.5,
+                    'timezone_score': 0.5
+                }
+
+            try:
+                heuristic_scores['subreddit'] = self.heuristics['subreddit'].analyze({
                     'comments': user_data['comments'],
-                    'submissions': user_data.get('submissions', [])
-                }),
-                'engagement': self.heuristics['engagement'].analyze({
+                    'submissions': user_data['submissions']
+                })
+            except Exception as e:
+                logger.error(f"Error in subreddit heuristic: {str(e)}")
+                heuristic_scores['subreddit'] = {'diversity_score': 0.5}
+
+            try:
+                heuristic_scores['engagement'] = self.heuristics['engagement'].analyze({
                     'comments': user_data['comments'],
-                    'submissions': user_data.get('submissions', [])
-                }),
-                'linguistic': self.heuristics['linguistic'].analyze({
+                    'submissions': user_data['submissions']
+                })
+            except Exception as e:
+                logger.error(f"Error in engagement heuristic: {str(e)}")
+                heuristic_scores['engagement'] = {
+                    'interaction_score': 0.5,
+                    'depth_score': 0.5
+                }
+
+            try:
+                heuristic_scores['linguistic'] = self.heuristics['linguistic'].analyze({
                     'comments': user_data['comments']
                 })
-            }
+            except Exception as e:
+                logger.error(f"Error in linguistic heuristic: {str(e)}")
+                heuristic_scores['linguistic'] = {
+                    'similarity_score': 0.5,
+                    'complexity_score': 0.5,
+                    'pattern_score': 0.5,
+                    'style_score': 0.5
+                }
 
             # Extract primary scores and store detailed metrics
             for category, result in heuristic_scores.items():
-                for score_name, score in result.items():
-                    if isinstance(score, (int, float)):  # Primary scores
-                        scores[f"{category}_{score_name}"] = score
-                    elif isinstance(score, dict) and score_name == 'metrics':
-                        # Store detailed metrics for visualization
-                        scores[f"{category}_metrics"] = score
+                if isinstance(result, dict):
+                    for score_name, score in result.items():
+                        if isinstance(score, (int, float)):  # Primary scores
+                            scores[f"{category}_{score_name}"] = score
+                        elif isinstance(score, dict) and score_name == 'metrics':
+                            # Store detailed metrics for visualization
+                            scores[f"{category}_metrics"] = score
 
             # Get ML-based risk score
-            ml_risk_score, feature_importance = self.ml_analyzer.analyze_account(
-                user_data, activity_patterns, text_metrics
-            )
-            scores['ml_risk_score'] = ml_risk_score
+            try:
+                ml_risk_score, feature_importance = self.ml_analyzer.analyze_account(
+                    user_data, activity_patterns, text_metrics
+                )
+                scores['ml_risk_score'] = ml_risk_score
+            except Exception as e:
+                logger.error(f"Error in ML analysis: {str(e)}")
+                scores['ml_risk_score'] = 0.5
 
             # Define weights for different components
             weights = {
@@ -105,6 +165,7 @@ class AccountScorer:
                     weight_sum += weight
 
             if weight_sum == 0:
+                logger.warning("No valid scores found for weighted calculation")
                 return 0.5, scores  # Return moderate risk if no scores available
 
             # Normalize final score
@@ -122,4 +183,4 @@ class AccountScorer:
 
         except Exception as e:
             logger.error(f"Error calculating score: {str(e)}")
-            return 0.5, scores  # Return moderate risk score in case of error
+            return 0.5, {}  # Return moderate risk score in case of error
