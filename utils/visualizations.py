@@ -100,8 +100,8 @@ def create_monthly_activity_chart(comments_df):
             nticks=12,
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
-            dtick="M1",  # Show every month
-            tickformat="%b %y",  # Format as "MMM YY"
+            type='date',
+            tickformat="%b %y",
             tickmode="auto",
             tickfont=dict(color='#E6D5B8')
         ),
