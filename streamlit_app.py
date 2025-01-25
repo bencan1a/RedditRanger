@@ -47,12 +47,16 @@ def get_risk_class(risk_score):
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user and return their analysis results."""
     try:
-        user_data, comments_df = reddit_analyzer.get_user_data(username)
-        activity_patterns = reddit_analyzer.analyze_activity_patterns(comments_df)
-        text_metrics = text_analyzer.analyze_comments(comments_df['body'].tolist())
+        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+        activity_patterns = reddit_analyzer.analyze_activity_patterns(comments_df, submissions_df)
+
+        # Analyze text only from comments
+        text_metrics = text_analyzer.analyze_comments(comments_df['body'].tolist() if not comments_df.empty else [])
+
         final_score, component_scores = account_scorer.calculate_score(
             user_data, activity_patterns, text_metrics
         )
+
         return {
             'username': username,
             'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
@@ -60,12 +64,13 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(v for k, v in component_scores.items() if k != 'ml_risk_score') 
-                                      / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
+                                   / len([k for k in component_scores if k != 'ml_risk_score'])) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
             'component_scores': component_scores,
-            'comments_df': comments_df
+            'comments_df': comments_df,
+            'submissions_df': submissions_df
         }
     except Exception as e:
         return {
@@ -138,7 +143,10 @@ def main():
 
                     with activity_cols[0]:
                         st.plotly_chart(
-                            create_monthly_activity_chart(result['comments_df']),
+                            create_monthly_activity_chart(
+                                result['comments_df'],
+                                result['submissions_df']
+                            ),
                             use_container_width=True,
                             config={'displayModeBar': False}
                         )

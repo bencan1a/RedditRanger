@@ -53,46 +53,81 @@ def create_score_radar_chart(scores):
 
     return fig
 
-def create_monthly_activity_chart(comments_df):
-    """Create a monthly activity chart from comments dataframe."""
-    # Debug logging for raw data
-    logger.info(f"Total comments in dataframe: {len(comments_df)}")
-    logger.info("Raw comment dates:")
-    for date in comments_df['created_utc'].tolist():
-        logger.info(f"Comment date: {date}")
+def create_monthly_activity_chart(comments_df, submissions_df):
+    """Create a monthly activity chart showing both comments and submissions."""
+    # Debug logging
+    logger.info(f"Creating chart with {len(comments_df)} comments and {len(submissions_df)} submissions")
 
     # Ensure we're working with UTC timestamps
     now = pd.Timestamp.now(tz='UTC')
     one_year_ago = now - pd.DateOffset(months=12)
 
-    logger.info(f"Filtering between {one_year_ago} and {now}")
+    def process_activity(df, activity_type):
+        # Create a date range covering all months
+        date_range = pd.date_range(
+            start=one_year_ago,
+            end=now,
+            freq='M'
+        )
 
-    # Convert created_utc to datetime if it isn't already
-    if not pd.api.types.is_datetime64_any_dtype(comments_df['created_utc']):
-        comments_df['created_utc'] = pd.to_datetime(comments_df['created_utc'], utc=True)
+        # Create an empty DataFrame with all months
+        monthly_template = pd.DataFrame({
+            'month': date_range,
+            'count': 0
+        })
 
-    # Filter and resample
-    mask = (comments_df['created_utc'] >= one_year_ago) & (comments_df['created_utc'] <= now)
-    filtered_df = comments_df[mask]
-    logger.info(f"Comments after date filtering: {len(filtered_df)}")
+        if df.empty:
+            logger.info(f"No {activity_type} data available")
+            return monthly_template
 
-    monthly_activity = (
-        filtered_df
-        .resample('M', on='created_utc')
-        .size()
-        .reset_index()
-    )
-    monthly_activity.columns = ['month', 'count']
+        # Convert timestamps if needed
+        if not pd.api.types.is_datetime64_any_dtype(df['created_utc']):
+            df['created_utc'] = pd.to_datetime(df['created_utc'], utc=True)
 
-    # Log the final aggregated data
-    logger.info("Monthly aggregated data:")
-    for _, row in monthly_activity.iterrows():
-        logger.info(f"Month: {row['month']}, Count: {row['count']}")
+        # Filter and resample
+        mask = (df['created_utc'] >= one_year_ago) & (df['created_utc'] <= now)
+        filtered = df[mask]
 
-    # Create the figure
-    fig = go.Figure(data=go.Scatter(
-        x=monthly_activity['month'],
-        y=monthly_activity['count'],
+        if filtered.empty:
+            return monthly_template
+
+        monthly = (
+            filtered
+            .resample('M', on='created_utc')
+            .size()
+            .reset_index()
+        )
+        monthly.columns = ['month', 'count']
+
+        # Merge with template to ensure all months are present
+        monthly = pd.merge(
+            monthly_template,
+            monthly,
+            on='month',
+            how='left'
+        )
+        # Use the count from actual data where available, otherwise keep 0
+        monthly['count'] = monthly['count_y'].fillna(monthly['count_x'])
+        monthly = monthly[['month', 'count']]
+
+        logger.info(f"Monthly {activity_type} data:")
+        for _, row in monthly.iterrows():
+            logger.info(f"Month: {row['month']}, Count: {row['count']}")
+
+        return monthly
+
+    # Process both types of activity
+    comments_monthly = process_activity(comments_df, 'comments')
+    posts_monthly = process_activity(submissions_df, 'submissions')
+
+    # Create figure with two traces
+    fig = go.Figure()
+
+    # Add comments trace
+    fig.add_trace(go.Scatter(
+        x=comments_monthly['month'],
+        y=comments_monthly['count'],
+        name='Comments',
         mode='lines+markers',
         line=dict(color='#E6D5B8', width=2),
         marker=dict(
@@ -102,10 +137,24 @@ def create_monthly_activity_chart(comments_df):
         )
     ))
 
-    # Update layout with custom styling
+    # Add posts trace
+    fig.add_trace(go.Scatter(
+        x=posts_monthly['month'],
+        y=posts_monthly['count'],
+        name='Posts',
+        mode='lines+markers',
+        line=dict(color='#ff9800', width=2),
+        marker=dict(
+            size=8,
+            color='#ff9800',
+            line=dict(color='#E6D5B8', width=2)
+        )
+    ))
+
+    # Update layout
     fig.update_layout(
         title={
-            'text': 'Trailing 12 Month Activity',
+            'text': 'Activity Timeline (12 Months)',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -119,20 +168,29 @@ def create_monthly_activity_chart(comments_df):
             tickangle=45,
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
+            tickfont=dict(color='#E6D5B8'),
+            # Ensure x-axis shows all months
             tickmode='array',
-            ticktext=[d.strftime('%b %y') for d in monthly_activity['month']],
-            tickvals=monthly_activity['month'],
-            tickfont=dict(color='#E6D5B8')
+            ticktext=[d.strftime('%b %Y') for d in comments_monthly['month']],
+            tickvals=comments_monthly['month']
         ),
         yaxis=dict(
-            title="Number of Posts",
+            title="Count",
             showgrid=True,
             gridcolor='rgba(255, 255, 255, 0.1)',
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
             tickfont=dict(color='#E6D5B8')
         ),
-        showlegend=False,
+        showlegend=True,
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            font=dict(color='#E6D5B8'),
+            bgcolor='rgba(0,0,0,0)'
+        ),
         margin=dict(t=50, b=50, l=40, r=20),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)'
