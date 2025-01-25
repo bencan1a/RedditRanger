@@ -5,6 +5,8 @@ from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.rate_limiter import RateLimiter
+from utils.database import init_db, get_db, AnalysisResult
+from sqlalchemy.orm import Session
 import uvicorn
 from pydantic import BaseModel
 from datetime import datetime
@@ -40,6 +42,8 @@ class AnalysisResponse(BaseModel):
     username: str
     probability: float
     summary: dict
+    analysis_count: int
+    last_analyzed: datetime
 
 class HealthResponse(BaseModel):
     status: str
@@ -48,7 +52,14 @@ class HealthResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup and configuration"""
+    """Initialize database and log application startup"""
+    try:
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {str(e)}")
+        raise
+
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
     logger.info(f"Server running on {settings.HOST}:{settings.PORT}")
@@ -81,9 +92,10 @@ async def check_rate_limit(request: Request):
 async def analyze_user(
     username: str,
     settings: Settings = Depends(get_settings),
-    rate_limit_headers: dict = Depends(check_rate_limit)
+    rate_limit_headers: dict = Depends(check_rate_limit),
+    db: Session = Depends(get_db)
 ):
-    """Analyze Reddit user account"""
+    """Analyze Reddit user account and store results"""
     logger.info(f"Analyzing user: {username}")
     try:
         # Create a new RedditAnalyzer instance for each request using settings
@@ -102,16 +114,23 @@ async def analyze_user(
             user_data, activity_patterns, text_metrics
         )
 
+        # Store analysis result in database
+        bot_probability = (1 - final_score) * 100
+        analysis_result = AnalysisResult.get_or_create(db, username, bot_probability)
+        db.commit()
+
         response = AnalysisResponse(
             username=username,
-            probability=(1 - final_score) * 100,  # Convert to percentage and invert for bot probability
+            probability=bot_probability,
             summary={
                 "account_age": user_data['created_utc'].strftime('%Y-%m-%d'),
                 "karma": user_data['comment_karma'] + user_data['link_karma'],
                 "scores": component_scores,
                 "activity_metrics": activity_patterns,
                 "text_analysis": text_metrics
-            }
+            },
+            analysis_count=analysis_result.analysis_count,
+            last_analyzed=analysis_result.last_analyzed
         )
 
         # Add rate limit headers to response
@@ -128,7 +147,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=settings.HOST,
-        port=settings.PORT,
+        port=5001,  # Changed from settings.PORT to avoid conflict with Streamlit
         reload=True,
         log_level=settings.LOG_LEVEL.lower()
     )

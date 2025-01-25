@@ -1,4 +1,5 @@
 import nltk
+import os
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from collections import Counter
@@ -17,6 +18,7 @@ class TextAnalyzer:
     _instance = None
     _initialized = False
     _nltk_initialized = False
+    _nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
 
     def __new__(cls):
         if cls._instance is None:
@@ -30,14 +32,22 @@ class TextAnalyzer:
                 min_df=1,
                 max_df=0.95
             )
+            # Initialize NLTK data directory
+            if not os.path.exists(self._nltk_data_dir):
+                os.makedirs(self._nltk_data_dir)
+            nltk.data.path.append(self._nltk_data_dir)
             self._initialized = True
+            # Pre-download NLTK resources during initialization
+            self._ensure_nltk_resources()
 
     def _ensure_nltk_resources(self):
-        """Lazy initialization of NLTK resources"""
+        """Pre-download NLTK resources during initialization"""
         if not self._nltk_initialized:
             try:
-                logger.info("Initializing NLTK resources (first use)...")
-                nltk.download(['punkt', 'stopwords', 'averaged_perceptron_tagger'], quiet=True)
+                logger.info("Pre-downloading NLTK resources...")
+                nltk.download(['punkt', 'stopwords', 'averaged_perceptron_tagger'], 
+                            quiet=True, 
+                            download_dir=self._nltk_data_dir)
                 self.stop_words = set(stopwords.words('english'))
                 self._nltk_initialized = True
                 logger.info("NLTK initialization complete")
@@ -47,8 +57,7 @@ class TextAnalyzer:
 
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
         """Analyze comments for bot-like patterns."""
-        self._ensure_nltk_resources()  # Lazy load NLTK resources
-
+        
         if not comments:
             logger.warning("No comments provided for analysis")
             return self._get_empty_metrics()

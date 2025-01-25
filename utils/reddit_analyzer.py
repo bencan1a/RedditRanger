@@ -1,10 +1,11 @@
 import praw
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 import os
 from prawcore.exceptions import ResponseException, OAuthException
 import logging
 from typing import Optional, Dict, Union, Tuple, List
+from functools import lru_cache
 
 # Configure logging
 logging.basicConfig(
@@ -17,6 +18,8 @@ class RedditAnalyzer:
     _instance = None
     _initialized = False
     _reddit_client = None
+    _cache = {}
+    _cache_timeout = timedelta(minutes=5)
 
     def __new__(cls, client_id: Optional[str] = None, client_secret: Optional[str] = None):
         if cls._instance is None:
@@ -51,15 +54,35 @@ class RedditAnalyzer:
                 raise
         return self._reddit_client
 
-    def _fetch_user_content(self, user, content_type: str = 'comments', limit: Optional[int] = None) -> List[Dict]:
-        """Fetch either comments or submissions for a user."""
+    def _get_cached_data(self, username: str) -> tuple:
+        """Get cached user data if available and not expired"""
+        if username in self._cache:
+            data, timestamp = self._cache[username]
+            if datetime.now(timezone.utc) - timestamp < self._cache_timeout:
+                return data
+        return None
+
+    def _cache_data(self, username: str, data: tuple):
+        """Cache user data with timestamp"""
+        self._cache[username] = (data, datetime.now(timezone.utc))
+        # Cleanup old cache entries
+        current_time = datetime.now(timezone.utc)
+        self._cache = {
+            k: v for k, v in self._cache.items()
+            if current_time - v[1] < self._cache_timeout
+        }
+
+    @lru_cache(maxsize=100)
+    def _fetch_user_content(self, username: str, content_type: str = 'comments', limit: int = None) -> List[Dict]:
+        """Cached version of content fetching"""
+        user = self.reddit.redditor(username)
         content_list = []
         one_year_ago = datetime.now(timezone.utc).timestamp() - (365 * 24 * 60 * 60)
 
         try:
             iterator = user.comments.new(limit=limit) if content_type == 'comments' else user.submissions.new(limit=limit)
 
-            logger.info(f"Fetching {content_type} for user {user.name}")
+            logger.info(f"Fetching {content_type} for user {username}")
             for item in iterator:
                 if item.created_utc < one_year_ago:
                     break
@@ -90,7 +113,11 @@ class RedditAnalyzer:
             return []
 
     def get_user_data(self, username: str) -> Tuple[Dict, pd.DataFrame, pd.DataFrame]:
-        """Get user data including both comments and submissions."""
+        """Get user data with caching"""
+        cached_data = self._get_cached_data(username)
+        if cached_data:
+            return cached_data
+
         try:
             logger.info(f"Analyzing user: {username}")
             user = self.reddit.redditor(username)
@@ -104,16 +131,19 @@ class RedditAnalyzer:
             }
 
             # Fetch both comments and submissions
-            comments = self._fetch_user_content(user, 'comments')
-            submissions = self._fetch_user_content(user, 'submissions')
+            comments = self._fetch_user_content(username, 'comments')
+            submissions = self._fetch_user_content(username, 'submissions')
 
             logger.info(f"Found {len(comments)} comments and {len(submissions)} submissions")
 
-            return (
+            result = (
                 user_data,
                 pd.DataFrame(comments),
                 pd.DataFrame(submissions)
             )
+
+            self._cache_data(username, result)
+            return result
 
         except ResponseException as e:
             if e.response.status_code == 404:
@@ -122,7 +152,8 @@ class RedditAnalyzer:
                 raise Exception(f"Access to user '{username}' data is forbidden")
             raise Exception(f"Error fetching user data: {str(e)}")
         except Exception as e:
-            raise Exception(f"Error analyzing user: {str(e)}")
+            logger.error(f"Error analyzing user {username}: {str(e)}")
+            raise
 
     def analyze_activity_patterns(self, comments_df: pd.DataFrame, submissions_df: pd.DataFrame = None) -> Dict:
         """Analyze activity patterns from both comments and submissions."""
