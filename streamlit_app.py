@@ -171,6 +171,27 @@ def load_css():
         }
 
 
+        .mentat-litany {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            color: #FFB74D;
+            text-align: center;
+            padding: 2rem;
+            margin: 1rem 0;
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+            border: 1px solid rgba(255, 152, 0, 0.1);
+            border-radius: 8px;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #FF9800, 0 0 10px #FF9800;
+            }
+            to {
+                text-shadow: 0 0 10px #FF9800, 0 0 20px #FF9800;
+            }
+        }
         </style>
 
         <!-- Add shader code -->
@@ -283,37 +304,50 @@ def get_risk_class(risk_score):
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user and return their analysis results."""
     try:
-        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
-        activity_patterns = reddit_analyzer.analyze_activity_patterns(
-            comments_df, submissions_df)
+        litany_placeholder = st.empty()
+        litany_cycle = cycle_litany()
 
-        # Enhanced text analysis with timestamps
-        text_metrics = text_analyzer.analyze_comments(
-            comments_df['body'].tolist() if not comments_df.empty else [],
-            comments_df['created_utc'].tolist()
-            if not comments_df.empty else None)
+        while True:
+            try:
+                litany_placeholder.markdown(f'<div class="mentat-litany">{next(litany_cycle)}</div>', unsafe_allow_html=True)
+                time.sleep(2)
 
-        final_score, component_scores = account_scorer.calculate_score(
-            user_data, activity_patterns, text_metrics)
+                user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+                activity_patterns = reddit_analyzer.analyze_activity_patterns(
+                    comments_df, submissions_df)
 
-        return {
-            'username': username,
-            'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
-            'karma': user_data['comment_karma'] + user_data['link_karma'],
-            'risk_score': (1 - final_score) * 100,
-            'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
-            'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
-                                             if k != 'ml_risk_score') /
-                                     len([k for k in component_scores
-                                         if k != 'ml_risk_score'])) * 100,
-            'user_data': user_data,
-            'activity_patterns': activity_patterns,
-            'text_metrics': text_metrics,
-            'component_scores': component_scores,
-            'comments_df': comments_df,
-            'submissions_df': submissions_df,
-            'bot_probability': text_metrics.get('bot_probability', 0) * 100
-        }
+                text_metrics = text_analyzer.analyze_comments(
+                    comments_df['body'].tolist() if not comments_df.empty else [],
+                    comments_df['created_utc'].tolist()
+                    if not comments_df.empty else None)
+
+                final_score, component_scores = account_scorer.calculate_score(
+                    user_data, activity_patterns, text_metrics)
+
+                litany_placeholder.empty()
+                return {
+                    'username': username,
+                    'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
+                    'karma': user_data['comment_karma'] + user_data['link_karma'],
+                    'risk_score': (1 - final_score) * 100,
+                    'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
+                    'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
+                                                 if k != 'ml_risk_score') /
+                                         len([k for k in component_scores
+                                             if k != 'ml_risk_score'])) * 100,
+                    'user_data': user_data,
+                    'activity_patterns': activity_patterns,
+                    'text_metrics': text_metrics,
+                    'component_scores': component_scores,
+                    'comments_df': comments_df,
+                    'submissions_df': submissions_df,
+                    'bot_probability': text_metrics.get('bot_probability', 0) * 100
+                }
+            except Exception as e:
+                if 'error' in str(e):
+                    raise e
+                litany_placeholder.markdown(f'<div class="mentat-litany">{next(litany_cycle)}</div>', unsafe_allow_html=True)
+                time.sleep(2)
     except Exception as e:
         return {'username': username, 'error': str(e)}
 
@@ -350,13 +384,10 @@ def main():
         username = st.text_input("Enter Reddit Username:", "")
         if username:
             try:
-                # Create a placeholder for the litany
                 litany_placeholder = st.empty()
                 litany_cycle = cycle_litany()
 
-                # Create a spinner that we'll update with litany
                 with st.spinner(''):
-                    # Update litany text while processing
                     while True:
                         try:
                             result = analyze_single_user(username, reddit_analyzer,
@@ -366,14 +397,13 @@ def main():
                             if 'error' in str(e):
                                 st.error(f"Error analyzing account: {str(e)}")
                                 return
-                        litany_placeholder.markdown(f"*{next(litany_cycle)}*")
-                        time.sleep(1)  # Cycle every second
+                        litany_placeholder.markdown(f'<div class="mentat-litany">{next(litany_cycle)}</div>', unsafe_allow_html=True)
+                        time.sleep(2)
 
                 if 'error' in result:
                     st.error(f"Error analyzing account: {result['error']}")
                     return
 
-                # Probabilities section - Single markdown call
                 risk_class = get_risk_class(result['risk_score'])
                 bot_prob = result['bot_probability']
                 bot_risk_class = get_risk_class(bot_prob)
@@ -413,7 +443,6 @@ def main():
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Overview sections - Single markdown call
                 overview_html = f"""
                     <div class="grid-container">
                         <div class="grid-item half-width">
@@ -425,7 +454,6 @@ def main():
                             <span class="section-heading">Top Subreddits</span>
                 """
 
-                # Add subreddit information
                 for subreddit, count in result['activity_patterns']['top_subreddits'].items():
                     overview_html += f"<p>{subreddit}: {count} posts</p>"
 
@@ -444,7 +472,6 @@ def main():
 
                 st.markdown(overview_html, unsafe_allow_html=True)
 
-                # Add charts after the HTML structure
                 col3, col4 = st.columns(2)
                 with col3:
                     activity_data = create_monthly_activity_table(
@@ -461,7 +488,6 @@ def main():
                         config={'displayModeBar': False})
 
 
-                # Bot Behavior Analysis - Single markdown call
                 st.markdown("""
                     <div class="grid-container">
                         <div class="grid-item full-width">
@@ -479,14 +505,12 @@ def main():
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Add bot analysis chart
                 st.plotly_chart(
                     create_bot_analysis_chart(result['text_metrics'],
                                              result['activity_patterns']),
                     use_container_width=True,
                     config={'displayModeBar': False})
 
-                # Row 6: Suspicious Patterns - Single markdown call
                 suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
                 patterns_html = "\n".join([
                     f"<tr><td>{pattern.replace('_', ' ').title()}</td><td>{count}%</td></tr>"
@@ -517,7 +541,6 @@ def main():
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Row 7: Divider - Single markdown call
                 st.markdown("""
                     <div class="grid-container">
                         <div class="grid-item full-width">
@@ -526,7 +549,6 @@ def main():
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Row 8: Feedback - Single markdown call
                 st.markdown("""
                     <div class="grid-container">
                         <div class="grid-item full-width">
@@ -566,7 +588,6 @@ def main():
         usernames = st.text_area(
             "Enter Reddit Usernames (one per line or comma-separated):", "")
         if usernames:
-            # Parse usernames
             usernames = [
                 u.strip() for u in usernames.replace(',', '\n').split('\n')
                 if u.strip()
@@ -589,7 +610,6 @@ def main():
 
                 status_text.text("Analysis complete!")
 
-                # Convert results to DataFrame for display
                 df = pd.DataFrame([{
                     'Username':
                     r.get('username'),
@@ -607,7 +627,6 @@ def main():
                 st.subheader("Bulk Analysis Results")
                 st.dataframe(df)
 
-                # Download results as CSV
                 csv = df.to_csv(index=False)
                 st.download_button(label="Download Results as CSV",
                                    data=csv,
