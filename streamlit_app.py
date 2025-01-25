@@ -156,16 +156,6 @@ def load_css():
             text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
         }
 
-        #sand-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-        }
-
-        /* Add semi-transparent overlay to improve text readability */
         .stApp {
             background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
         }
@@ -181,10 +171,10 @@ def load_css():
             background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
             border: 1px solid rgba(255, 152, 0, 0.1);
             border-radius: 8px;
-            animation: glow 1.5s ease-in-out infinite alternate;
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            animation: glow 1.5s ease-in-out infinite alternate;
         }
 
         .mentat-litany.visible {
@@ -193,7 +183,9 @@ def load_css():
         }
 
         .mentat-litany .char {
+            display: inline-block;
             opacity: 0;
+            transform: translateY(10px);
             animation: typeChar 0.1s ease-in-out forwards;
         }
 
@@ -218,41 +210,6 @@ def load_css():
                 box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
             }
         }
-
-        /* Add loading spinner style */
-        .mentat-spinner {
-            width: 40px;
-            height: 40px;
-            margin: 20px auto;
-            border: 3px solid rgba(255, 152, 0, 0.1);
-            border-top: 3px solid #FF9800;
-            border-radius: 50%;
-            animation: spin 1s ease-in-out infinite;
-            position: relative;
-        }
-
-        .mentat-spinner::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border: 3px solid transparent;
-            border-top: 3px solid rgba(255, 152, 0, 0.3);
-            border-radius: 50%;
-            animation: spin-reverse 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes spin-reverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
-        }
         </style>
 
         <script>
@@ -260,22 +217,23 @@ def load_css():
             const container = document.querySelector('.mentat-litany');
             if (!container) return;
 
+            // Clear and reset container
             container.innerHTML = '';
             container.classList.remove('visible');
 
-            // Add characters with delay
+            // Add characters one by one
             [...text].forEach((char, i) => {
                 const span = document.createElement('span');
-                span.textContent = char;
+                span.textContent = char === ' ' ? '\u00A0' : char;  // Use non-breaking space for spaces
                 span.className = 'char';
-                span.style.animationDelay = `${i * 50}ms`;
+                span.style.animationDelay = `${i * 50}ms`;  // 50ms delay between each character
                 container.appendChild(span);
             });
 
-            // Show container
-            requestAnimationFrame(() => {
+            // Show container after a brief delay
+            setTimeout(() => {
                 container.classList.add('visible');
-            });
+            }, 100);
         }
         </script>
 
@@ -378,6 +336,7 @@ def load_css():
         unsafe_allow_html=True)
 
 
+
 def get_risk_class(risk_score):
     if risk_score > 70:
         return "high-risk"
@@ -397,15 +356,14 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                 # Show the current litany line with animation
                 litany_text = next(litany_cycle)
                 litany_placeholder.markdown(f"""
-                    <div class="mentat-spinner"></div>
-                    <div class="mentat-litany visible">
+                    <div class="mentat-litany">
                         {litany_text}
                     </div>
                     <script>
                         animateText("{litany_text}");
                     </script>
                 """, unsafe_allow_html=True)
-                time.sleep(2)
+                time.sleep(2)  # Wait for 2 seconds between transitions
 
                 user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
                 activity_patterns = reddit_analyzer.analyze_activity_patterns(
@@ -442,10 +400,12 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                 if 'error' in str(e):
                     raise e
                 litany_placeholder.markdown(f"""
-                    <div class="mentat-spinner"></div>
-                    <div class="mentat-litany visible">
+                    <div class="mentat-litany">
                         {next(litany_cycle)}
                     </div>
+                    <script>
+                        animateText("{next(litany_cycle)}");
+                    </script>
                 """, unsafe_allow_html=True)
                 time.sleep(2)
     except Exception as e:
@@ -498,8 +458,7 @@ def main():
                                 st.error(f"Error analyzing account: {str(e)}")
                                 return
                         litany_placeholder.markdown(f"""
-                            <div class="mentat-spinner"></div>
-                            <div class="mentat-litany visible">
+                            <div class="mentat-litany">
                                 {next(litany_cycle)}
                             </div>
                         """, unsafe_allow_html=True)
