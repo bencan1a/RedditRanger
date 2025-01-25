@@ -16,7 +16,6 @@ def load_css():
         <style>
         .grid-container {
             display: flex;
-            flex-wrap: wrap;
             gap: 20px;
             width: 100%;
             align-items: stretch; /* Ensure items in a row have same height */
