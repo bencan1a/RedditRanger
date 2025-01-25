@@ -14,16 +14,19 @@ class TextAnalyzer:
     def __init__(self):
         try:
             logger.info("Initializing NLTK resources...")
-            # Download all required NLTK data
-            nltk.download(['punkt', 'stopwords'], quiet=True)
+            # Download required NLTK data first
+            nltk.download('punkt')
+            nltk.download('stopwords')
 
-            # Initialize tokenizer using punkt
+            # Now initialize stopwords after ensuring they're downloaded
             self.stop_words = set(stopwords.words('english'))
             self.vectorizer = TfidfVectorizer()
             logger.info("NLTK initialization complete")
         except Exception as e:
             logger.error(f"Error initializing NLTK: {str(e)}")
-            raise
+            # Provide fallback empty stopwords if initialization fails
+            self.stop_words = set()
+            self.vectorizer = TfidfVectorizer()
 
     def analyze_comments(self, comments):
         if not comments:

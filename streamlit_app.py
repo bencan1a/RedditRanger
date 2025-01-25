@@ -82,7 +82,7 @@ def main():
 
     load_css()
 
-    # Title section with Dune-inspired description
+    # Title section
     st.title("Thinking Machine Detector")
     st.markdown("""
     <div class='intro-text'>
@@ -110,7 +110,7 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Display risk score prominently with reduced size (CSS handles this)
+                    # Display risk score prominently
                     risk_class = get_risk_class(result['risk_score'])
                     st.markdown(f"""
                         <div class='risk-score {risk_class}'>
@@ -118,20 +118,45 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # Account overview and feedback
-                    col1, col2 = st.columns([1, 2])
+                    # Overview and Risk Analysis section
+                    overview_cols = st.columns([1, 2])
 
-                    with col1:
-                        st.markdown("""
-                        <div class='account-overview'>
-                            <h3>Account Overview</h3>
-                            <div class='overview-content'>
-                        """, unsafe_allow_html=True)
+                    with overview_cols[0]:
+                        st.subheader("Account Overview")
                         st.write(f"Account Age: {result['account_age']}")
                         st.write(f"Total Karma: {result['karma']:,}")
 
-                        # Feedback section
+                    with overview_cols[1]:
+                        st.plotly_chart(
+                            create_score_radar_chart(result['component_scores']),
+                            use_container_width=True,
+                            config={'displayModeBar': False}
+                        )
+
+                    # Activity and Subreddits section
+                    activity_cols = st.columns(2)
+
+                    with activity_cols[0]:
+                        st.plotly_chart(
+                            create_monthly_activity_chart(result['comments_df']),
+                            use_container_width=True,
+                            config={'displayModeBar': False}
+                        )
+
+                    with activity_cols[1]:
+                        st.plotly_chart(
+                            create_subreddit_distribution(result['activity_patterns']['top_subreddits']),
+                            use_container_width=True,
+                            config={'displayModeBar': False}
+                        )
+
+                    # Feedback section
+                    feedback_cols = st.columns([2, 1])
+                    with feedback_cols[0]:
                         st.subheader("Improve the Abominable Intelligence")
+                        st.write("Help us improve our detection capabilities by marking legitimate human accounts.")
+
+                    with feedback_cols[1]:
                         if st.button("Mark as Human Account"):
                             account_scorer.ml_analyzer.add_training_example(
                                 result['user_data'],
@@ -140,46 +165,6 @@ def main():
                                 is_legitimate=True
                             )
                             st.success("Thank you for your feedback! This will help our Abominable Intelligence become more accurate.")
-                        st.markdown("</div></div>", unsafe_allow_html=True)
-
-                    # Charts section with proper spacing and dividers
-                    charts_container = st.container()
-                    with charts_container:
-                        col1, div1, col2, div2, col3 = st.columns([6, 0.2, 6, 0.2, 6])
-
-                        # Vertical dividers
-                        div1.markdown('<div class="chart-divider"></div>', unsafe_allow_html=True)
-                        div2.markdown('<div class="chart-divider"></div>', unsafe_allow_html=True)
-
-                        # Radar Chart
-                        with col1:
-                            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                            st.plotly_chart(
-                                create_score_radar_chart(result['component_scores']),
-                                use_container_width=True,
-                                config={'displayModeBar': False}
-                            )
-                            st.markdown('</div>', unsafe_allow_html=True)
-
-                        # Monthly Activity Timeline
-                        with col2:
-                            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                            st.plotly_chart(
-                                create_monthly_activity_chart(result['comments_df']),
-                                use_container_width=True,
-                                config={'displayModeBar': False}
-                            )
-                            st.markdown('</div>', unsafe_allow_html=True)
-
-                        # Subreddit Distribution
-                        with col3:
-                            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                            st.plotly_chart(
-                                create_subreddit_distribution(result['activity_patterns']['top_subreddits']),
-                                use_container_width=True,
-                                config={'displayModeBar': False}
-                            )
-                            st.markdown('</div>', unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"Error analyzing account: {str(e)}")

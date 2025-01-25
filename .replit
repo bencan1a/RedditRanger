@@ -17,26 +17,11 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Reddit Analyzer"
+args = "Reddit Analyzer API"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Reddit Analyzer API"
-
-[[workflows.workflow]]
-name = "Reddit Analyzer"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run streamlit_app.py --server.port 5000"
-waitForPort = 5000
+args = "Reddit Analyzer"
 
 [[workflows.workflow]]
 name = "Reddit Analyzer API"
@@ -52,6 +37,21 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5001
+
+[[workflows.workflow]]
+name = "Reddit Analyzer"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run streamlit_app.py --server.port 5000"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000

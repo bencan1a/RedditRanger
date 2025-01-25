@@ -19,7 +19,7 @@ def create_score_radar_chart(scores):
 
     fig.update_layout(
         title={
-            'text': 'Account Risk Analysis',
+            'text': 'Risk Analysis',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -78,7 +78,7 @@ def create_monthly_activity_chart(comments_df):
 
     fig.update_layout(
         title={
-            'text': 'Monthly Activity Timeline',
+            'text': 'Activity Over Time',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -91,7 +91,8 @@ def create_monthly_activity_chart(comments_df):
             tickangle=45,
             nticks=12,
             showline=True,
-            linecolor='rgba(255, 255, 255, 0.2)'
+            linecolor='rgba(255, 255, 255, 0.2)',
+            tickformat="%b %y"  # Format as "Jan 25"
         ),
         yaxis=dict(
             title="Number of Posts",
@@ -124,7 +125,7 @@ def create_subreddit_distribution(top_subreddits):
 
     fig.update_layout(
         title={
-            'text': 'Top Subreddits Distribution',
+            'text': 'Top Subreddits',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
