@@ -250,15 +250,6 @@ def load_css():
             letter-spacing: 0.05em;
         }
 
-        .score-help {
-            font-family: 'Space Mono', monospace;
-            font-size: 1rem;
-            line-height: 1.5;
-            color: #FFB74D;
-            margin-top: 0.5rem;
-        }
-
-
         .info-icon {
             font-size: 1rem;
             color: #FFB74D;
@@ -668,14 +659,13 @@ def main():
                             st.markdown(f"""
                                 <div class="risk-score {risk_class}">
                                     {result['risk_score']:.1f}% Thinking Machine Probability
-                                </div>
-                            """, unsafe_allow_html=True)
-                            st.markdown("""
-                                <div class="score-help">
-                                    • Account age, karma & activity (25%)
-                                    • Posting patterns & subreddit diversity (25%)
-                                    • Comment analysis & vocabulary (25%)
-                                    • ML-based behavior assessment (25%)
+                                    <span class="info-icon">ⓘ<span class="tooltip">
+                                        Score breakdown:
+                                        • Account age, karma & activity (25%)
+                                        • Posting patterns & subreddit diversity (25%)
+                                        • Comment analysis & vocabulary (25%)
+                                        • ML-based behavior assessment (25%)
+                                    </span></span>
                                 </div>
                             """, unsafe_allow_html=True)
 
@@ -685,15 +675,14 @@ def main():
                             st.markdown(f"""
                                 <div class="risk-score {bot_risk_class}">
                                     {bot_prob:.1f}% Bot Probability
-                                </div>
-                            """, unsafe_allow_html=True)
-                            st.markdown("""
-                                <div class="score-help">
-                                    • Repetitive phrase patterns
-                                    • Template response detection
-                                    • Timing analysis
-                                    • Language complexity
-                                    • Suspicious behavior patterns
+                                    <span class="info-icon">ⓘ<span class="tooltip">
+                                        Based on:
+                                        • Repetitive phrase patterns
+                                        • Template response detection
+                                        • Timing analysis
+                                        • Language complexity
+                                        • Suspicious behavior patterns
+                                    </span></span>
                                 </div>
                             """, unsafe_allow_html=True)
 
