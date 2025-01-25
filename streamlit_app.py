@@ -487,14 +487,12 @@ def main():
             if username != st.session_state.previous_username:
                 reset_analysis_state()
                 st.session_state.previous_username = username
-                # Clear previous results
-                results_container.empty()
 
             # Start new analysis if needed
             if username and not st.session_state.analysis_started and not st.session_state.analysis_complete:
                 try:
                     st.session_state.analysis_started = True
-                    # Clear any previous results while loading
+                    # Only clear previous results when starting new analysis
                     results_container.empty()
 
                     result_queue = Queue()
@@ -522,7 +520,7 @@ def main():
                                 else:
                                     st.session_state.analysis_result = result
                                 st.session_state.analysis_complete = True
-                                loading_placeholder.empty()  # Clear loading animation
+                                loading_placeholder.empty()
                                 break
                             except Empty:
                                 pass  # No result yet
