@@ -236,14 +236,14 @@ class TextAnalyzer:
             return patterns
 
     def _calculate_bot_probability(self, metrics: Dict) -> float:
-        """Calculate final bot probability with aggressive weighting."""
+        """Calculate final bot probability with balanced weighting."""
         try:
-            # Primary metrics weights
+            # Primary metrics weights - adjusted for less aggressive scoring
             weights = {
-                'repetition_score': 0.3,     # Increased weight for repetitive content
-                'template_score': 0.25,       # Template/pattern matching
-                'complexity_score': 0.2,      # Language complexity
-                'timing_score': 0.25          # Timing patterns
+                'repetition_score': 0.25,     # Reduced from 0.3
+                'template_score': 0.2,        # Reduced from 0.25
+                'complexity_score': 0.15,     # Reduced from 0.2
+                'timing_score': 0.15          # Reduced from 0.25
             }
 
             # Calculate primary score
@@ -253,6 +253,9 @@ class TextAnalyzer:
             for key, weight in weights.items():
                 if key in metrics and metrics[key] is not None:
                     score = metrics[key]
+                    # Apply dampening to reduce false positives
+                    if score < 0.3:  # Low scores get reduced further
+                        score = score * 0.5
                     primary_score += score * weight
                     weight_sum += weight
                     logger.info(f"{key}: {score} (weight: {weight})")
@@ -263,20 +266,19 @@ class TextAnalyzer:
             # Normalize primary score
             primary_score = primary_score / weight_sum
 
-            # Calculate suspicious patterns score
+            # Calculate suspicious patterns score with reduced impact
             suspicious_patterns = metrics.get('suspicious_patterns', {})
             if suspicious_patterns:
                 pattern_score = sum(val/100 for val in suspicious_patterns.values()) / len(suspicious_patterns)
+                # Dampen pattern score to reduce impact
+                pattern_score = pattern_score * 0.5
             else:
                 pattern_score = 0.0
 
-            # Combine scores with higher weight on primary metrics
-            final_score = primary_score * 0.7 + pattern_score * 0.3
+            # Combine scores with reduced pattern impact
+            final_score = primary_score * 0.8 + pattern_score * 0.2
 
-            # Amplify scores above certain thresholds
-            if final_score > 0.6:
-                final_score = min(1.0, final_score * 1.2)
-
+            # Remove aggressive amplification
             logger.info(f"Primary score: {primary_score}, Pattern score: {pattern_score}, Final score: {final_score}")
             return final_score
 

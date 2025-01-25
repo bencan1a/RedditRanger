@@ -72,6 +72,25 @@ def load_css():
         .high-risk { background-color: rgba(255, 0, 0, 0.1); }
         .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
         .low-risk { background-color: rgba(0, 255, 0, 0.1); }
+        .pattern-table {
+            width: 100%;
+            margin: 1rem 0;
+            border-collapse: collapse;
+        }
+        .pattern-table th, .pattern-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pattern-table th {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .help-text {
+            font-size: 0.9rem;
+            color: #E6D5B8;
+            margin: 0.5rem 0 1rem 0;
+            font-style: italic;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -231,7 +250,18 @@ def main():
 
                     with activity_cols[1]:
                         st.subheader("Bot Behavior Analysis")
-                        # Display the new bot analysis chart
+                        st.markdown("""
+                        <div class='help-text'>
+                        This chart shows three key aspects of potential automated behavior:
+                        • Text Patterns: How repetitive and template-like the writing is
+                        • Timing Patterns: If posting follows suspicious timing patterns
+                        • Suspicious Patterns: Frequency of bot-like behavior markers
+
+                        Higher scores (closer to 1.0) indicate more bot-like characteristics.
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        # Display the bot analysis chart
                         st.plotly_chart(
                             create_bot_analysis_chart(result['text_metrics'], result['activity_patterns']),
                             use_container_width=True,
@@ -239,18 +269,29 @@ def main():
                         )
 
                         st.subheader("Suspicious Patterns Detected")
+                        st.markdown("""
+                        <div class='help-text'>
+                        Shows the percentage of comments that contain specific patterns often associated with bots:
+                        • Identical Greetings: Generic hello/hi messages
+                        • URL Patterns: Frequency of link sharing
+                        • Promotional Phrases: Marketing-like language
+                        • Generic Responses: Very basic/template-like replies
+                        </div>
+                        """, unsafe_allow_html=True)
+
                         suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
 
                         # Create a formatted display of suspicious patterns
-                        patterns_md = """
-                        | Pattern | Count |
-                        |---------|-------|
-                        """
-                        for pattern, count in suspicious_patterns.items():
-                            pattern_name = pattern.replace('_', ' ').title()
-                            patterns_md += f"| {pattern_name} | {count} |\n"
-
-                        st.markdown(patterns_md)
+                        st.markdown("""
+                        <table class='pattern-table'>
+                        <tr>
+                            <th>Pattern Type</th>
+                            <th>Frequency (%)</th>
+                        </tr>
+                        """ + "\n".join([
+                            f"<tr><td>{pattern.replace('_', ' ').title()}</td><td>{count}%</td></tr>"
+                            for pattern, count in suspicious_patterns.items()
+                        ]) + "</table>", unsafe_allow_html=True)
 
 
                     # Top Subreddits section remains in its original location
