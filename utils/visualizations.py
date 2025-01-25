@@ -13,7 +13,7 @@ def create_score_radar_chart(scores):
     logger.debug(f"Creating radar chart with scores: {scores}")
 
     # Filter out non-score keys and format names
-    score_items = {k.replace('_score', ''): v 
+    score_items = {k.replace('_score', ''): (1 - v)  # Invert scores for display
                   for k, v in scores.items() 
                   if k.endswith('_score') and isinstance(v, (int, float))}
 
@@ -44,9 +44,9 @@ def create_score_radar_chart(scores):
         r=values,
         theta=categories,
         fill='toself',
-        name='Account Scores',
-        fillcolor='rgba(99, 110, 250, 0.5)',
-        line=dict(color='rgb(99, 110, 250)', width=2)
+        name='Risk Factors',  # Updated name to reflect inverted scores
+        fillcolor='rgba(239, 85, 59, 0.5)',  # Changed color to indicate risk
+        line=dict(color='rgb(239, 85, 59)', width=2)
     ))
 
     fig.update_layout(
