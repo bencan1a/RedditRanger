@@ -47,8 +47,9 @@ class RedditAnalyzer:
                 if item.created_utc < one_year_ago:
                     break
 
+                created_time = datetime.fromtimestamp(item.created_utc, tz=timezone.utc)
                 content_dict = {
-                    'created_utc': datetime.fromtimestamp(item.created_utc, tz=timezone.utc),
+                    'created_utc': created_time,
                     'score': item.score,
                     'subreddit': str(item.subreddit),
                 }
@@ -106,47 +107,105 @@ class RedditAnalyzer:
         except Exception as e:
             raise Exception(f"Error analyzing user: {str(e)}")
 
-    def analyze_activity_patterns(self, comments_df: pd.DataFrame, submissions_df: pd.DataFrame) -> Dict:
+    def analyze_activity_patterns(self, comments_df: pd.DataFrame, submissions_df: pd.DataFrame = None) -> Dict:
         """Analyze activity patterns from both comments and submissions."""
-        if comments_df.empty and submissions_df.empty:
+        if comments_df.empty and (submissions_df is None or submissions_df.empty):
             return {
                 'total_comments': 0,
                 'total_submissions': 0,
                 'unique_subreddits': 0,
                 'avg_score': 0,
                 'activity_hours': {},
-                'top_subreddits': {}
+                'top_subreddits': {},
+                'bot_patterns': {
+                    'regular_intervals': 0,
+                    'rapid_responses': 0,
+                    'automated_timing': 0
+                }
             }
 
-        # Combine subreddits from both comments and submissions for analysis
+        # Analyze comment timings for bot-like patterns
+        bot_patterns = self._analyze_timing_patterns(comments_df)
+
+        # Original activity pattern analysis
         all_subreddits = pd.concat([
             comments_df['subreddit'] if not comments_df.empty else pd.Series(),
-            submissions_df['subreddit'] if not submissions_df.empty else pd.Series()
+            submissions_df['subreddit'] if submissions_df is not None and not submissions_df.empty else pd.Series()
         ])
 
         # Log activity stats
         logger.info(f"Total comments: {len(comments_df)}")
-        logger.info(f"Total submissions: {len(submissions_df)}")
+        logger.info(f"Total submissions: {len(submissions_df) if submissions_df is not None else 0}")
         logger.info(f"Unique subreddits: {all_subreddits.nunique()}")
 
         # Calculate average scores
         comments_avg = comments_df['score'].mean() if not comments_df.empty else 0
-        submissions_avg = submissions_df['score'].mean() if not submissions_df.empty else 0
+        submissions_avg = submissions_df['score'].mean() if submissions_df is not None and not submissions_df.empty else 0
 
         # Combine timestamps for activity analysis
         all_times = pd.concat([
             comments_df['created_utc'] if not comments_df.empty else pd.Series(),
-            submissions_df['created_utc'] if not submissions_df.empty else pd.Series()
+            submissions_df['created_utc'] if submissions_df is not None and not submissions_df.empty else pd.Series()
         ])
 
         patterns = {
             'total_comments': len(comments_df),
-            'total_submissions': len(submissions_df),
+            'total_submissions': len(submissions_df) if submissions_df is not None else 0,
             'unique_subreddits': all_subreddits.nunique(),
             'avg_comment_score': comments_avg,
             'avg_submission_score': submissions_avg,
             'activity_hours': all_times.dt.hour.value_counts().to_dict(),
-            'top_subreddits': all_subreddits.value_counts().head(5).to_dict()
+            'top_subreddits': all_subreddits.value_counts().head(5).to_dict(),
+            'bot_patterns': bot_patterns
         }
 
         return patterns
+
+    def _analyze_timing_patterns(self, comments_df: pd.DataFrame) -> Dict:
+        """Analyze comment timing patterns for bot-like behavior."""
+        bot_patterns = {
+            'regular_intervals': 0,
+            'rapid_responses': 0,
+            'automated_timing': 0
+        }
+
+        if comments_df.empty:
+            return bot_patterns
+
+        try:
+            # Sort comments by timestamp
+            comments_df = comments_df.sort_values('created_utc')
+
+            # Calculate time differences between consecutive comments
+            time_diffs = comments_df['created_utc'].diff().dropna()
+
+            if len(time_diffs) < 2:
+                return bot_patterns
+
+            # Convert to seconds
+            time_diffs_seconds = time_diffs.dt.total_seconds()
+
+            # Check for regular intervals
+            std_dev = time_diffs_seconds.std()
+            mean_diff = time_diffs_seconds.mean()
+            if mean_diff > 0:
+                variation_coef = std_dev / mean_diff
+                if variation_coef < 0.5:  # Very regular posting pattern
+                    bot_patterns['regular_intervals'] = 1
+
+            # Check for rapid responses (less than 30 seconds between comments)
+            rapid_responses = (time_diffs_seconds < 30).sum()
+            if rapid_responses > len(time_diffs) * 0.3:  # More than 30% are rapid responses
+                bot_patterns['rapid_responses'] = 1
+
+            # Check for automated timing patterns (posting at exact minute marks)
+            seconds_distribution = comments_df['created_utc'].dt.second.value_counts()
+            if len(seconds_distribution) < 10 and len(comments_df) > 10:
+                # Comments cluster around specific seconds
+                bot_patterns['automated_timing'] = 1
+
+            return bot_patterns
+
+        except Exception as e:
+            logger.error(f"Error analyzing timing patterns: {str(e)}")
+            return bot_patterns

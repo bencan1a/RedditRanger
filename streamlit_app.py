@@ -6,7 +6,8 @@ from utils.visualizations import (
     create_score_radar_chart,
     create_monthly_activity_table,
     create_subreddit_distribution,
-    create_monthly_activity_chart # Added import for the new chart function
+    create_monthly_activity_chart,
+    create_bot_analysis_chart # Added import for the new chart function
 )
 import pandas as pd
 
@@ -87,8 +88,11 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
         activity_patterns = reddit_analyzer.analyze_activity_patterns(comments_df, submissions_df)
 
-        # Analyze text only from comments
-        text_metrics = text_analyzer.analyze_comments(comments_df['body'].tolist() if not comments_df.empty else [])
+        # Enhanced text analysis with timestamps
+        text_metrics = text_analyzer.analyze_comments(
+            comments_df['body'].tolist() if not comments_df.empty else [],
+            comments_df['created_utc'].tolist() if not comments_df.empty else None
+        )
 
         final_score, component_scores = account_scorer.calculate_score(
             user_data, activity_patterns, text_metrics
@@ -107,7 +111,8 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             'text_metrics': text_metrics,
             'component_scores': component_scores,
             'comments_df': comments_df,
-            'submissions_df': submissions_df
+            'submissions_df': submissions_df,
+            'bot_probability': text_metrics.get('bot_probability', 0) * 100
         }
     except Exception as e:
         return {
@@ -171,6 +176,28 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
+                    # Display bot probability score
+                    bot_prob = result['bot_probability']
+                    risk_class = get_risk_class(bot_prob)
+                    tooltip_text = """
+                    Bot Probability Score is calculated using:
+                    • Repetitive phrase patterns
+                    • Template response detection
+                    • Timing analysis
+                    • Language complexity
+                    • Suspicious behavior patterns
+
+                    Higher score = more bot-like patterns"""
+
+                    st.markdown(f"""
+                        <div class='risk-score {risk_class}'>
+                            {bot_prob:.1f}% Bot Probability
+                            <span class='info-icon'>ⓘ
+                                <span class='tooltip'>{tooltip_text}</span>
+                            </span>
+                        </div>
+                    """, unsafe_allow_html=True)
+
                     # Overview and Risk Analysis section
                     overview_cols = st.columns([1, 2])
 
@@ -186,7 +213,7 @@ def main():
                             config={'displayModeBar': False}
                         )
 
-                    # Activity and Subreddits section
+                    # Activity and Subreddits section & Bot Analysis Section
                     activity_cols = st.columns(2)
 
                     with activity_cols[0]:
@@ -203,11 +230,38 @@ def main():
                         )
 
                     with activity_cols[1]:
+                        st.subheader("Bot Behavior Analysis")
+                        # Display the new bot analysis chart
+                        st.plotly_chart(
+                            create_bot_analysis_chart(result['text_metrics'], result['activity_patterns']),
+                            use_container_width=True,
+                            config={'displayModeBar': False}
+                        )
+
+                        st.subheader("Suspicious Patterns Detected")
+                        suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
+
+                        # Create a formatted display of suspicious patterns
+                        patterns_md = """
+                        | Pattern | Count |
+                        |---------|-------|
+                        """
+                        for pattern, count in suspicious_patterns.items():
+                            pattern_name = pattern.replace('_', ' ').title()
+                            patterns_md += f"| {pattern_name} | {count} |\n"
+
+                        st.markdown(patterns_md)
+
+
+                    # Top Subreddits section remains in its original location
+
+                    with activity_cols[1]:
                         st.subheader("Top Subreddits")
                         for subreddit, count in result['activity_patterns']['top_subreddits'].items():
                             st.write(f"{subreddit}: {count} posts")
 
-                    # Feedback section
+                    # Feedback section remains in its original location
+
                     feedback_cols = st.columns([2, 1])
                     with feedback_cols[0]:
                         st.subheader("Improve the Abominable Intelligence")

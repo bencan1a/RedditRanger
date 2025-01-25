@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import logging
 from datetime import datetime, timezone
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -206,4 +207,78 @@ def create_activity_heatmap(activity_hours):
         margin=dict(t=50, b=20, l=20, r=20)
     )
     
+    return fig
+
+def create_bot_analysis_chart(text_metrics: Dict, activity_patterns: Dict) -> go.Figure:
+    """Create a comprehensive bot analysis visualization."""
+    # Combine all bot-related metrics
+    bot_metrics = {
+        'Text Patterns': {
+            'Repetitive Phrases': text_metrics.get('repetition_score', 0),
+            'Template Usage': text_metrics.get('template_score', 0),
+            'Language Complexity': text_metrics.get('complexity_score', 0),
+            'Copy-Paste Content': text_metrics.get('copy_paste_score', 0)
+        },
+        'Timing Patterns': {
+            'Regular Intervals': activity_patterns.get('bot_patterns', {}).get('regular_intervals', 0),
+            'Rapid Responses': activity_patterns.get('bot_patterns', {}).get('rapid_responses', 0),
+            'Automated Timing': activity_patterns.get('bot_patterns', {}).get('automated_timing', 0)
+        },
+        'Suspicious Patterns': {
+            'Generic Responses': text_metrics.get('suspicious_patterns', {}).get('generic_responses', 0) / 100,
+            'Promotional Content': text_metrics.get('suspicious_patterns', {}).get('promotional_phrases', 0) / 100,
+            'URL Patterns': text_metrics.get('suspicious_patterns', {}).get('url_patterns', 0) / 100
+        }
+    }
+
+    # Create figure with secondary y-axis
+    fig = go.Figure()
+
+    # Add traces for each category
+    colors = ['rgb(99, 110, 250)', 'rgb(239, 85, 59)', 'rgb(0, 204, 150)']
+
+    for i, (category, metrics) in enumerate(bot_metrics.items()):
+        values = list(metrics.values())
+        labels = list(metrics.keys())
+
+        fig.add_trace(go.Bar(
+            name=category,
+            x=labels,
+            y=values,
+            marker_color=colors[i]
+        ))
+
+    # Update layout
+    fig.update_layout(
+        title={
+            'text': 'Bot Behavior Analysis',
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(color='#E6D5B8')
+        },
+        barmode='group',
+        xaxis=dict(
+            title="Metrics",
+            tickangle=45,
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='#E6D5B8')
+        ),
+        yaxis=dict(
+            title="Score",
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='#E6D5B8'),
+            range=[0, 1]
+        ),
+        showlegend=True,
+        legend=dict(
+            font=dict(color='#E6D5B8'),
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(t=50, b=100, l=40, r=20)
+    )
+
     return fig
