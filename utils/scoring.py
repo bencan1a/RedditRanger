@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class AccountScorer:
     def __init__(self):
+        logger.debug("Initializing AccountScorer")
         self.ml_analyzer = MLAnalyzer()
         self.heuristics = {
             'account_age': AccountAgeHeuristic(),
@@ -25,22 +26,35 @@ class AccountScorer:
             'engagement': EngagementHeuristic(),
             'linguistic': LinguisticHeuristic()
         }
+        logger.debug("AccountScorer initialized with all heuristics")
 
     def _extract_karma_value(self, karma_data):
         """Safely extract karma value from potentially nested data"""
+        logger.debug(f"Extracting karma value from: {karma_data} (type: {type(karma_data)})")
+
         if isinstance(karma_data, (int, float)):
-            return float(karma_data)
+            value = float(karma_data)
+            logger.debug(f"Direct numeric value extracted: {value}")
+            return value
         elif isinstance(karma_data, dict):
             # If it's a dictionary, try to find a numeric value
+            logger.debug(f"Karma data is dictionary with keys: {karma_data.keys()}")
             for key in ['value', 'score', 'count']:
                 if key in karma_data and isinstance(karma_data[key], (int, float)):
-                    return float(karma_data[key])
+                    value = float(karma_data[key])
+                    logger.debug(f"Found numeric value in dict under key '{key}': {value}")
+                    return value
         elif isinstance(karma_data, str):
             # Try to convert string to float
             try:
-                return float(karma_data.replace(',', ''))
-            except (ValueError, TypeError):
+                value = float(karma_data.replace(',', ''))
+                logger.debug(f"Converted string to numeric value: {value}")
+                return value
+            except (ValueError, TypeError) as e:
+                logger.error(f"Failed to convert string to float: {e}")
                 pass
+
+        logger.warning("Could not extract valid karma value, returning 0.0")
         return 0.0
 
     def calculate_score(self, user_data, activity_patterns, text_metrics):
@@ -50,6 +64,7 @@ class AccountScorer:
             logger.info("=== Starting score calculation ===")
             logger.debug(f"Input user_data type: {type(user_data)}")
             logger.debug(f"Input user_data keys: {user_data.keys() if isinstance(user_data, dict) else 'Not a dict'}")
+            logger.debug(f"Raw user_data: {user_data}")
 
             # Initialize containers
             scores = {}
@@ -70,10 +85,14 @@ class AccountScorer:
                 key: user_data.get(key, default_value) 
                 for key, default_value in required_fields.items()
             }
+            logger.debug(f"Sanitized data: {sanitized_data}")
 
             # Extract karma values safely
+            logger.debug("Extracting karma values...")
             sanitized_data['comment_karma'] = self._extract_karma_value(user_data.get('comment_karma', 0))
             sanitized_data['link_karma'] = self._extract_karma_value(user_data.get('link_karma', 0))
+            logger.debug(f"Extracted comment_karma: {sanitized_data['comment_karma']}")
+            logger.debug(f"Extracted link_karma: {sanitized_data['link_karma']}")
 
             # Process heuristics
             logger.info("Processing heuristics...")

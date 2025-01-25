@@ -1,4 +1,5 @@
 import streamlit as st
+import logging
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
@@ -11,14 +12,24 @@ import pandas as pd
 import time
 import itertools
 import threading
-from queue import Queue, Empty  # Import both Queue and Empty
+from queue import Queue, Empty
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Initialize analyzers at the module level
 try:
+    logger.debug("Initializing analyzers...")
     reddit_analyzer = RedditAnalyzer()
     text_analyzer = TextAnalyzer()
     account_scorer = AccountScorer()
+    logger.debug("Analyzers initialized successfully")
 except Exception as e:
+    logger.error(f"Failed to initialize analyzers: {str(e)}", exc_info=True)
     st.error(f"Failed to initialize analyzers: {str(e)}")
 
 # Mentat Sapho Juice Litany
@@ -37,38 +48,63 @@ def cycle_litany():
 def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
     """Perform the analysis in a separate thread"""
     try:
+        logger.debug(f"Starting perform_analysis for user: {username}")
+
         # Set a timeout for the entire analysis
+        logger.debug("Fetching user data...")
         user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+
+        logger.debug(f"User data fetched. Type: {type(user_data)}")
+        logger.debug(f"User data contents: {user_data}")
 
         # Handle empty dataframes
         if comments_df.empty and submissions_df.empty:
+            logger.warning("No data found for user")
             result_queue.put(('error', 'No data found for this user'))
             return
 
+        logger.debug("Analyzing activity patterns...")
         activity_patterns = reddit_analyzer.analyze_activity_patterns(
             comments_df, submissions_df)
+        logger.debug(f"Activity patterns: {activity_patterns}")
 
         # Get comment texts safely
         comment_texts = comments_df['body'].tolist() if not comments_df.empty else []
         comment_times = comments_df['created_utc'].tolist() if not comments_df.empty else None
 
+        logger.debug("Analyzing comment texts...")
         text_metrics = text_analyzer.analyze_comments(comment_texts, comment_times)
+        logger.debug(f"Text metrics: {text_metrics}")
 
         # Create default text metrics if analysis fails
         if not text_metrics:
+            logger.warning("Text metrics analysis failed, using defaults")
             text_metrics = {
                 'vocab_size': 0,
                 'avg_similarity': 0.0,
                 'bot_probability': 0.0
             }
 
+        logger.debug("Calculating final score...")
         final_score, component_scores = account_scorer.calculate_score(
             user_data, activity_patterns, text_metrics)
+        logger.debug(f"Final score: {final_score}")
+        logger.debug(f"Component scores: {component_scores}")
+
+        # Log karma values before calculation
+        comment_karma = user_data.get('comment_karma', 0)
+        link_karma = user_data.get('link_karma', 0)
+        logger.debug(f"Comment karma: {comment_karma} (type: {type(comment_karma)})")
+        logger.debug(f"Link karma: {link_karma} (type: {type(link_karma)})")
+
+        # Calculate total karma with explicit type conversion
+        total_karma = int(comment_karma) + int(link_karma) if isinstance(comment_karma, (int, float)) and isinstance(link_karma, (int, float)) else 0
+        logger.debug(f"Total karma calculated: {total_karma}")
 
         result = {
             'username': username,
             'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
-            'karma': user_data['comment_karma'] + user_data['link_karma'],
+            'karma': total_karma,
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(v for k, v in component_scores.items()
@@ -84,14 +120,18 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             'bot_probability': text_metrics.get('bot_probability', 0) * 100
         }
 
+        logger.debug("Analysis complete, putting success result in queue")
         # Set result and mark as complete atomically
         result_queue.put(('success', result))
     except Exception as e:
+        logger.error(f"Error in perform_analysis: {str(e)}", exc_info=True)
         result_queue.put(('error', str(e)))
 
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user with background processing"""
     try:
+        logger.debug(f"Starting analysis for user: {username}")
+
         # Reset state for new analysis
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
@@ -99,6 +139,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
         # Create a queue for thread communication
         result_queue = Queue()
+        logger.debug("Created result queue")
 
         # Start analysis in background thread
         analysis_thread = threading.Thread(
@@ -107,6 +148,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             daemon=True
         )
         analysis_thread.start()
+        logger.debug("Started analysis thread")
 
         # Show loading animation while analysis runs
         placeholder = st.empty()
@@ -118,14 +160,17 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
             try:
                 # Check if result is available
                 try:
-                    status, result = result_queue.get(block=False)  # Non-blocking get
+                    status, result = result_queue.get(block=False)
+                    logger.debug(f"Got result from queue: status={status}")
                     if status == 'error':
+                        logger.error(f"Analysis error: {result}")
                         st.session_state.analysis_error = result
                     else:
+                        logger.debug("Analysis successful, storing result")
                         st.session_state.analysis_result = result
                     st.session_state.analysis_complete = True
                     break
-                except Empty:  # Use the imported Empty exception
+                except Empty:
                     # No result yet, continue with animation
                     pass
 
@@ -139,6 +184,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                 """, unsafe_allow_html=True)
                 time.sleep(1)
             except Exception as e:
+                logger.error(f"Error during analysis loop: {str(e)}", exc_info=True)
                 st.session_state.analysis_error = f"Error during analysis: {str(e)}"
                 st.session_state.analysis_complete = True
                 break
@@ -148,15 +194,20 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
         # Handle timeout
         if not st.session_state.analysis_complete:
+            logger.warning("Analysis timed out")
             st.session_state.analysis_error = "Analysis timed out. Please try again."
             st.session_state.analysis_complete = True
 
         # Return result or error
         if st.session_state.analysis_error:
+            logger.error(f"Returning error result: {st.session_state.analysis_error}")
             return {'username': username, 'error': st.session_state.analysis_error}
+
+        logger.debug("Returning successful analysis result")
         return st.session_state.analysis_result
 
     except Exception as e:
+        logger.error(f"Error in analyze_single_user: {str(e)}", exc_info=True)
         st.session_state.analysis_complete = True
         return {'username': username, 'error': str(e)}
 
@@ -512,7 +563,6 @@ def load_css():
         </script>
     """,
         unsafe_allow_html=True)
-
 
 
 def get_risk_class(risk_score):
