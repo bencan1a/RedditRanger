@@ -2,11 +2,6 @@ import streamlit as st
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
-from utils.visualizations import (create_score_radar_chart,
-                                  create_monthly_activity_table,
-                                  create_subreddit_distribution,
-                                  create_monthly_activity_chart,
-                                  create_bot_analysis_chart)
 import pandas as pd
 import time
 import itertools
@@ -27,140 +22,6 @@ def cycle_litany():
 def load_css():
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
-
-        .grid-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            align-items: stretch;
-            margin-bottom: 20px;
-            flex-direction: row;
-        }
-        .grid-item {
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-            border: 1px solid rgba(255, 152, 0, 0.1);
-            border-radius: 8px;
-            padding: 20px;
-            box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
-            backdrop-filter: blur(8px);
-        }
-        .grid-item.half-width { flex: 0 0 50%; }
-        .grid-item.full-width { flex: 0 0 100%; }
-        .grid-item.quarter-width { flex: 0 0 25%; }
-
-        .risk-score {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.8rem;
-            text-align: center;
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin: 0;
-            text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
-            letter-spacing: 0.05em;
-        }
-
-        .info-icon {
-            font-size: 1rem;
-            color: #FFB74D;
-            margin-left: 8px;
-            cursor: help;
-            display: inline-block;
-            position: relative;
-        }
-
-        .tooltip {
-            visibility: hidden;
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
-            color: #FFB74D;
-            text-align: left;
-            padding: 12px 16px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 152, 0, 0.2);
-            position: absolute;
-            z-index: 1;
-            width: 280px;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -140px;
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            transform: translateY(10px);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .info-icon:hover .tooltip {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .high-risk { 
-            background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
-            border: 1px solid rgba(255, 50, 0, 0.2);
-        }
-        .medium-risk { 
-            background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
-            border: 1px solid rgba(255, 152, 0, 0.2);
-        }
-        .low-risk { 
-            background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
-            border: 1px solid rgba(0, 255, 50, 0.2);
-        }
-
-        .section-heading {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #FFB74D;
-            letter-spacing: 0.1em;
-            display: block;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-        }
-
-        /* Override Streamlit's default button styles */
-        .stButton>button {
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-            color: #FFB74D;
-            border: 1px solid rgba(255, 152, 0, 0.2);
-            font-family: 'Space Mono', monospace;
-            letter-spacing: 0.05em;
-            transition: all 0.3s ease;
-        }
-
-        .stButton>button:hover {
-            background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95));
-            border-color: rgba(255, 152, 0, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
-        }
-
-        /* Additional Dune-inspired elements */
-        div[data-testid="stHeader"] {
-            background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
-            border-bottom: 1px solid rgba(255, 152, 0, 0.1);
-        }
-
-        .intro-text {
-            font-family: 'Space Mono', monospace;
-            color: #FFB74D;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin: 1rem 0;
-            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-        }
-
-        .stApp {
-            background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
-        }
-
-
         .mentat-litany {
             font-family: 'Space Mono', monospace;
             font-size: 1.2rem;
@@ -174,7 +35,6 @@ def load_css():
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            animation: glow 1.5s ease-in-out infinite alternate;
         }
 
         .mentat-litany.visible {
@@ -236,106 +96,7 @@ def load_css():
             }, 100);
         }
         </script>
-
-        <!-- Add shader code -->
-        <script type="x-shader/x-vertex" id="vertex-shader">
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        </script>
-
-        <script type="x-shader/x-fragment" id="fragment-shader">
-            uniform float time;
-            uniform vec2 resolution;
-            varying vec2 vUv;
-
-            float rand(vec2 n) { 
-                return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-            }
-
-            float noise(vec2 p) {
-                vec2 ip = floor(p);
-                vec2 u = fract(p);
-                u = u*u*(3.0-2.0*u);
-
-                float res = mix(
-                    mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
-                    mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
-                return res*res;
-            }
-
-            void main() {
-                vec2 uv = vUv;
-
-                float nx = noise(uv * 8.0 + time * 0.2);
-                float ny = noise(uv * 8.0 - time * 0.2);
-
-                vec3 sandColor1 = vec3(0.76, 0.45, 0.2);  // Spice orange
-                vec3 sandColor2 = vec3(0.55, 0.35, 0.15); // Dark sand
-
-                vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
-
-                float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
-                color += vec3(sparkle);
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        </script>
-
-        <!-- Add Three.js -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-        <!-- Add sand effect container -->
-        <div id="sand-background"></div>
-
-        <script>
-        // Initialize sand effect
-        const container = document.getElementById('sand-background');
-        const scene = new THREE.Scene();
-        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-
-        // Set canvas size
-        function resize() {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        // Add to container
-        container.appendChild(renderer.domElement);
-
-        // Create shader material
-        const uniforms = {
-            time: { value: 0 },
-            resolution: { value: new THREE.Vector2() }
-        };
-
-        const material = new THREE.ShaderMaterial({
-            uniforms: uniforms,
-            vertexShader: document.getElementById('vertex-shader').textContent,
-            fragmentShader: document.getElementById('fragment-shader').textContent
-        });
-
-        // Create mesh
-        const geometry = new THREE.PlaneGeometry(2, 2);
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-
-        // Animation loop
-        function animate(time) {
-            uniforms.time.value = time * 0.001;
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-        </script>
-    """,
-        unsafe_allow_html=True)
-
-
+    """, unsafe_allow_html=True)
 
 def get_risk_class(risk_score):
     if risk_score > 70:
@@ -410,7 +171,6 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                 time.sleep(2)
     except Exception as e:
         return {'username': username, 'error': str(e)}
-
 
 def main():
     st.set_page_config(
