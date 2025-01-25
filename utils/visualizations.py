@@ -66,8 +66,8 @@ def create_monthly_activity_chart(comments_df, submissions_df):
         # Create a date range covering current month plus prior 11 months
         date_range = pd.date_range(
             start=eleven_months_ago.replace(day=1),  # Start from first day of month
-            end=now,
-            freq='ME'  # Month End frequency instead of 'M'
+            end=now + pd.offsets.MonthEnd(0),  # Ensure current month is included
+            freq='M'  # Monthly frequency
         )
 
         # Create an empty DataFrame with all months
@@ -93,7 +93,7 @@ def create_monthly_activity_chart(comments_df, submissions_df):
 
         monthly = (
             filtered
-            .resample('ME', on='created_utc')  # Month End frequency
+            .resample('M', on='created_utc')  # Monthly frequency
             .size()
             .reset_index()
         )
