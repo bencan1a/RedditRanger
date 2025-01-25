@@ -255,6 +255,14 @@ def main():
             layout="wide",
             initial_sidebar_state="collapsed")
 
+        # Initialize session state variables
+        if 'analysis_complete' not in st.session_state:
+            st.session_state.analysis_complete = False
+        if 'analysis_result' not in st.session_state:
+            st.session_state.analysis_result = None
+        if 'analysis_error' not in st.session_state:
+            st.session_state.analysis_error = None
+
         # Load CSS asynchronously
         with st.spinner("Initializing interface..."):
             load_css()
