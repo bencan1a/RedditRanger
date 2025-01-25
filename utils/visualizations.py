@@ -60,14 +60,14 @@ def create_monthly_activity_chart(comments_df, submissions_df):
 
     # Ensure we're working with UTC timestamps
     now = pd.Timestamp.now(tz='UTC')
-    one_year_ago = now - pd.DateOffset(months=12)
+    eleven_months_ago = now - pd.DateOffset(months=11)  # Changed from 12 to 11 to include current month
 
     def process_activity(df, activity_type):
-        # Create a date range covering all months
+        # Create a date range covering current month plus prior 11 months
         date_range = pd.date_range(
-            start=one_year_ago,
+            start=eleven_months_ago.replace(day=1),  # Start from first day of month
             end=now,
-            freq='M'
+            freq='ME'  # Month End frequency instead of 'M'
         )
 
         # Create an empty DataFrame with all months
@@ -85,7 +85,7 @@ def create_monthly_activity_chart(comments_df, submissions_df):
             df['created_utc'] = pd.to_datetime(df['created_utc'], utc=True)
 
         # Filter and resample
-        mask = (df['created_utc'] >= one_year_ago) & (df['created_utc'] <= now)
+        mask = (df['created_utc'] >= eleven_months_ago) & (df['created_utc'] <= now)
         filtered = df[mask]
 
         if filtered.empty:
@@ -93,7 +93,7 @@ def create_monthly_activity_chart(comments_df, submissions_df):
 
         monthly = (
             filtered
-            .resample('M', on='created_utc')
+            .resample('ME', on='created_utc')  # Month End frequency
             .size()
             .reset_index()
         )
@@ -110,7 +110,7 @@ def create_monthly_activity_chart(comments_df, submissions_df):
         monthly['count'] = monthly['count_y'].fillna(monthly['count_x'])
         monthly = monthly[['month', 'count']]
 
-        logger.info(f"Monthly {activity_type} data:")
+        logger.info("Monthly {} data:".format(activity_type))
         for _, row in monthly.iterrows():
             logger.info(f"Month: {row['month']}, Count: {row['count']}")
 
@@ -154,7 +154,7 @@ def create_monthly_activity_chart(comments_df, submissions_df):
     # Update layout
     fig.update_layout(
         title={
-            'text': 'Activity Timeline (12 Months)',
+            'text': 'Monthly Activity Timeline',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -180,7 +180,9 @@ def create_monthly_activity_chart(comments_df, submissions_df):
             gridcolor='rgba(255, 255, 255, 0.1)',
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
-            tickfont=dict(color='#E6D5B8')
+            tickfont=dict(color='#E6D5B8'),
+            # Set minimum to 0
+            range=[0, None]  # This ensures minimum is 0 while maximum auto-adjusts
         ),
         showlegend=True,
         legend=dict(
