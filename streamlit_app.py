@@ -64,6 +64,8 @@ def cycle_litany():
 def perform_analysis(username, _result_queue):  # Added underscore to prevent caching of queue
     """Perform the analysis in a separate thread"""
     try:
+        results_container = st.empty()
+        results_container.empty()
         logger.debug(f"Starting perform_analysis for user: {username}")
 
         # Get cached analyzers
@@ -491,10 +493,9 @@ def main():
             # Start new analysis if needed
             if username and not st.session_state.analysis_started and not st.session_state.analysis_complete:
                 try:
-                    st.session_state.analysis_started = True
-                    # Only clear previous results when starting new analysis
+                    # Clear previous results before starting new analysis
                     results_container.empty()
-
+                    st.session_state.analysis_started = True
                     result_queue = Queue()
 
                     # Start analysis in background thread
