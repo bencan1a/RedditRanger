@@ -17,9 +17,9 @@ def load_css():
             display: flex;
             gap: 20px;
             width: 100%;
-            flex-wrap: wrap;
             align-items: stretch;
             margin-bottom: 20px;
+            flex-direction: row;
         }
         .grid-item {
             background: rgba(255, 255, 255, 0.05);
@@ -28,13 +28,13 @@ def load_css():
             box-sizing: border-box;
         }
         .grid-item.half-width {
-            flex: 0 0 calc(50% - 10px);
+            flex: 0 0 50%;
         }
         .grid-item.full-width {
             flex: 0 0 100%;
         }
         .grid-item.quarter-width {
-            flex: 0 0 calc(25% - 15px);
+            flex: 0 0 25%;
         }
         .risk-score {
             font-size: 2.1rem;
@@ -76,22 +76,10 @@ def load_css():
         .high-risk { background-color: rgba(255, 0, 0, 0.1); }
         .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
         .low-risk { background-color: rgba(0, 255, 0, 0.1); }
-        .chart-container {
-            width: 100%;
-            min-height: 300px;
-            margin-top: 1rem;
-        }
-        .pattern-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .pattern-table th, .pattern-table td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+                unsafe_allow_html=True)
+
 
 
 def get_risk_class(risk_score):
@@ -162,6 +150,19 @@ def main():
 
     load_css()
 
+    # Row 1: Header - Single markdown call
+    st.markdown("""
+        <div class="grid-container">
+            <div class="grid-item full-width">
+                <h1>Thinking Machine Detector</h1>
+                <div class='intro-text'>
+                Like the Bene Gesserit's ability to detect truth, this tool uses Abominable Intelligence 
+                to identify Thinking Machines among Reddit users. The spice must flow, but the machines must not prevail.
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
     # Initialize analyzers and get input
     reddit_analyzer = RedditAnalyzer()
     text_analyzer = TextAnalyzer()
@@ -221,58 +222,50 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # Generate the overview data first
-                    activity_data = create_monthly_activity_table(
-                        result['comments_df'], result['submissions_df'])
-
-                    # Create charts
-                    activity_chart = create_monthly_activity_chart(activity_data)
-                    score_radar = create_score_radar_chart(result['component_scores'])
-                    bot_chart = create_bot_analysis_chart(
-                        result['text_metrics'], result['activity_patterns'])
-
-                    # Convert charts to HTML
-                    activity_html = activity_chart.to_html(
-                        full_html=False,
-                        include_plotlyjs='cdn',
-                        config={'displayModeBar': False}
-                    )
-                    radar_html = score_radar.to_html(
-                        full_html=False,
-                        include_plotlyjs='cdn',
-                        config={'displayModeBar': False}
-                    )
-                    bot_html = bot_chart.to_html(
-                        full_html=False,
-                        include_plotlyjs='cdn',
-                        config={'displayModeBar': False}
-                    )
-
-                    # Combine data into a single markdown call with embedded charts
+                    # Overview sections - Single markdown call
                     overview_html = f"""
-                    <div class="grid-container">
-                        <div class="grid-item quarter-width">
-                            <h3>Account Overview</h3>
-                            <p>Account Age: {result['account_age']}</p>
-                            <p>Total Karma: {result['karma']:,}</p>
+                        <div class="grid-container">
+                            <div class="grid-item quarter-width">
+                                <h3>Account Overview</h3>
+                                <p>Account Age: {result['account_age']}</p>
+                                <p>Total Karma: {result['karma']:,}</p>
+                            </div>
+                            <div class="grid-item quarter-width">
+                                <h3>Top Subreddits</h3>
+                    """
+
+                    # Add subreddit information
+                    for subreddit, count in result['activity_patterns']['top_subreddits'].items():
+                        overview_html += f"<p>{subreddit}: {count} posts</p>"
+
+                    overview_html += """
+                            </div>
+                            <div class="grid-item quarter-width">
+                                <h3>Activity Overview</h3>
+                            </div>
+                            <div class="grid-item quarter-width">
+                                <h3>Risk Analysis</h3>
+                            </div>
                         </div>
-                        <div class="grid-item quarter-width">
-                            <h3>Top Subreddits</h3>
-                            {''.join(f"<p>{subreddit}: {count} posts</p>"
-                                   for subreddit, count in result['activity_patterns']['top_subreddits'].items())}
-                        </div>
-                        <div class="grid-item quarter-width">
-                            <h3>Activity Overview</h3>
-                            <div class="chart-container">{activity_html}</div>
-                        </div>
-                        <div class="grid-item quarter-width">
-                            <h3>Risk Analysis</h3>
-                            <div class="chart-container">{radar_html}</div>
-                        </div>
-                    </div>
                     """
 
                     st.markdown(overview_html, unsafe_allow_html=True)
+
+                    # Add charts after the HTML structure
+                    col3, col4 = st.columns(2)
+                    with col3:
+                        activity_data = create_monthly_activity_table(
+                            result['comments_df'], result['submissions_df'])
+                        st.plotly_chart(
+                            create_monthly_activity_chart(activity_data),
+                            use_container_width=True,
+                            config={'displayModeBar': False})
+
+                    with col4:
+                        st.plotly_chart(
+                            create_score_radar_chart(result['component_scores']),
+                            use_container_width=True,
+                            config={'displayModeBar': False})
 
                     # Detailed Analysis Header - Single markdown call
                     st.markdown("""
@@ -283,29 +276,32 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # Bot analysis section with embedded chart
-                    bot_analysis_html = f"""
-                    <div class="grid-container">
-                        <div class="grid-item half-width">
-                            <h3>Bot Behavior Analysis</h3>
-                            <div class='help-text'>
+                    # Bot Behavior Analysis - Single markdown call
+                    st.markdown("""
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
+                                <h3>Bot Behavior Analysis</h3>
+                                <div class='help-text'>
                                 This chart shows three key aspects of potential automated behavior:
-                                <ul>
-                                    <li>Text Patterns: How repetitive and template-like the writing is</li>
-                                    <li>Timing Patterns: If posting follows suspicious timing patterns</li>
-                                    <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
-                                </ul>
+                                • Text Patterns: How repetitive and template-like the writing is
+                                • Timing Patterns: If posting follows suspicious timing patterns
+                                • Suspicious Patterns: Frequency of bot-like behavior markers
+
                                 Higher scores (closer to 1.0) indicate more bot-like characteristics.
+                                </div>
+                            </div>
+                            <div class="grid-item half-width">
+                                <div id="bot-analysis-chart"></div>
                             </div>
                         </div>
-                        <div class="grid-item half-width">
-                            <div class="chart-container">{bot_html}</div>
-                        </div>
-                    </div>
-                    """
+                    """, unsafe_allow_html=True)
 
-                    st.markdown(bot_analysis_html, unsafe_allow_html=True)
-
+                    # Add bot analysis chart
+                    st.plotly_chart(
+                        create_bot_analysis_chart(result['text_metrics'],
+                                                 result['activity_patterns']),
+                        use_container_width=True,
+                        config={'displayModeBar': False})
 
                     # Row 6: Suspicious Patterns - Single markdown call
                     suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
