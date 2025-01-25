@@ -87,33 +87,37 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
     """Analyze a single user with background processing"""
     try:
         # Initialize session state
-        if 'analysis_complete' not in st.session_state:
-            st.session_state.analysis_complete = False
-            st.session_state.analysis_result = None
-            st.session_state.analysis_error = None
+        st.session_state.analysis_complete = False
+        st.session_state.analysis_result = None
+        st.session_state.analysis_error = None
 
-            # Create a queue for thread communication
-            result_queue = Queue()
+        # Create a queue for thread communication
+        result_queue = Queue()
 
-            # Start analysis in background thread
-            analysis_thread = threading.Thread(
-                target=perform_analysis,
-                args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue)
-            )
-            analysis_thread.start()
+        # Start analysis in background thread
+        analysis_thread = threading.Thread(
+            target=perform_analysis,
+            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue)
+        )
+        analysis_thread.start()
 
-            # Show loading animation while analysis runs
-            show_loading_animation()
+        # Start animation in a separate thread
+        animation_thread = threading.Thread(target=show_loading_animation)
+        animation_thread.start()
 
-            # Get result from queue
-            status, result = result_queue.get()
+        # Wait for analysis result in main thread
+        status, result = result_queue.get()
 
-            if status == 'error':
-                st.session_state.analysis_error = result
-            else:
-                st.session_state.analysis_result = result
+        # Update session state to stop animation
+        if status == 'error':
+            st.session_state.analysis_error = result
+        else:
+            st.session_state.analysis_result = result
 
-            st.session_state.analysis_complete = True
+        st.session_state.analysis_complete = True
+
+        # Wait for animation to finish
+        animation_thread.join()
 
         # Return result or error
         if st.session_state.analysis_error:
@@ -121,6 +125,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         return st.session_state.analysis_result
 
     except Exception as e:
+        st.session_state.analysis_complete = True
         return {'username': username, 'error': str(e)}
 
 def load_css():
@@ -475,6 +480,7 @@ def load_css():
         </script>
     """,
         unsafe_allow_html=True)
+
 
 
 def get_risk_class(risk_score):
