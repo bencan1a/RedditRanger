@@ -51,46 +51,38 @@ def create_score_radar_chart(scores):
     return fig
 
 def create_monthly_activity_chart(comments_df):
-    if comments_df.empty:
-        return go.Figure()
+    # Get date range for last 12 months
+    now = pd.Timestamp.now()
+    one_year_ago = now - pd.DateOffset(months=12)
 
-    # Get current date and date 12 months ago
-    now = datetime.now(timezone.utc)
-    twelve_months_ago = now.replace(year=now.year - 1)
-
-    # Filter for last 12 months and resample by month
-    monthly_activity = (
-        comments_df[comments_df['created_utc'] >= twelve_months_ago]
-        .set_index('created_utc')
-        .resample('M')
-        .size()
-        .reset_index()
-    )
+    # Filter comments for last 12 months and resample by month
+    comments_df['created_utc'] = pd.to_datetime(comments_df['created_utc'])
+    mask = (comments_df['created_utc'] >= one_year_ago) & (comments_df['created_utc'] <= now)
+    monthly_activity = comments_df[mask].resample('M', on='created_utc').size().reset_index()
     monthly_activity.columns = ['month', 'count']
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
+    # Create the figure
+    fig = go.Figure(data=go.Scatter(
         x=monthly_activity['month'],
         y=monthly_activity['count'],
         mode='lines+markers',
-        name='Posts per Month',
-        line=dict(width=3, color='rgb(99, 110, 250)'),
+        line=dict(color='#E6D5B8', width=2),
         marker=dict(
             size=8,
-            color='rgb(99, 110, 250)',
-            line=dict(width=2, color='rgb(255, 255, 255)')
-        ),
-        fill='tozeroy',
-        fillcolor='rgba(99, 110, 250, 0.1)'
+            color='#E6D5B8',
+            line=dict(color='#ff9800', width=2)
+        )
     ))
 
+    # Update layout with custom styling
     fig.update_layout(
         title={
             'text': 'Trailing 12 Month Activity',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
-            'yanchor': 'top'
+            'yanchor': 'top',
+            'font': dict(color='#E6D5B8')
         },
         xaxis=dict(
             title="Month",
