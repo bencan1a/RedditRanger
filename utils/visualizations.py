@@ -12,7 +12,9 @@ def create_score_radar_chart(scores):
         r=values,
         theta=categories,
         fill='toself',
-        name='Account Scores'
+        name='Account Scores',
+        fillcolor='rgba(99, 110, 250, 0.5)',
+        line=dict(color='rgb(99, 110, 250)', width=2)
     ))
 
     fig.update_layout(
@@ -26,11 +28,21 @@ def create_score_radar_chart(scores):
         polar=dict(
             radialaxis=dict(
                 visible=True,
-                range=[0, 1]
-            )
+                range=[0, 1],
+                tickformat='.0%',
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                linecolor='rgba(255, 255, 255, 0.1)'
+            ),
+            angularaxis=dict(
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                linecolor='rgba(255, 255, 255, 0.1)'
+            ),
+            bgcolor='rgba(0, 0, 0, 0)'
         ),
         showlegend=False,
-        margin=dict(t=50, b=20, l=20, r=20)
+        margin=dict(t=50, b=20, l=40, r=40),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
     )
 
     return fig
@@ -54,8 +66,14 @@ def create_monthly_activity_chart(comments_df):
         y=monthly_activity['count'],
         mode='lines+markers',
         name='Posts per Month',
-        line=dict(width=2),
-        marker=dict(size=8)
+        line=dict(width=3, color='rgb(99, 110, 250)'),
+        marker=dict(
+            size=8,
+            color='rgb(99, 110, 250)',
+            line=dict(width=2, color='rgb(255, 255, 255)')
+        ),
+        fill='tozeroy',
+        fillcolor='rgba(99, 110, 250, 0.1)'
     ))
 
     fig.update_layout(
@@ -66,19 +84,42 @@ def create_monthly_activity_chart(comments_df):
             'xanchor': 'center',
             'yanchor': 'top'
         },
-        xaxis_title="Month",
-        yaxis_title="Number of Posts",
+        xaxis=dict(
+            title="Month",
+            showgrid=True,
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickangle=45,
+            nticks=12,
+            showline=True,
+            linecolor='rgba(255, 255, 255, 0.2)'
+        ),
+        yaxis=dict(
+            title="Number of Posts",
+            showgrid=True,
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            showline=True,
+            linecolor='rgba(255, 255, 255, 0.2)'
+        ),
         showlegend=False,
-        margin=dict(t=50, b=20, l=20, r=20)
+        margin=dict(t=50, b=50, l=40, r=20),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
     )
 
     return fig
 
 def create_subreddit_distribution(top_subreddits):
+    # Create a color sequence that's visually distinct
+    colors = px.colors.qualitative.Set3
+
     fig = go.Figure(data=go.Pie(
         labels=list(top_subreddits.keys()),
         values=list(top_subreddits.values()),
-        hole=0.3
+        hole=0.3,
+        marker=dict(colors=colors),
+        textinfo='label+percent',
+        textposition='outside',
+        insidetextorientation='radial'
     ))
 
     fig.update_layout(
@@ -93,11 +134,14 @@ def create_subreddit_distribution(top_subreddits):
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=-0.2,
+            y=-0.3,
             xanchor="center",
-            x=0.5
+            x=0.5,
+            bgcolor='rgba(0,0,0,0)'
         ),
-        margin=dict(t=50, b=50, l=20, r=20)
+        margin=dict(t=50, b=80, l=20, r=20),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
     )
 
     return fig
