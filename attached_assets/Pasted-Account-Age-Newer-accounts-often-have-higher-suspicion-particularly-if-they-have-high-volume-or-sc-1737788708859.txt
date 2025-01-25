@@ -1,0 +1,44 @@
+Account Age
+
+Newer accounts often have higher suspicion, particularly if they have high-volume or scripted posting patterns (e.g., 50+ posts within the first few days).
+Sudden changes in posting behavior after months/years of inactivity can indicate an account takeover.
+Karma and Trophy History
+
+Extremely high or extremely low karma, or karma that spikes quickly in a short period, can be suspicious.
+Large discrepancy between link karma and comment karma (e.g., only link posts, no genuine engagement in comments) can be indicative of a bot or spammy usage.
+Username Patterns
+
+Random strings, typical spam/bot names (e.g., “User12345,” “BestDealsXYZ”), or known phone number or email handle patterns can raise suspicion.
+This alone is not definitive but can be aggregated with other signals.
+1.2 Posting/Commenting Behavior
+Posting Frequency and Timing
+
+High frequency or consistent posting intervals (e.g., posting exactly every 30 minutes, 24 hours a day) are red flags.
+Posting at unusual hours for the self-reported region or with no sleep breaks can also be suggestive of bot-like activity.
+Subreddit Distribution
+
+Bot accounts often focus on a narrow set of subreddits (e.g., only promotional subreddits) or jump rapidly between unrelated subreddits in a short time.
+Hijacked accounts might suddenly change their subreddit activity: if a user posted almost exclusively in /r/cooking for years but then abruptly starts spamming political content across many subreddits, that’s a potential signal.
+Engagement Patterns
+
+Look at the ratio of original posts to comments. Bots often create lots of posts but minimal follow-up in comment threads.
+Check for typical user behaviors (e.g., sometimes they just lurk or upvote, sometimes they engage in threaded discussions). Bots typically fail to maintain consistent, human-like interactions over time.
+Time-to-First-Comment
+
+If the account responds immediately to new posts in multiple subreddits across different times and geographies, it may indicate scripted/automated behavior.
+1.3 Linguistic and Stylistic Analysis
+Text Similarity and Repetition
+
+Bots often recycle the same text or have templates. Searching for repeated phrases across the user’s post history or across multiple users can catch spam-bot nets.
+Hijacked accounts might exhibit a sudden shift in writing style, grammar usage, or vocabulary choice.
+N-gram or Bag-of-Words Analysis
+
+Identifying characteristic phrases, repeated spam links, or suspicious keywords (e.g., repeated mentions of certain products/services without context).
+Clusters of users posting near-identical language across different subreddits can indicate bot farms.
+Grammar and Syntax
+
+Poor grammar or consistent “machine-like” grammar errors (e.g., GPT-based bots might have unnatural repetition or certain linguistic tics).
+Highly generic or context-free comments (“Great post!” “Thanks for sharing!” repeated many times) can be a sign of low-effort spam automation.
+Stylometric Anomalies
+
+Tracking an account’s historical writing style over time (sentence length, vocabulary uniqueness, punctuation habits) and looking for significant changes can detect hijacking. Tools like stylometric analysis or language modeling can help.
