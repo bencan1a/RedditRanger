@@ -75,41 +75,15 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             'submissions_df': submissions_df,
             'bot_probability': text_metrics.get('bot_probability', 0) * 100
         }
+
+        # Set result and mark as complete atomically
         result_queue.put(('success', result))
     except Exception as e:
         result_queue.put(('error', str(e)))
 
-def show_loading_animation():
-    """Display the Mentat litany loading animation"""
-    placeholder = st.empty()
-    litany = cycle_litany()
-
-    while not st.session_state.get('analysis_complete', False):
-        try:
-            litany_text = next(litany)
-            placeholder.markdown(f"""
-                <div class="mentat-spinner"></div>
-                <div class="mentat-litany visible">
-                    {litany_text}
-                </div>
-            """, unsafe_allow_html=True)
-            time.sleep(1)  # Reduced sleep time
-        except:
-            break
-
-    placeholder.empty()
-
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user with background processing"""
     try:
-        # Initialize session state
-        if 'analysis_complete' not in st.session_state:
-            st.session_state.analysis_complete = False
-        if 'analysis_result' not in st.session_state:
-            st.session_state.analysis_result = None
-        if 'analysis_error' not in st.session_state:
-            st.session_state.analysis_error = None
-
         # Reset state for new analysis
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
@@ -122,27 +96,49 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         analysis_thread = threading.Thread(
             target=perform_analysis,
             args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue),
-            daemon=True  # Make thread daemon so it doesn't block process exit
+            daemon=True
         )
         analysis_thread.start()
 
-        # Show loading animation while waiting
-        show_loading_animation()
+        # Show loading animation while analysis runs
+        placeholder = st.empty()
+        litany = cycle_litany()
 
-        # Wait for analysis result with timeout
-        try:
-            status, result = result_queue.get(timeout=60)  # Increased timeout to 60 seconds
+        # Wait for result with timeout
+        timeout = time.time() + 60  # 60 second timeout
+        while time.time() < timeout and not st.session_state.analysis_complete:
+            try:
+                # Check if result is available
+                try:
+                    status, result = result_queue.get_nowait()
+                    if status == 'error':
+                        st.session_state.analysis_error = result
+                    else:
+                        st.session_state.analysis_result = result
+                    st.session_state.analysis_complete = True
+                    break
+                except Queue.Empty:
+                    pass
 
-            # Update session state based on result
-            if status == 'error':
-                st.session_state.analysis_error = result
-            else:
-                st.session_state.analysis_result = result
-        except:
+                # Update loading animation
+                litany_text = next(litany)
+                placeholder.markdown(f"""
+                    <div class="mentat-spinner"></div>
+                    <div class="mentat-litany visible">
+                        {litany_text}
+                    </div>
+                """, unsafe_allow_html=True)
+                time.sleep(1)
+            except:
+                break
+
+        # Clear loading animation
+        placeholder.empty()
+
+        # Handle timeout
+        if not st.session_state.analysis_complete:
             st.session_state.analysis_error = "Analysis timed out. Please try again."
-
-        # Set analysis as complete regardless of outcome
-        st.session_state.analysis_complete = True
+            st.session_state.analysis_complete = True
 
         # Return result or error
         if st.session_state.analysis_error:
