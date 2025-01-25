@@ -34,12 +34,8 @@ class RedditAnalyzer:
                 read_only=True
             )
             logger.info("Verifying Reddit API connection...")
-            # Use a simpler verification that doesn't require authentication
             self.reddit.subreddit('announcements').id
             logger.info("Reddit API connection successful")
-        except ResponseException as e:
-            logger.error(f"Reddit API error: {str(e)}")
-            raise Exception(f"Reddit API error: {str(e)}")
         except Exception as e:
             logger.error(f"Error initializing Reddit client: {str(e)}")
             raise Exception(f"Error initializing Reddit client: {str(e)}")
@@ -51,6 +47,7 @@ class RedditAnalyzer:
 
             # Force a simple API call to verify the user exists
             created_utc = user.created_utc
+            logger.info(f"User account created at: {datetime.fromtimestamp(created_utc, tz=timezone.utc)}")
 
             user_data = {
                 'created_utc': datetime.fromtimestamp(created_utc, tz=timezone.utc),
@@ -59,26 +56,40 @@ class RedditAnalyzer:
                 'verified_email': user.has_verified_email if hasattr(user, 'has_verified_email') else None,
             }
 
-            # Collect recent comments with actual comment count
+            # Get all comments for the past year
             comments = []
-            comment_count = 0
             try:
-                logger.info(f"Fetching recent comments for user: {username}")
-                for comment in user.comments.new():  # Remove limit to get all comments
-                    comment_count += 1
+                logger.info(f"Fetching comments for user: {username}")
+
+                # Calculate timestamp for one year ago
+                one_year_ago = datetime.now(timezone.utc).timestamp() - (365 * 24 * 60 * 60)
+
+                # Fetch all comments until we hit comments older than a year
+                for comment in user.comments.new(limit=None):  # None means no limit
+                    if comment.created_utc < one_year_ago:
+                        break
+
                     comments.append({
                         'body': comment.body,
                         'created_utc': datetime.fromtimestamp(comment.created_utc, tz=timezone.utc),
                         'score': comment.score,
                         'subreddit': str(comment.subreddit)
                     })
-                logger.info(f"Successfully fetched {comment_count} comments")
+
+                    if len(comments) % 100 == 0:
+                        logger.info(f"Fetched {len(comments)} comments so far...")
+
+                logger.info(f"Successfully fetched {len(comments)} comments for the past year")
+                logger.info(f"First comment date: {comments[0]['created_utc'] if comments else 'No comments'}")
+                logger.info(f"Last comment date: {comments[-1]['created_utc'] if comments else 'No comments'}")
+
             except Exception as e:
                 logger.warning(f"Could not fetch comments for user {username}: {str(e)}")
                 if not comments:
                     comments = []
 
             return user_data, pd.DataFrame(comments)
+
         except ResponseException as e:
             if e.response.status_code == 404:
                 logger.error(f"User '{username}' not found")
@@ -101,6 +112,11 @@ class RedditAnalyzer:
                 'activity_hours': {},
                 'top_subreddits': {}
             }
+
+        # Log data before analysis
+        logger.info(f"Analyzing {len(comments_df)} comments")
+        logger.info(f"Date range: {comments_df['created_utc'].min()} to {comments_df['created_utc'].max()}")
+        logger.info(f"Unique subreddits: {comments_df['subreddit'].nunique()}")
 
         patterns = {
             'total_comments': len(comments_df),
