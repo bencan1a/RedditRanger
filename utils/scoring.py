@@ -27,46 +27,68 @@ class AccountScorer:
             'linguistic': LinguisticHeuristic()
         }
 
+    def _sanitize_user_data(self, user_data):
+        """Sanitize user data to ensure proper types"""
+        if not isinstance(user_data, dict):
+            return None
+
+        sanitized = {}
+        try:
+            # Ensure basic fields exist with proper types
+            sanitized['username'] = str(user_data.get('username', ''))
+            sanitized['created_utc'] = user_data.get('created_utc', datetime.now(timezone.utc))
+
+            # Convert karma values to integers
+            sanitized['comment_karma'] = int(float(str(user_data.get('comment_karma', 0)).replace(',', '')))
+            sanitized['link_karma'] = int(float(str(user_data.get('link_karma', 0)).replace(',', '')))
+
+            # Ensure lists exist
+            sanitized['comments'] = list(user_data.get('comments', []))
+            sanitized['submissions'] = list(user_data.get('submissions', []))
+
+            return sanitized
+        except Exception as e:
+            logger.error(f"Error sanitizing user data: {str(e)}")
+            return None
+
     def calculate_score(self, user_data, activity_patterns, text_metrics):
         try:
             # Initialize scores dictionary
             scores = {}
 
-            # Validate user_data
-            if not isinstance(user_data, dict):
-                logger.error("Invalid user_data format")
+            # Sanitize user data
+            sanitized_data = self._sanitize_user_data(user_data)
+            if not sanitized_data:
+                logger.error("Invalid user data format")
                 return 0.5, {'error': 'Invalid user data format'}
-
-            # Ensure required fields exist
-            user_data['comments'] = user_data.get('comments', [])
-            user_data['submissions'] = user_data.get('submissions', [])
 
             # Apply each heuristic with safe data access
             heuristic_scores = {}
 
             try:
-                heuristic_scores['account_age'] = self.heuristics['account_age'].analyze(user_data)
+                heuristic_scores['account_age'] = self.heuristics['account_age'].analyze(sanitized_data)
             except Exception as e:
                 logger.error(f"Error in account_age heuristic: {str(e)}")
                 heuristic_scores['account_age'] = {'age_score': 0.5}
 
             try:
-                heuristic_scores['karma'] = self.heuristics['karma'].analyze(user_data)
+                heuristic_scores['karma'] = self.heuristics['karma'].analyze(sanitized_data)
             except Exception as e:
                 logger.error(f"Error in karma heuristic: {str(e)}")
                 heuristic_scores['karma'] = {'karma_score': 0.5}
 
             try:
-                heuristic_scores['username'] = self.heuristics['username'].analyze(user_data)
+                heuristic_scores['username'] = self.heuristics['username'].analyze(sanitized_data)
             except Exception as e:
                 logger.error(f"Error in username heuristic: {str(e)}")
                 heuristic_scores['username'] = {'username_score': 0.5}
 
             try:
-                heuristic_scores['posting'] = self.heuristics['posting'].analyze({
-                    'comments': user_data['comments'],
-                    'submissions': user_data['submissions']
-                })
+                posting_data = {
+                    'comments': sanitized_data['comments'],
+                    'submissions': sanitized_data['submissions']
+                }
+                heuristic_scores['posting'] = self.heuristics['posting'].analyze(posting_data)
             except Exception as e:
                 logger.error(f"Error in posting heuristic: {str(e)}")
                 heuristic_scores['posting'] = {
@@ -76,19 +98,21 @@ class AccountScorer:
                 }
 
             try:
-                heuristic_scores['subreddit'] = self.heuristics['subreddit'].analyze({
-                    'comments': user_data['comments'],
-                    'submissions': user_data['submissions']
-                })
+                subreddit_data = {
+                    'comments': sanitized_data['comments'],
+                    'submissions': sanitized_data['submissions']
+                }
+                heuristic_scores['subreddit'] = self.heuristics['subreddit'].analyze(subreddit_data)
             except Exception as e:
                 logger.error(f"Error in subreddit heuristic: {str(e)}")
                 heuristic_scores['subreddit'] = {'diversity_score': 0.5}
 
             try:
-                heuristic_scores['engagement'] = self.heuristics['engagement'].analyze({
-                    'comments': user_data['comments'],
-                    'submissions': user_data['submissions']
-                })
+                engagement_data = {
+                    'comments': sanitized_data['comments'],
+                    'submissions': sanitized_data['submissions']
+                }
+                heuristic_scores['engagement'] = self.heuristics['engagement'].analyze(engagement_data)
             except Exception as e:
                 logger.error(f"Error in engagement heuristic: {str(e)}")
                 heuristic_scores['engagement'] = {
@@ -97,9 +121,10 @@ class AccountScorer:
                 }
 
             try:
-                heuristic_scores['linguistic'] = self.heuristics['linguistic'].analyze({
-                    'comments': user_data['comments']
-                })
+                linguistic_data = {
+                    'comments': sanitized_data['comments']
+                }
+                heuristic_scores['linguistic'] = self.heuristics['linguistic'].analyze(linguistic_data)
             except Exception as e:
                 logger.error(f"Error in linguistic heuristic: {str(e)}")
                 heuristic_scores['linguistic'] = {
@@ -114,7 +139,7 @@ class AccountScorer:
                 if isinstance(result, dict):
                     for score_name, score in result.items():
                         if isinstance(score, (int, float)):  # Primary scores
-                            scores[f"{category}_{score_name}"] = score
+                            scores[f"{category}_{score_name}"] = float(score)  # Ensure float type
                         elif isinstance(score, dict) and score_name == 'metrics':
                             # Store detailed metrics for visualization
                             scores[f"{category}_metrics"] = score
@@ -122,9 +147,11 @@ class AccountScorer:
             # Get ML-based risk score
             try:
                 ml_risk_score, feature_importance = self.ml_analyzer.analyze_account(
-                    user_data, activity_patterns, text_metrics
+                    sanitized_data, activity_patterns, text_metrics
                 )
-                scores['ml_risk_score'] = ml_risk_score
+                scores['ml_risk_score'] = float(ml_risk_score)  # Ensure float type
+                if feature_importance:
+                    scores['feature_importance'] = feature_importance
             except Exception as e:
                 logger.error(f"Error in ML analysis: {str(e)}")
                 scores['ml_risk_score'] = 0.5
@@ -156,8 +183,8 @@ class AccountScorer:
             weight_sum = 0.0
 
             for score_name, weight in weights.items():
-                if score_name in scores and scores[score_name] is not None:
-                    score = scores[score_name]
+                if score_name in scores and isinstance(scores[score_name], (int, float)):
+                    score = float(scores[score_name])
                     # Apply dampening to reduce false positives
                     if score < 0.3:  # Low scores get reduced further
                         score = score * 0.5
@@ -170,14 +197,6 @@ class AccountScorer:
 
             # Normalize final score
             final_score = final_score / weight_sum
-
-            # Integrate ML score (25% influence)
-            if 'ml_risk_score' in scores:
-                final_score = (final_score * 0.75) + (scores['ml_risk_score'] * 0.25)
-
-            # Store feature importance for visualization
-            if feature_importance:
-                scores['feature_importance'] = feature_importance
 
             return final_score, scores
 
