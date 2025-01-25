@@ -1,5 +1,14 @@
 from datetime import datetime, timezone
 from utils.ml_analyzer import MLAnalyzer
+from utils.heuristics import (
+    AccountAgeHeuristic,
+    KarmaHeuristic,
+    UsernameHeuristic,
+    PostingBehaviorHeuristic,
+    SubredditHeuristic,
+    EngagementHeuristic,
+    LinguisticHeuristic
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,34 +16,52 @@ logger = logging.getLogger(__name__)
 class AccountScorer:
     def __init__(self):
         self.ml_analyzer = MLAnalyzer()
+        # Initialize all heuristic analyzers
+        self.heuristics = {
+            'account_age': AccountAgeHeuristic(),
+            'karma': KarmaHeuristic(),
+            'username': UsernameHeuristic(),
+            'posting': PostingBehaviorHeuristic(),
+            'subreddit': SubredditHeuristic(),
+            'engagement': EngagementHeuristic(),
+            'linguistic': LinguisticHeuristic()
+        }
 
     def calculate_score(self, user_data, activity_patterns, text_metrics):
-        scores = {}
-
         try:
-            # Account age score (older accounts more likely legitimate)
-            account_age_days = (datetime.now(timezone.utc) - user_data['created_utc']).days
-            scores['age_score'] = min(account_age_days / 365, 1.0)  # Normalize to 1 year
+            # Initialize scores dictionary
+            scores = {}
 
-            # Karma score (higher karma more likely legitimate)
-            total_karma = user_data['comment_karma'] + user_data['link_karma']
-            scores['karma_score'] = min(total_karma / 10000, 1.0)  # Normalize to 10k karma
+            # Apply each heuristic
+            heuristic_scores = {
+                'account_age': self.heuristics['account_age'].analyze(user_data),
+                'karma': self.heuristics['karma'].analyze(user_data),
+                'username': self.heuristics['username'].analyze(user_data),
+                'posting': self.heuristics['posting'].analyze({
+                    'comments': user_data['comments'],
+                    'submissions': user_data.get('submissions', [])
+                }),
+                'subreddit': self.heuristics['subreddit'].analyze({
+                    'comments': user_data['comments'],
+                    'submissions': user_data.get('submissions', [])
+                }),
+                'engagement': self.heuristics['engagement'].analyze({
+                    'comments': user_data['comments'],
+                    'submissions': user_data.get('submissions', [])
+                }),
+                'linguistic': self.heuristics['linguistic'].analyze({
+                    'comments': user_data['comments']
+                })
+            }
 
-            # Subreddit diversity (more diverse activity more likely legitimate)
-            subreddit_diversity = min(len(activity_patterns['top_subreddits']) / 10, 1.0)
-            scores['diversity_score'] = subreddit_diversity
-
-            # Text analysis scores
-            # Text complexity (richer vocabulary more likely legitimate)
-            vocab_size = text_metrics.get('vocab_size', 0)
-            if isinstance(vocab_size, (int, float)):
-                scores['text_score'] = min(vocab_size / 1000, 1.0)
-            else:
-                scores['text_score'] = 0.5  # Default if vocab_size is invalid
-
-            # Content uniqueness (more unique content more likely legitimate)
-            similarity_score = text_metrics.get('avg_similarity', 0.0)
-            scores['uniqueness_score'] = 1.0 - similarity_score
+            # Extract primary scores and store detailed metrics
+            for category, result in heuristic_scores.items():
+                for score_name, score in result.items():
+                    if isinstance(score, (int, float)):  # Primary scores
+                        scores[f"{category}_{score_name}"] = score
+                    elif isinstance(score, dict) and score_name == 'metrics':
+                        # Store detailed metrics for visualization
+                        scores[f"{category}_metrics"] = score
 
             # Get ML-based risk score
             ml_risk_score, feature_importance = self.ml_analyzer.analyze_account(
@@ -42,16 +69,29 @@ class AccountScorer:
             )
             scores['ml_risk_score'] = ml_risk_score
 
-            # Calculate final weighted score with ML integration
+            # Define weights for different components
             weights = {
-                'age_score': 0.15,        # Account age
-                'karma_score': 0.15,      # Total karma
-                'diversity_score': 0.15,  # Subreddit diversity
-                'text_score': 0.15,       # Vocabulary richness
-                'uniqueness_score': 0.15, # Content uniqueness
-                'ml_risk_score': 0.25     # ML prediction
+                # Traditional metrics (40%)
+                'account_age_age_score': 0.10,
+                'karma_karma_score': 0.10,
+                'username_username_score': 0.05,
+                'subreddit_diversity_score': 0.15,
+
+                # Behavioral metrics (35%)
+                'posting_frequency_score': 0.10,
+                'posting_interval_score': 0.10,
+                'engagement_interaction_score': 0.05,
+                'engagement_depth_score': 0.05,
+                'posting_timezone_score': 0.05,
+
+                # Content analysis (25%)
+                'linguistic_similarity_score': 0.05,
+                'linguistic_complexity_score': 0.05,
+                'linguistic_pattern_score': 0.10,
+                'linguistic_style_score': 0.05
             }
 
+            # Calculate weighted score
             final_score = 0.0
             weight_sum = 0.0
 
@@ -70,7 +110,11 @@ class AccountScorer:
             # Normalize final score
             final_score = final_score / weight_sum
 
-            # Store feature importance for visualization if available
+            # Integrate ML score (25% influence)
+            if 'ml_risk_score' in scores:
+                final_score = (final_score * 0.75) + (scores['ml_risk_score'] * 0.25)
+
+            # Store feature importance for visualization
             if feature_importance:
                 scores['feature_importance'] = feature_importance
 
