@@ -18,10 +18,8 @@ def load_css():
             display: flex;
             gap: 20px;
             width: 100%;
-            min-width: min-content;
             align-items: stretch; /* Ensure items in a row have same height */
             margin-bottom: 20px;
-            overflow-x: auto; /* Allow horizontal scrolling if needed */
         }
         .grid-item {
             background: rgba(255, 255, 255, 0.05);
@@ -174,7 +172,8 @@ def main():
 
                     # Probabilities section with proper grid layout
                     risk_class = get_risk_class(result['risk_score'])
-                    bot_risk_class = get_risk_class(result['bot_probability'])
+                    bot_prob = result['bot_probability']
+                    bot_risk_class = get_risk_class(bot_prob)
 
                     st.markdown(f"""
                         <div class="grid-container">
@@ -195,7 +194,7 @@ def main():
                             </div>
                             <div class="grid-item half-width">
                                 <div class="risk-score {bot_risk_class}">
-                                    {result['bot_probability']:.1f}% Bot Probability
+                                    {bot_prob:.1f}% Bot Probability
                                     <span class="info-icon">ⓘ
                                         <span class="tooltip">
                                         Bot Probability Score is calculated using:
