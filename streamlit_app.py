@@ -233,6 +233,7 @@ def get_risk_class(risk_score):
 
 
 def display_analysis_results(result):
+    """Display analysis results with proper analyzer references"""
     risk_class = get_risk_class(result['risk_score'])
     bot_prob = result['bot_probability']
     bot_risk_class = get_risk_class(bot_prob)
@@ -391,25 +392,33 @@ def display_analysis_results(result):
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Mark as Human Account", key="human-account-btn"):
-            account_scorer.ml_analyzer.add_training_example(
-                result['user_data'],
-                result['activity_patterns'],
-                result['text_metrics'],
-                is_legitimate=True)
-            st.success(
-                "Thank you for marking this as a human account! This feedback helps improve our detection."
-                                                )
+            scorer = get_account_scorer()
+            if scorer:
+                scorer.ml_analyzer.add_training_example(
+                    result['user_data'],
+                    result['activity_patterns'],
+                    result['text_metrics'],
+                    is_legitimate=True)
+                st.success(
+                    "Thank you for marking this as a human account! This feedback helps improve our detection."
+                )
+            else:
+                st.error("Unable to submit feedback at this time.")
 
     with col2:
         if st.button("Mark as Bot Account", key="bot-account-btn"):
-            account_scorer.ml_analyzer.add_training_example(
-                result['user_data'],
-                result['activity_patterns'],
-                result['text_metrics'],
-                is_legitimate=False)
-            st.success(
-                "Thank you for marking this as a bot account! This feedback helps improve our detection."
-            )
+            scorer = get_account_scorer()
+            if scorer:
+                scorer.ml_analyzer.add_training_example(
+                    result['user_data'],
+                    result['activity_patterns'],
+                    result['text_metrics'],
+                    is_legitimate=False)
+                st.success(
+                    "Thank you for marking this as a bot account! This feedback helps improve our detection."
+                )
+            else:
+                st.error("Unable to submit feedback at this time.")
 
 
 
@@ -423,12 +432,23 @@ def main():
         # Initialize session state variables
         if 'analysis_complete' not in st.session_state:
             st.session_state.analysis_complete = False
-        if 'analysis_result' not in st.session_state:
             st.session_state.analysis_result = None
-        if 'analysis_error' not in st.session_state:
             st.session_state.analysis_error = None
-        if 'analysis_started' not in st.session_state:
             st.session_state.analysis_started = False
+            st.session_state.analyzers_initialized = False
+
+        # Initialize analyzers once
+        if not st.session_state.analyzers_initialized:
+            with st.spinner("Initializing analyzers..."):
+                reddit_analyzer = get_reddit_analyzer()
+                text_analyzer = get_text_analyzer()
+                account_scorer = get_account_scorer()
+
+                if all([reddit_analyzer, text_analyzer, account_scorer]):
+                    st.session_state.analyzers_initialized = True
+                else:
+                    st.error("Failed to initialize analyzers. Please refresh the page.")
+                    return
 
         # Load CSS asynchronously
         with st.spinner("Initializing interface..."):
