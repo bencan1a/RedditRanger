@@ -225,12 +225,12 @@ def main():
                     # Overview sections - Single markdown call
                     overview_html = f"""
                         <div class="grid-container">
-                            <div class="grid-item quarter-width">
+                            <div class="grid-item half-width">
                                 <h3>Account Overview</h3>
                                 <p>Account Age: {result['account_age']}</p>
                                 <p>Total Karma: {result['karma']:,}</p>
                             </div>
-                            <div class="grid-item quarter-width">
+                            <div class="grid-item half-width">
                                 <h3>Top Subreddits</h3>
                     """
 
@@ -240,10 +240,12 @@ def main():
 
                     overview_html += """
                             </div>
-                            <div class="grid-item quarter-width">
+                        </div>
+                        <div class="grid-container">
+                            <div class="grid-item half-width">
                                 <h3>Activity Overview</h3>
                             </div>
-                            <div class="grid-item quarter-width">
+                            <div class="grid-item half-width">
                                 <h3>Risk Analysis</h3>
                             </div>
                         </div>
@@ -279,21 +281,19 @@ def main():
                     # Bot Behavior Analysis - Single markdown call
                     st.markdown("""
                         <div class="grid-container">
-                            <div class="grid-item half-width">
+                            <div class="grid-item full-width">
                                 <h3>Bot Behavior Analysis</h3>
-                                <div class='help-text'>
-                                This chart shows three key aspects of potential automated behavior:
-                                • Text Patterns: How repetitive and template-like the writing is
-                                • Timing Patterns: If posting follows suspicious timing patterns
-                                • Suspicious Patterns: Frequency of bot-like behavior markers
-
+                                <span class="info-icon">ⓘ<span class="tooltip">
+                                <ul>
+                                    <li>Text Patterns: How repetitive and template-like the writing is</li>
+                                    <li>Timing Patterns: If posting follows suspicious timing patterns</li>
+                                    <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
+                                </ul>
+                                
                                 Higher scores (closer to 1.0) indicate more bot-like characteristics.
-                                </div>
-                            </div>
-                            <div class="grid-item half-width">
-                                <div id="bot-analysis-chart"></div>
-                            </div>
-                        </div>
+                                </span></span>
+
+</div></div></div>
                     """, unsafe_allow_html=True)
 
                     # Add bot analysis chart
