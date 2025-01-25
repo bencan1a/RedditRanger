@@ -13,6 +13,8 @@ import pandas as pd
 def load_css():
     st.markdown("""
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
         .grid-container {
             display: flex;
             gap: 20px;
@@ -22,42 +24,46 @@ def load_css():
             flex-direction: row;
         }
         .grid-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+            border: 1px solid rgba(255, 152, 0, 0.1);
+            border-radius: 8px;
             padding: 20px;
             box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
+            backdrop-filter: blur(4px);
         }
-        .grid-item.half-width {
-            flex: 0 0 50%;
-        }
-        .grid-item.full-width {
-            flex: 0 0 100%;
-        }
-        .grid-item.quarter-width {
-            flex: 0 0 25%;
-        }
+        .grid-item.half-width { flex: 0 0 50%; }
+        .grid-item.full-width { flex: 0 0 100%; }
+        .grid-item.quarter-width { flex: 0 0 25%; }
+
         .risk-score {
+            font-family: 'Space Mono', monospace;
             font-size: 2.1rem;
             text-align: center;
-            padding: 1rem;
+            padding: 1.5rem;
             border-radius: 10px;
             margin: 0;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+            letter-spacing: 0.05em;
         }
+
         .info-icon {
             font-size: 1rem;
-            color: #E6D5B8;
+            color: #FFB74D;
             margin-left: 8px;
             cursor: help;
             display: inline-block;
             position: relative;
         }
+
         .tooltip {
             visibility: hidden;
-            background-color: rgba(45, 45, 45, 0.95);
-            color: #E6D5B8;
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+            color: #FFB74D;
             text-align: left;
-            padding: 8px 12px;
+            padding: 12px 16px;
             border-radius: 6px;
+            border: 1px solid rgba(255, 152, 0, 0.2);
             position: absolute;
             z-index: 1;
             width: 280px;
@@ -65,30 +71,79 @@ def load_css():
             left: 50%;
             margin-left: -140px;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateY(10px);
+            font-family: 'Space Mono', monospace;
             font-size: 0.85rem;
             line-height: 1.4;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
+
         .info-icon:hover .tooltip {
             visibility: visible;
             opacity: 1;
+            transform: translateY(0);
         }
-        .high-risk { background-color: rgba(255, 0, 0, 0.1); }
-        .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
-        .low-risk { background-color: rgba(0, 255, 0, 0.1); }
+
+        .high-risk { 
+            background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
+            border: 1px solid rgba(255, 50, 0, 0.2);
+        }
+        .medium-risk { 
+            background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
+            border: 1px solid rgba(255, 152, 0, 0.2);
+        }
+        .low-risk { 
+            background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
+            border: 1px solid rgba(0, 255, 50, 0.2);
+        }
+
         .section-heading {
+            font-family: 'Space Mono', monospace;
             font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #E6D5B8;
-            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #FFB74D;
             letter-spacing: 0.1em;
             display: block;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+        }
+
+        /* Override Streamlit's default button styles */
+        .stButton>button {
+            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+            color: #FFB74D;
+            border: 1px solid rgba(255, 152, 0, 0.2);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+        }
+
+        .stButton>button:hover {
+            background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95));
+            border-color: rgba(255, 152, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
+        }
+
+        /* Additional Dune-inspired elements */
+        div[data-testid="stHeader"] {
+            background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+            border-bottom: 1px solid rgba(255, 152, 0, 0.1);
+        }
+
+        .intro-text {
+            font-family: 'Space Mono', monospace;
+            color: #FFB74D;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
         }
         </style>
     """,
                 unsafe_allow_html=True)
-
 
 
 def get_risk_class(risk_score):
@@ -292,7 +347,8 @@ def main():
                                     </ul>
                                     
                                     Higher scores (closer to 1.0) indicate more bot-like characteristics.
-
+                                </span></span>
+                            </div>
                         </div>
                     """, unsafe_allow_html=True)
 
