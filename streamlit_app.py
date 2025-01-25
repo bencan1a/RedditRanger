@@ -76,6 +76,15 @@ def load_css():
         .high-risk { background-color: rgba(255, 0, 0, 0.1); }
         .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
         .low-risk { background-color: rgba(0, 255, 0, 0.1); }
+        .section-heading {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #E6D5B8;
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: 0.1em;
+            display: block;
+        }
         </style>
     """,
                 unsafe_allow_html=True)
@@ -226,12 +235,12 @@ def main():
                     overview_html = f"""
                         <div class="grid-container">
                             <div class="grid-item half-width">
-                                <h3>Account Overview</h3>
+                                <span class="section-heading">Account Overview</span>
                                 <p>Account Age: {result['account_age']}</p>
                                 <p>Total Karma: {result['karma']:,}</p>
                             </div>
                             <div class="grid-item half-width">
-                                <h3>Top Subreddits</h3>
+                                <span class="section-heading">Top Subreddits</span>
                     """
 
                     # Add subreddit information
@@ -243,10 +252,10 @@ def main():
                         </div>
                         <div class="grid-container">
                             <div class="grid-item half-width">
-                                <h3>Activity Overview</h3>
+                                <span class="section-heading">Activity Overview</span>
                             </div>
                             <div class="grid-item half-width">
-                                <h3>Risk Analysis</h3>
+                                <span class="section-heading">Risk Analysis</span>
                             </div>
                         </div>
                     """
@@ -282,7 +291,7 @@ def main():
                     st.markdown("""
                         <div class="grid-container">
                             <div class="grid-item full-width">
-                                <h3>Bot Behavior Analysis</h3>
+                                <span class="section-heading">Bot Behavior Analysis</span>
                                 <span class="info-icon">ⓘ<span class="tooltip">
                                 <ul>
                                     <li>Text Patterns: How repetitive and template-like the writing is</li>
@@ -313,7 +322,7 @@ def main():
                     st.markdown(f"""
                         <div class="grid-container">
                             <div class="grid-item half-width">
-                                <h3>Suspicious Patterns Detected</h3>
+                                <span class="section-heading">Suspicious Patterns Detected</span>
                                 <div class='help-text'>
                                 Shows the percentage of comments that contain specific patterns often associated with bots:
                                 • Identical Greetings: Generic hello/hi messages
@@ -347,7 +356,7 @@ def main():
                     st.markdown("""
                         <div class="grid-container">
                             <div class="grid-item half-width">
-                                <h3>Improve the Abominable Intelligence</h3>
+                                <span class="section-heading">Improve the Abominable Intelligence</span>
                                 <p>Help us improve our detection capabilities by marking legitimate human accounts.</p>
                             </div>
                             <div class="grid-item half-width">
