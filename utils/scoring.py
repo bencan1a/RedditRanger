@@ -44,6 +44,7 @@ class AccountScorer:
         return 0.0
 
     def calculate_score(self, user_data, activity_patterns, text_metrics):
+        """Calculate final score for the account"""
         try:
             # Initial debug logging
             logger.info("=== Starting score calculation ===")

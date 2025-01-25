@@ -551,7 +551,9 @@ def main():
             try:
                 result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
                 if 'error' in result:
-                    st.error(f"Error analyzing account: {result['error']}")
+                    import traceback
+                    error_details = f"Error analyzing account: {result['error']}\n{traceback.format_exc()}"
+                    st.error(error_details)
                     return
 
                 risk_class = get_risk_class(result['risk_score'])
