@@ -181,8 +181,8 @@ def create_monthly_activity_chart(comments_df, submissions_df):
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
             tickfont=dict(color='#E6D5B8'),
-            # Set minimum to 0
-            range=[0, None]  # This ensures minimum is 0 while maximum auto-adjusts
+            # Explicitly set y-axis range to start at 0
+            range=[0, max(max(comments_monthly['count'].max(), posts_monthly['count'].max()) * 1.1, 1)]
         ),
         showlegend=True,
         legend=dict(
