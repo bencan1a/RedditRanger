@@ -2,6 +2,9 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timezone
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_score_radar_chart(scores):
     # Remove "_score" suffix from category names
@@ -52,9 +55,17 @@ def create_score_radar_chart(scores):
 
 def create_monthly_activity_chart(comments_df):
     """Create a monthly activity chart from comments dataframe."""
+    # Debug logging for raw data
+    logger.info(f"Total comments in dataframe: {len(comments_df)}")
+    logger.info("Raw comment dates:")
+    for date in comments_df['created_utc'].tolist():
+        logger.info(f"Comment date: {date}")
+
     # Ensure we're working with UTC timestamps
     now = pd.Timestamp.now(tz='UTC')
     one_year_ago = now - pd.DateOffset(months=12)
+
+    logger.info(f"Filtering between {one_year_ago} and {now}")
 
     # Convert created_utc to datetime if it isn't already
     if not pd.api.types.is_datetime64_any_dtype(comments_df['created_utc']):
@@ -62,13 +73,21 @@ def create_monthly_activity_chart(comments_df):
 
     # Filter and resample
     mask = (comments_df['created_utc'] >= one_year_ago) & (comments_df['created_utc'] <= now)
+    filtered_df = comments_df[mask]
+    logger.info(f"Comments after date filtering: {len(filtered_df)}")
+
     monthly_activity = (
-        comments_df[mask]
+        filtered_df
         .resample('M', on='created_utc')
         .size()
         .reset_index()
     )
     monthly_activity.columns = ['month', 'count']
+
+    # Log the final aggregated data
+    logger.info("Monthly aggregated data:")
+    for _, row in monthly_activity.iterrows():
+        logger.info(f"Month: {row['month']}, Count: {row['count']}")
 
     # Create the figure
     fig = go.Figure(data=go.Scatter(
