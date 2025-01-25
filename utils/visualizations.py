@@ -100,8 +100,10 @@ def create_monthly_activity_chart(comments_df):
             nticks=12,
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
-            tickformat="%b %y",  # Format as "Jan 25"
-            tickfont=dict(color='#E6D5B8')  # Match theme text color
+            dtick="M1",  # Show every month
+            tickformat="%b %y",  # Format as "MMM YY"
+            tickmode="auto",
+            tickfont=dict(color='#E6D5B8')
         ),
         yaxis=dict(
             title="Number of Posts",
@@ -109,7 +111,7 @@ def create_monthly_activity_chart(comments_df):
             gridcolor='rgba(255, 255, 255, 0.1)',
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
-            tickfont=dict(color='#E6D5B8')  # Match theme text color
+            tickfont=dict(color='#E6D5B8')
         ),
         showlegend=False,
         margin=dict(t=50, b=50, l=40, r=20),
