@@ -135,6 +135,11 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
     try:
         logger.debug(f"Starting analysis for user: {username}")
 
+        #Check Database Connection
+        if not account_scorer.db_connection_ok():
+            logger.error("Database connection failed. Cannot proceed with analysis.")
+            return {'username': username, 'error': "Database connection failed."}
+
         # Reset state for new analysis
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
@@ -571,44 +576,66 @@ def render_stats_page():
     """Render the statistics page with analysis history"""
     st.title("Analysis Statistics")
 
-    # Get analysis results from database
-    df = AnalysisResult.get_all_analysis_stats()
+    try:
+        # Get analysis results from database with retry
+        for attempt in range(3):  # Try up to 3 times
+            try:
+                df = AnalysisResult.get_all_analysis_stats()
+                break
+            except Exception as e:
+                if attempt == 2:  # Last attempt
+                    logger.error(f"Failed to fetch analysis stats after 3 attempts: {str(e)}")
+                    st.error("""
+                        Unable to fetch analysis statistics. 
+                        Please try refreshing the page in a few moments.
 
-    if df.empty:
-        st.info("No analysis results found in the database yet.")
-        return
+                        If the problem persists, the database might be temporarily unavailable.
+                    """)
+                    return
+                logger.warning(f"Attempt {attempt + 1} failed, retrying... Error: {str(e)}")
+                time.sleep(1)  # Wait before retry
 
-    # Add search box for username
-    search = st.text_input("Search by username")
-    if search:
-        df = df[df['Username'].str.contains(search, case=False)]
+        if df.empty:
+            st.info("No analysis results found in the database yet.")
+            return
 
-    # Configure the table
-    st.dataframe(
-        df,
-        column_config={
-            "Username": st.column_config.TextColumn(
-                "Username",
-                help="Reddit username",
-                max_chars=50
-            ),
-            "Last Analyzed": st.column_config.DatetimeColumn(
-                "Last Analyzed",
-                help="When the analysis was last performed",
-                format="D MMM YYYY, HH:mm"
-            ),
-            "Analysis Count": st.column_config.NumberColumn(
-                "Times Analyzed",
-                help="Number of times this account was analyzed"
-            ),
-            "Bot Probability": st.column_config.TextColumn(
-                "Bot Probability",
-                help="Likelihood of being a bot"
-            )
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+        # Add search box for username
+        search = st.text_input("Search by username")
+        if search:
+            df = df[df['Username'].str.contains(search, case=False)]
+
+        # Configure the table
+        st.dataframe(
+            df,
+            column_config={
+                "Username": st.column_config.TextColumn(
+                    "Username",
+                    help="Reddit username",
+                    max_chars=50
+                ),
+                "Last Analyzed": st.column_config.DatetimeColumn(
+                    "Last Analyzed",
+                    help="When the analysis was last performed",
+                    format="D MMM YYYY, HH:mm"
+                ),
+                "Analysis Count": st.column_config.NumberColumn(
+                    "Times Analyzed",
+                    help="Number of times this account was analyzed"
+                ),
+                "Bot Probability": st.column_config.TextColumn(
+                    "Bot Probability",
+                    help="Likelihood of being a bot"
+                )
+            },
+            hide_index=True,
+            use_container_width=True
+        )
+    except Exception as e:
+        logger.error(f"Error rendering stats page: {str(e)}", exc_info=True)
+        st.error("""
+            An error occurred while loading the statistics page.
+            Please try refreshing the page.
+        """)
 
 def get_risk_class(risk_score):
     if risk_score > 70:
@@ -771,8 +798,7 @@ def main():
                                     result['text_metrics'],
                                     is_legitimate=True
                                 )
-                                st.success(
-                                    "Thank you for marking this as a human account! "
+                                st.success(                                    "Thank you for marking this as a human account! "
                                     "This feedback helps improve our detection."
                                 )
 

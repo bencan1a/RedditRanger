@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 import logging
 from functools import lru_cache
 import pandas as pd
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -63,23 +64,39 @@ class AnalysisResult(Base):
     @classmethod
     def get_all_analysis_stats(cls) -> pd.DataFrame:
         """Get all analysis results for statistics page"""
-        with SessionLocal() as db:
-            results = db.query(
-                cls.username,
-                cls.last_analyzed,
-                cls.analysis_count,
-                cls.bot_probability
-            ).all()
+        max_retries = 3
+        retry_delay = 1  # seconds
 
-            return pd.DataFrame([
-                {
-                    'Username': r.username,
-                    'Last Analyzed': r.last_analyzed,
-                    'Analysis Count': r.analysis_count,
-                    'Bot Probability': f"{r.bot_probability:.1f}%"
-                }
-                for r in results
-            ])
+        for attempt in range(max_retries):
+            try:
+                with SessionLocal() as db:
+                    results = db.query(
+                        cls.username,
+                        cls.last_analyzed,
+                        cls.analysis_count,
+                        cls.bot_probability
+                    ).all()
+
+                    return pd.DataFrame([
+                        {
+                            'Username': r.username,
+                            'Last Analyzed': r.last_analyzed,
+                            'Analysis Count': r.analysis_count,
+                            'Bot Probability': f"{r.bot_probability:.1f}%"
+                        }
+                        for r in results
+                    ])
+
+            except Exception as e:
+                logger.error(f"Database error on attempt {attempt + 1}: {str(e)}")
+                if attempt == max_retries - 1:  # Last attempt
+                    logger.error("Maximum retries reached, raising error")
+                    raise
+                time.sleep(retry_delay)
+                continue
+
+        # This should never be reached due to the raise in the last attempt
+        return pd.DataFrame()  # Return empty DataFrame as fallback
 
 def init_db():
     """Initialize the database tables"""
