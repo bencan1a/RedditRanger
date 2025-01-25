@@ -17,7 +17,6 @@ class TextAnalyzer:
     def __init__(self):
         try:
             logger.info("Initializing NLTK resources...")
-            # Download required NLTK data
             nltk.download('punkt')
             nltk.download('stopwords')
             nltk.download('averaged_perceptron_tagger')
@@ -26,12 +25,12 @@ class TextAnalyzer:
             self.stop_words = set(stopwords.words('english'))
             self.vectorizer = TfidfVectorizer()
 
-            # Bot detection thresholds
+            # Adjusted bot detection thresholds for better sensitivity
             self.thresholds = {
-                'repeat_phrase_threshold': 0.3,  # Max allowable phrase repetition
-                'template_similarity_threshold': 0.8,  # Similarity threshold for template detection
-                'time_pattern_threshold': 0.7,  # Threshold for suspicious timing patterns
-                'complexity_threshold': 0.4,  # Minimum complexity score
+                'repeat_phrase_threshold': 0.1,  # More sensitive to repetition
+                'template_similarity_threshold': 0.6,  # Lowered similarity threshold
+                'time_pattern_threshold': 0.5,  # More sensitive to timing
+                'complexity_threshold': 0.3,  # Lower complexity requirement
             }
 
             logger.info("NLTK initialization complete")
@@ -49,6 +48,9 @@ class TextAnalyzer:
             # Basic metrics
             metrics = self._calculate_basic_metrics(comments)
 
+            # Log the number of comments being analyzed
+            logger.info(f"Analyzing {len(comments)} comments")
+
             # Enhanced bot detection metrics
             bot_metrics = {
                 'repetition_score': self._analyze_repetition(comments),
@@ -59,10 +61,14 @@ class TextAnalyzer:
                 'suspicious_patterns': self._identify_suspicious_patterns(comments)
             }
 
+            # Log bot detection metrics
+            logger.info(f"Bot detection metrics: {bot_metrics}")
+
             metrics.update(bot_metrics)
 
-            # Calculate overall bot probability
+            # Calculate overall bot probability with adjusted weights
             metrics['bot_probability'] = self._calculate_bot_probability(bot_metrics)
+            logger.info(f"Final bot probability: {metrics['bot_probability']}")
 
             return metrics
         except Exception as e:
@@ -241,7 +247,7 @@ class TextAnalyzer:
         return previous_row[-1]
 
     def _identify_suspicious_patterns(self, comments: List[str]) -> Dict[str, int]:
-        """Identify suspicious patterns in comments."""
+        """Identify suspicious patterns in comments with adjusted pattern matching."""
         patterns = {
             'identical_greetings': 0,
             'url_patterns': 0,
@@ -249,12 +255,13 @@ class TextAnalyzer:
             'generic_responses': 0
         }
 
-        # Common bot patterns
-        greeting_patterns = r'\b(hi|hello|hey|greetings)\b.*'
+        # Enhanced bot patterns
+        greeting_patterns = r'\b(hi|hello|hey|greetings|good morning|good evening)\b.*'
         url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        promo_patterns = r'\b(check out|visit|click|buy|discount|offer)\b'
-        generic_patterns = r'\b(thanks for sharing|great post|nice one|good point)\b'
+        promo_patterns = r'\b(check out|visit|click|buy|discount|offer|limited time|act now|don\'t miss|exclusive)\b'
+        generic_patterns = r'\b(thanks for sharing|great post|nice one|good point|interesting|awesome|cool|wow)\b'
 
+        total_patterns = 0
         for comment in comments:
             comment_lower = comment.lower()
 
@@ -266,21 +273,38 @@ class TextAnalyzer:
                 patterns['promotional_phrases'] += 1
             if re.search(generic_patterns, comment_lower):
                 patterns['generic_responses'] += 1
+            total_patterns += 1
 
+        # Normalize counts by total comments
+        if total_patterns > 0:
+            for key in patterns:
+                patterns[key] = int((patterns[key] / total_patterns) * 100)
+
+        logger.info(f"Suspicious patterns detected: {patterns}")
         return patterns
 
     def _calculate_bot_probability(self, metrics: Dict) -> float:
-        """Calculate overall bot probability based on all metrics."""
+        """Calculate overall bot probability with enhanced weighting."""
         weights = {
-            'repetition_score': 0.25,
-            'template_score': 0.2,
-            'timing_score': 0.2,
-            'complexity_score': 0.15,
-            'copy_paste_score': 0.2
+            'repetition_score': 0.3,      # Increased weight for repetition
+            'template_score': 0.25,       # Template matching importance
+            'timing_score': 0.2,          # Timing patterns
+            'complexity_score': 0.15,     # Language complexity
+            'copy_paste_score': 0.1       # Copy-paste detection
         }
 
-        weighted_sum = sum(weights[key] * metrics[key] for key in weights if key in metrics)
-        return min(1.0, weighted_sum)
+        # Calculate weighted sum with logging
+        weighted_sum = 0
+        for key, weight in weights.items():
+            if key in metrics:
+                value = metrics[key]
+                weighted_contribution = weight * value
+                logger.info(f"{key}: {value} (weight: {weight}) = {weighted_contribution}")
+                weighted_sum += weighted_contribution
+
+        final_probability = min(1.0, weighted_sum)
+        logger.info(f"Final weighted probability: {final_probability}")
+        return final_probability
 
     def _get_empty_metrics(self) -> Dict:
         """Return empty metrics structure."""
