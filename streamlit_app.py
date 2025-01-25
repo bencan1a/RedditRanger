@@ -116,13 +116,28 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Display risk score prominently
+                    # Display risk score prominently with tooltip explanation
                     risk_class = get_risk_class(result['risk_score'])
-                    st.markdown(f"""
-                        <div class='risk-score {risk_class}'>
-                            {result['risk_score']:.1f}% Thinking Machine Probability
-                        </div>
-                    """, unsafe_allow_html=True)
+                    risk_explanation = """
+                    The Thinking Machine Probability Score is calculated using multiple factors:
+
+                    • Account Metrics (25%): Account age, karma ratio, and overall activity levels
+                    • Activity Patterns (25%): Posting times, subreddit diversity, and interaction frequency
+                    • Text Analysis (25%): Comment similarity, vocabulary diversity, and writing patterns
+                    • ML Risk Assessment (25%): Machine learning model prediction based on historical patterns
+
+                    A higher score indicates more bot-like behavior patterns.
+                    """
+
+                    score_col1, score_col2 = st.columns([3,1])
+                    with score_col1:
+                        st.markdown(f"""
+                            <div class='risk-score {risk_class}'>
+                                {result['risk_score']:.1f}% Thinking Machine Probability
+                            </div>
+                        """, unsafe_allow_html=True)
+                    with score_col2:
+                        st.info(risk_explanation)
 
                     # Overview and Risk Analysis section
                     overview_cols = st.columns([1, 2])
