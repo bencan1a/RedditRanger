@@ -693,11 +693,12 @@ def main():
                             config={'displayModeBar': False})
 
                     with col4:
+                        logger.debug(f"Component scores for radar chart: {result['component_scores']}")
+                        radar_chart = create_score_radar_chart(result['component_scores'])
                         st.plotly_chart(
-                            create_score_radar_chart(result['component_scores']),
+                            radar_chart,
                             use_container_width=True,
                             config={'displayModeBar': False})
-
 
                     st.markdown("""
                         <div class="grid-container">
@@ -779,7 +780,7 @@ def main():
                                 is_legitimate=True)
                             st.success(
                                 "Thank you for marking this as a human account! This feedback helps improve our detection."
-                            )
+                                                        )
 
                     with col2:
                         if st.button("Mark as Bot Account", key="bot-account-btn"):

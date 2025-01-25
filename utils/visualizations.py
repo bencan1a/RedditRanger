@@ -9,9 +9,32 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 def create_score_radar_chart(scores):
+    """Create a radar chart visualization of account scores."""
+    logger.debug(f"Creating radar chart with scores: {scores}")
+
+    # Filter out non-score keys and format names
+    score_items = {k: v for k, v in scores.items() if isinstance(v, (int, float)) and k != 'metrics'}
+    logger.debug(f"Filtered score items: {score_items}")
+
     # Remove "_score" suffix from category names
-    categories = [cat.replace('_score', '') for cat in scores.keys()]
-    values = list(scores.values())
+    categories = [cat.replace('_score', '') for cat in score_items.keys()]
+    values = list(score_items.values())
+
+    logger.debug(f"Radar chart categories: {categories}")
+    logger.debug(f"Radar chart values: {values}")
+
+    if not categories or not values:
+        logger.warning("No valid scores found for radar chart")
+        # Return an empty figure with a warning
+        fig = go.Figure()
+        fig.add_annotation(
+            text="No score data available",
+            xref="paper", yref="paper",
+            x=0.5, y=0.5,
+            showarrow=False,
+            font=dict(size=14, color="#E6D5B8")
+        )
+        return fig
 
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
@@ -38,12 +61,12 @@ def create_score_radar_chart(scores):
                 tickformat='.0%',
                 gridcolor='rgba(255, 255, 255, 0.1)',
                 linecolor='rgba(255, 255, 255, 0.1)',
-                tickfont=dict(color='#E6D5B8')  # Match the theme text color
+                tickfont=dict(color='#E6D5B8')
             ),
             angularaxis=dict(
                 gridcolor='rgba(255, 255, 255, 0.1)',
                 linecolor='rgba(255, 255, 255, 0.1)',
-                tickfont=dict(color='#E6D5B8')  # Match the theme text color
+                tickfont=dict(color='#E6D5B8')
             ),
             bgcolor='rgba(0, 0, 0, 0)'
         ),
