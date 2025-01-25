@@ -19,6 +19,42 @@ def load_css():
             padding: 1rem;
             border-radius: 10px;
             margin: 1rem 0;
+            position: relative;
+            display: inline-block;
+        }
+        .info-icon {
+            font-size: 1rem;
+            color: #E6D5B8;
+            margin-left: 8px;
+            cursor: help;
+            position: relative;
+            display: inline-block;
+        }
+        .info-icon .tooltip {
+            visibility: hidden;
+            background-color: rgba(45, 45, 45, 0.95);
+            color: #E6D5B8;
+            text-align: left;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+
+            /* Position the tooltip */
+            position: absolute;
+            z-index: 1;
+            width: 280px;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+
+            /* Fade in/out */
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .info-icon:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
         }
         .chart-container {
             border-radius: 5px;
@@ -116,28 +152,24 @@ def main():
                         st.error(f"Error analyzing account: {result['error']}")
                         return
 
-                    # Display risk score prominently with tooltip explanation
+                    # Display risk score prominently with hover tooltip
                     risk_class = get_risk_class(result['risk_score'])
-                    risk_explanation = """
-                    The Thinking Machine Probability Score is calculated using multiple factors:
+                    tooltip_text = """
+                    • Account age, karma & activity (25%)
+                    • Posting patterns & subreddit diversity (25%)
+                    • Comment analysis & vocabulary (25%)
+                    • ML-based behavior assessment (25%)
 
-                    • Account Metrics (25%): Account age, karma ratio, and overall activity levels
-                    • Activity Patterns (25%): Posting times, subreddit diversity, and interaction frequency
-                    • Text Analysis (25%): Comment similarity, vocabulary diversity, and writing patterns
-                    • ML Risk Assessment (25%): Machine learning model prediction based on historical patterns
+                    Higher score = more bot-like patterns"""
 
-                    A higher score indicates more bot-like behavior patterns.
-                    """
-
-                    score_col1, score_col2 = st.columns([3,1])
-                    with score_col1:
-                        st.markdown(f"""
-                            <div class='risk-score {risk_class}'>
-                                {result['risk_score']:.1f}% Thinking Machine Probability
-                            </div>
-                        """, unsafe_allow_html=True)
-                    with score_col2:
-                        st.info(risk_explanation)
+                    st.markdown(f"""
+                        <div class='risk-score {risk_class}'>
+                            {result['risk_score']:.1f}% Thinking Machine Probability
+                            <span class='info-icon'>ⓘ
+                                <span class='tooltip'>{tooltip_text}</span>
+                            </span>
+                        </div>
+                    """, unsafe_allow_html=True)
 
                     # Overview and Risk Analysis section
                     overview_cols = st.columns([1, 2])
