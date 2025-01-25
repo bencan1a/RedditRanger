@@ -117,9 +117,9 @@ def perform_analysis(username, _result_queue):  # Added underscore to prevent ca
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(float(v) for k, v in component_scores.items()
-                                           if k != 'ml_risk_score' and isinstance(v, (int, float))) /
-                                       max(1, len([k for k in component_scores
-                                           if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
+                                               if k != 'ml_risk_score' and isinstance(v, (int, float))) /
+                                           max(1, len([k for k in component_scores
+                                               if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -145,6 +145,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
         st.session_state.analysis_error = None
+        st.session_state.analysis_started = False
 
         # Create a queue for thread communication
         result_queue = Queue()
@@ -421,6 +422,12 @@ def display_analysis_results(result):
                 st.error("Unable to submit feedback at this time.")
 
 
+def reset_analysis_state():
+    """Reset all analysis-related state variables"""
+    st.session_state.analysis_complete = False
+    st.session_state.analysis_result = None
+    st.session_state.analysis_error = None
+    st.session_state.analysis_started = False
 
 def main():
     try:
@@ -436,6 +443,7 @@ def main():
             st.session_state.analysis_error = None
             st.session_state.analysis_started = False
             st.session_state.analyzers_initialized = False
+            st.session_state.previous_username = None
 
         # Initialize analyzers once
         if not st.session_state.analyzers_initialized:
@@ -473,14 +481,14 @@ def main():
             username = st.text_input("Enter Reddit Username:", "")
 
             # Reset state when username changes
-            if username and not st.session_state.analysis_started:
-                st.session_state.analysis_complete = False
-                st.session_state.analysis_result = None
-                st.session_state.analysis_error = None
-                st.session_state.analysis_started = True
+            if username != st.session_state.previous_username:
+                reset_analysis_state()
+                st.session_state.previous_username = username
 
+            # Start new analysis if needed
+            if username and not st.session_state.analysis_started and not st.session_state.analysis_complete:
                 try:
-                    # Create result queue
+                    st.session_state.analysis_started = True
                     result_queue = Queue()
 
                     # Start analysis in background thread
@@ -494,10 +502,9 @@ def main():
                     # Show loading animation while analysis runs
                     placeholder = st.empty()
                     litany = cycle_litany()
-
-                    # Wait for result with timeout
                     start_time = time.time()
-                    while time.time() - start_time < 60 and not st.session_state.analysis_complete:  # 60 second timeout
+
+                    while time.time() - start_time < 60 and not st.session_state.analysis_complete:
                         try:
                             # Check if result is available (non-blocking)
                             try:
@@ -507,6 +514,7 @@ def main():
                                 else:
                                     st.session_state.analysis_result = result
                                 st.session_state.analysis_complete = True
+                                placeholder.empty()  # Clear loading animation
                                 break
                             except Empty:
                                 pass  # No result yet
@@ -518,23 +526,18 @@ def main():
                                     {litany_text}
                                 </div>
                             """, unsafe_allow_html=True)
-                            time.sleep(0.5)  # Reduced sleep time for more responsive UI
+                            time.sleep(0.5)
+
                         except Exception as e:
                             logger.error(f"Error during analysis loop: {str(e)}")
                             st.session_state.analysis_error = f"Error during analysis: {str(e)}"
                             st.session_state.analysis_complete = True
                             break
 
-                    # Clear loading animation
-                    placeholder.empty()
-
                     # Handle timeout
                     if not st.session_state.analysis_complete:
                         st.session_state.analysis_error = "Analysis timed out. Please try again."
                         st.session_state.analysis_complete = True
-
-                    # Reset analysis started flag
-                    st.session_state.analysis_started = False
 
                 except Exception as e:
                     st.error(f"Error analyzing account: {str(e)}")
@@ -544,8 +547,15 @@ def main():
             if st.session_state.analysis_complete:
                 if st.session_state.analysis_error:
                     st.error(f"Error analyzing account: {st.session_state.analysis_error}")
+                    if st.button("Retry Analysis"):
+                        reset_analysis_state()
+                        st.experimental_rerun()
                 elif st.session_state.analysis_result:
                     display_analysis_results(st.session_state.analysis_result)
+                    if st.button("Analyze Another Account"):
+                        reset_analysis_state()
+                        st.session_state.previous_username = None
+                        st.experimental_rerun()
 
         else:  # Bulk Analysis
             usernames = st.text_area(
