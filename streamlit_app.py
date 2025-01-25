@@ -20,12 +20,15 @@ def load_css():
             width: 100%;
             align-items: stretch; /* Ensure items in a row have same height */
             margin-bottom: 20px;
+            flex-wrap: nowrap; /* Prevent wrapping to new rows */
+            overflow-x: auto; /* Allow horizontal scrolling if needed */
         }
         .grid-item {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 5px;
             padding: 20px;
             box-sizing: border-box;
+            min-width: 200px; /* Prevent items from getting too narrow */
         }
         .grid-item.half-width {
             flex: 0 0 calc(50% - 10px);
