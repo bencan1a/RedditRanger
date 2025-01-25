@@ -18,32 +18,24 @@ def load_css():
             display: flex;
             gap: 20px;
             width: 100%;
-            align-items: stretch; /* Ensure items in a row have same height */
+            align-items: stretch;
             margin-bottom: 20px;
-            flex-wrap: nowrap; /* Prevent wrapping to new rows */
-            overflow-x: auto; /* Allow horizontal scrolling if needed */
+            flex-direction: row;
         }
         .grid-item {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 5px;
             padding: 20px;
             box-sizing: border-box;
-            min-width: 200px; /* Prevent items from getting too narrow */
         }
         .grid-item.half-width {
-            flex: 0 0 calc(50% - 10px);
-            width: calc(50% - 10px);
-            max-width: calc(50% - 10px);
+            flex: 1 1 0;
         }
         .grid-item.full-width {
-            flex: 0 0 100%;
-            width: 100%;
-            max-width: 100%;
+            flex: 1 1 100%;
         }
         .grid-item.quarter-width {
-            flex: 0 0 calc(25% - 15px);
-            width: calc(25% - 15px);
-            max-width: calc(25% - 15px);
+            flex: 1 1 0;
         }
         .risk-score {
             font-size: 2.1rem;
