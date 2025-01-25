@@ -30,7 +30,7 @@ def load_css():
             padding: 20px;
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
         }
         .grid-item.half-width { flex: 0 0 50%; }
         .grid-item.full-width { flex: 0 0 100%; }
@@ -141,7 +141,72 @@ def load_css():
             margin: 1rem 0;
             text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
         }
+
+        #sand-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Add semi-transparent overlay to improve text readability */
+        .stApp {
+            background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
+        }
+
+
         </style>
+
+        <!-- Add Three.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+        <!-- Add sand effect container -->
+        <div id="sand-background"></div>
+
+        <script>
+        // Initialize sand effect
+        const container = document.getElementById('sand-background');
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+
+        // Set canvas size
+        function resize() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Add to container
+        container.appendChild(renderer.domElement);
+
+        // Create shader material
+        const uniforms = {
+            time: { value: 0 },
+            resolution: { value: new THREE.Vector2() }
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: document.getElementById('vertex-shader').textContent,
+            fragmentShader: document.getElementById('fragment-shader').textContent
+        });
+
+        // Create mesh
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        // Animation loop
+        function animate(time) {
+            uniforms.time.value = time * 0.001;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+        </script>
     """,
                 unsafe_allow_html=True)
 
