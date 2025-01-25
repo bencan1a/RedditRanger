@@ -21,7 +21,7 @@ args = "Reddit Analyzer API"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Streamlit App"
+args = "Start application"
 
 [[workflows.workflow]]
 name = "Reddit Analyzer API"
@@ -39,7 +39,7 @@ args = "python main.py"
 waitForPort = 5001
 
 [[workflows.workflow]]
-name = "Streamlit App"
+name = "Start application"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -50,7 +50,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run streamlit_app.py"
+args = "streamlit run streamlit_app.py --server.port 5000"
 waitForPort = 5000
 
 [[ports]]
@@ -64,3 +64,7 @@ externalPort = 3000
 [[ports]]
 localPort = 5002
 externalPort = 3001
+
+[[ports]]
+localPort = 8501
+externalPort = 3002
