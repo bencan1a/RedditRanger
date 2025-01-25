@@ -97,12 +97,11 @@ def create_monthly_activity_chart(comments_df):
             showgrid=True,
             gridcolor='rgba(255, 255, 255, 0.1)',
             tickangle=45,
-            nticks=12,
             showline=True,
             linecolor='rgba(255, 255, 255, 0.2)',
-            type='date',
-            tickformat="%b %y",
-            tickmode="auto",
+            tickmode='array',
+            ticktext=[d.strftime('%b %y') for d in monthly_activity['month']],
+            tickvals=monthly_activity['month'],
             tickfont=dict(color='#E6D5B8')
         ),
         yaxis=dict(
