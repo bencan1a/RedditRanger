@@ -14,25 +14,42 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
+    _instance = None
+    _initialized = False
+    _reddit_client = None
+
+    def __new__(cls, client_id: Optional[str] = None, client_secret: Optional[str] = None):
+        if cls._instance is None:
+            cls._instance = super(RedditAnalyzer, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, client_id: Optional[str] = None, client_secret: Optional[str] = None):
-        self.client_id = client_id or os.environ.get('REDDIT_CLIENT_ID')
-        self.client_secret = client_secret or os.environ.get('REDDIT_CLIENT_SECRET')
+        if not self._initialized:
+            self.client_id = client_id or os.environ.get('REDDIT_CLIENT_ID')
+            self.client_secret = client_secret or os.environ.get('REDDIT_CLIENT_SECRET')
 
-        if not self.client_id or not self.client_secret:
-            raise ValueError("Reddit API credentials not found")
+            if not self.client_id or not self.client_secret:
+                raise ValueError("Reddit API credentials not found")
 
-        try:
-            self.reddit = praw.Reddit(
-                client_id=self.client_id,
-                client_secret=self.client_secret,
-                user_agent="script:reddit-analyzer:v1.0 (by /u/RedditAnalyzerBot)",
-                check_for_async=False,
-                read_only=True
-            )
-            logger.info("Reddit API connection successful")
-        except Exception as e:
-            logger.error(f"Error initializing Reddit client: {str(e)}")
-            raise
+            self._initialized = True
+
+    @property
+    def reddit(self):
+        """Lazy initialization of Reddit client"""
+        if self._reddit_client is None:
+            try:
+                self._reddit_client = praw.Reddit(
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                    user_agent="script:reddit-analyzer:v1.0 (by /u/RedditAnalyzerBot)",
+                    check_for_async=False,
+                    read_only=True
+                )
+                logger.info("Reddit API connection successful")
+            except Exception as e:
+                logger.error(f"Error initializing Reddit client: {str(e)}")
+                raise
+        return self._reddit_client
 
     def _fetch_user_content(self, user, content_type: str = 'comments', limit: Optional[int] = None) -> List[Dict]:
         """Fetch either comments or submissions for a user."""

@@ -14,22 +14,41 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TextAnalyzer:
+    _instance = None
+    _initialized = False
+    _nltk_initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(TextAnalyzer, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        try:
-            logger.info("Initializing NLTK resources...")
-            nltk.download(['punkt', 'stopwords', 'averaged_perceptron_tagger'])
-            self.stop_words = set(stopwords.words('english'))
+        if not self._initialized:
+            logger.info("Initializing TextAnalyzer instance")
             self.vectorizer = TfidfVectorizer(
-                min_df=1,  # Changed to catch more patterns
+                min_df=1,
                 max_df=0.95
             )
-            logger.info("NLTK initialization complete")
-        except Exception as e:
-            logger.error(f"Error initializing NLTK: {str(e)}")
-            raise
+            self._initialized = True
+
+    def _ensure_nltk_resources(self):
+        """Lazy initialization of NLTK resources"""
+        if not self._nltk_initialized:
+            try:
+                logger.info("Initializing NLTK resources (first use)...")
+                nltk.download(['punkt', 'stopwords', 'averaged_perceptron_tagger'], quiet=True)
+                self.stop_words = set(stopwords.words('english'))
+                self._nltk_initialized = True
+                logger.info("NLTK initialization complete")
+            except Exception as e:
+                logger.error(f"Error initializing NLTK: {str(e)}")
+                raise
 
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
         """Analyze comments for bot-like patterns."""
+        self._ensure_nltk_resources()  # Lazy load NLTK resources
+
         if not comments:
             logger.warning("No comments provided for analysis")
             return self._get_empty_metrics()
@@ -97,7 +116,6 @@ class TextAnalyzer:
             logger.info(f"Max repetition: {max_repetition}, Total sequences: {total_sequences}")
 
             return repetition_score
-
         except Exception as e:
             logger.error(f"Error calculating repetition score: {str(e)}")
             return 0.0
@@ -122,7 +140,6 @@ class TextAnalyzer:
             logger.info(f"Average similarity: {avg_similarity}, Template score: {template_score}")
 
             return template_score
-
         except Exception as e:
             logger.error(f"Error calculating template score: {str(e)}")
             return 0.0
@@ -158,7 +175,6 @@ class TextAnalyzer:
             logger.info(f"Calculated complexity score: {complexity_score}")
 
             return complexity_score
-
         except Exception as e:
             logger.error(f"Error calculating complexity score: {str(e)}")
             return 0.5  # Return neutral score on error
@@ -191,7 +207,6 @@ class TextAnalyzer:
             logger.info(f"Timing regularity: {regularity_score}, Rapid responses: {rapid_responses}")
 
             return timing_score
-
         except Exception as e:
             logger.error(f"Error analyzing timing patterns: {str(e)}")
             return 0.5
@@ -237,7 +252,6 @@ class TextAnalyzer:
 
             logger.info(f"Detected patterns (percentage): {patterns}")
             return patterns
-
         except Exception as e:
             logger.error(f"Error identifying suspicious patterns: {str(e)}")
             return patterns
