@@ -185,7 +185,7 @@ def main():
             try:
                 with st.spinner('Analyzing through Abominable Intelligence...'):
                     result = analyze_single_user(username, reddit_analyzer,
-                                               text_analyzer, account_scorer)
+                                                text_analyzer, account_scorer)
 
                     if 'error' in result:
                         st.error(f"Error analyzing account: {result['error']}")
@@ -278,14 +278,6 @@ def main():
                             use_container_width=True,
                             config={'displayModeBar': False})
 
-                    # Detailed Analysis Header - Single markdown call
-                    st.markdown("""
-                        <div class="grid-container">
-                            <div class="grid-item full-width">
-                                <h2>Detailed Analysis</h2>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
 
                     # Bot Behavior Analysis - Single markdown call
                     st.markdown("""
@@ -293,16 +285,15 @@ def main():
                             <div class="grid-item full-width">
                                 <span class="section-heading">Bot Behavior Analysis</span>
                                 <span class="info-icon">ⓘ<span class="tooltip">
-                                <ul>
-                                    <li>Text Patterns: How repetitive and template-like the writing is</li>
-                                    <li>Timing Patterns: If posting follows suspicious timing patterns</li>
-                                    <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
-                                </ul>
-                                
-                                Higher scores (closer to 1.0) indicate more bot-like characteristics.
-                                </span></span>
+                                    <ul>
+                                        <li>Text Patterns: How repetitive and template-like the writing is</li>
+                                        <li>Timing Patterns: If posting follows suspicious timing patterns</li>
+                                        <li>Suspicious Patterns: Frequency of bot-like behavior markers</li>
+                                    </ul>
+                                    
+                                    Higher scores (closer to 1.0) indicate more bot-like characteristics.
 
-</div></div></div>
+                        </div>
                     """, unsafe_allow_html=True)
 
                     # Add bot analysis chart
@@ -331,7 +322,7 @@ def main():
                                 • Generic Responses: Very basic/template-like replies
                                 </div>
                             </div>
-                            <div class="grid-item quarter-width">
+                            <div class="grid-item half-width">
                                 <table class='pattern-table'>
                                     <tr>
                                         <th>Pattern Type</th>
@@ -357,25 +348,41 @@ def main():
                         <div class="grid-container">
                             <div class="grid-item half-width">
                                 <span class="section-heading">Improve the Abominable Intelligence</span>
-                                <p>Help us improve our detection capabilities by marking legitimate human accounts.</p>
+                                <p>Help us improve our detection capabilities by providing feedback on the account classification.</p>
                             </div>
                             <div class="grid-item half-width">
                                 <div class="feedback-section">
-                                    <button id="human-account-btn" class="stButton">Mark as Human Account</button>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <button id="human-account-btn" class="stButton">Mark as Human Account</button>
+                                        <button id="bot-account-btn" class="stButton">Mark as Bot Account</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
 
-                    if st.button("Mark as Human Account", key="human-account-btn"):
-                        account_scorer.ml_analyzer.add_training_example(
-                            result['user_data'],
-                            result['activity_patterns'],
-                            result['text_metrics'],
-                            is_legitimate=True)
-                        st.success(
-                            "Thank you for your feedback! This will help our Abominable Intelligence become more accurate."
-                        )
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Mark as Human Account", key="human-account-btn"):
+                            account_scorer.ml_analyzer.add_training_example(
+                                result['user_data'],
+                                result['activity_patterns'],
+                                result['text_metrics'],
+                                is_legitimate=True)
+                            st.success(
+                                "Thank you for marking this as a human account! This feedback helps improve our detection."
+                            )
+
+                    with col2:
+                        if st.button("Mark as Bot Account", key="bot-account-btn"):
+                            account_scorer.ml_analyzer.add_training_example(
+                                result['user_data'],
+                                result['activity_patterns'],
+                                result['text_metrics'],
+                                is_legitimate=False)
+                            st.success(
+                                "Thank you for marking this as a bot account! This feedback helps improve our detection."
+                            )
 
             except Exception as e:
                 st.error(f"Error analyzing account: {str(e)}")
