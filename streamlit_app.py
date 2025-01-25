@@ -19,7 +19,6 @@ def load_css():
             width: 100%;
             align-items: stretch;
             margin-bottom: 20px;
-            flex-direction: row;
         }
         .grid-item {
             background: rgba(255, 255, 255, 0.05);
@@ -77,8 +76,7 @@ def load_css():
         .medium-risk { background-color: rgba(255, 165, 0, 0.1); }
         .low-risk { background-color: rgba(0, 255, 0, 0.1); }
         </style>
-    """,
-                unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 
 def get_risk_class(risk_score):
@@ -360,11 +358,13 @@ def main():
                             <div class="grid-item half-width">
                                 <h3>Improve the Abominable Intelligence</h3>
                                 <p>Help us improve our detection capabilities by marking legitimate human accounts.</p>
+                                <button id="human-account-btn" class="stButton">Mark as Human Account</button>
                             </div>
                             <div class="grid-item half-width">
                     """,
                                 unsafe_allow_html=True)
-                    if st.button("Mark as Human Account"):
+
+                    if st.button("Mark as Human Account", key="human-account-btn"):
                         account_scorer.ml_analyzer.add_training_example(
                             result['user_data'],
                             result['activity_patterns'],
