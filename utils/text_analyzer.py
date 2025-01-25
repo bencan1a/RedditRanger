@@ -131,30 +131,37 @@ class TextAnalyzer:
         """Calculate language complexity score."""
         try:
             if not comments:
-                return 0.0
+                logger.debug("No comments provided for complexity analysis")
+                return 0.5  # Neutral score
 
             scores = []
             for comment in comments:
-                words = word_tokenize(comment.lower())
-                if not words:
+                try:
+                    # Use word split instead of word_tokenize to avoid NLTK dependency
+                    words = str(comment).lower().split()
+                    if not words:
+                        continue
+
+                    # Calculate metrics
+                    unique_ratio = float(len(set(words)) / len(words))
+                    avg_word_length = float(np.mean([len(w) for w in words]))
+
+                    # More aggressive scoring for bot-like patterns
+                    comment_score = 1.0 - ((unique_ratio + min(1.0, avg_word_length/8)) / 2)
+                    scores.append(float(comment_score))
+
+                except Exception as e:
+                    logger.error(f"Error processing comment for complexity: {str(e)}")
                     continue
 
-                # Calculate metrics
-                unique_ratio = len(set(words)) / len(words)
-                avg_word_length = np.mean([len(w) for w in words])
-
-                # More aggressive scoring for bot-like patterns
-                comment_score = 1.0 - ((unique_ratio + min(1.0, avg_word_length/8)) / 2)
-                scores.append(comment_score)
-
-            complexity_score = np.mean(scores) if scores else 0.5
-            logger.info(f"Complexity score: {complexity_score}")
+            complexity_score = float(np.mean(scores) if scores else 0.5)
+            logger.info(f"Calculated complexity score: {complexity_score}")
 
             return complexity_score
 
         except Exception as e:
             logger.error(f"Error calculating complexity score: {str(e)}")
-            return 0.5
+            return 0.5  # Return neutral score on error
 
     def _analyze_timing_patterns(self, timestamps: List[datetime]) -> float:
         """Analyze timing patterns with increased sensitivity."""
