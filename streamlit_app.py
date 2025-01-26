@@ -6,10 +6,10 @@ from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.database import AnalysisResult, SessionLocal
 from utils.visualizations import (create_score_radar_chart,
-                              create_monthly_activity_table,
-                              create_subreddit_distribution,
-                              create_monthly_activity_chart,
-                              create_bot_analysis_chart)
+                                  create_monthly_activity_table,
+                                  create_subreddit_distribution,
+                                  create_monthly_activity_chart,
+                                  create_bot_analysis_chart)
 import pandas as pd
 import time
 import itertools
@@ -19,8 +19,7 @@ from queue import Queue, Empty
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Initialize analyzers at the module level
@@ -38,23 +37,26 @@ except Exception as e:
 MENTAT_LITANY = [
     "It is by will alone I set my mind in motion.",
     "It is by the juice of Sapho that thoughts acquire speed,",
-    "The lips acquire stains,",
-    "The stains become a warning.",
+    "The lips acquire stains,", "The stains become a warning.",
     "It is by will alone I set my mind in motion."
 ]
+
 
 def cycle_litany():
     #Creates a cycling iterator of the Mentat litany
     return itertools.cycle(MENTAT_LITANY)
 
-def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
+
+def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer,
+                     result_queue):
     # Perform the analysis in a separate thread
     try:
         logger.debug(f"Starting perform_analysis for user: {username}")
 
         # Set a timeout for the entire analysis
         logger.debug("Fetching user data...")
-        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
+        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(
+            username)
 
         logger.debug(f"User data fetched. Type: {type(user_data)}")
         logger.debug(f"User data contents: {user_data}")
@@ -71,11 +73,14 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         logger.debug(f"Activity patterns: {activity_patterns}")
 
         # Get comment texts safely
-        comment_texts = comments_df['body'].tolist() if not comments_df.empty else []
-        comment_times = comments_df['created_utc'].tolist() if not comments_df.empty else None
+        comment_texts = comments_df['body'].tolist(
+        ) if not comments_df.empty else []
+        comment_times = comments_df['created_utc'].tolist(
+        ) if not comments_df.empty else None
 
         logger.debug("Analyzing comment texts...")
-        text_metrics = text_analyzer.analyze_comments(comment_texts, comment_times)
+        text_metrics = text_analyzer.analyze_comments(comment_texts,
+                                                      comment_times)
         logger.debug(f"Text metrics: {text_metrics}")
 
         # Create default text metrics if analysis fails
@@ -96,46 +101,72 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         # Log karma values before calculation
         comment_karma = user_data.get('comment_karma', 0)
         link_karma = user_data.get('link_karma', 0)
-        logger.debug(f"Comment karma: {comment_karma} (type: {type(comment_karma)})")
+        logger.debug(
+            f"Comment karma: {comment_karma} (type: {type(comment_karma)})")
         logger.debug(f"Link karma: {link_karma} (type: {type(link_karma)})")
 
         # Calculate total karma with explicit type conversion
-        total_karma = int(comment_karma) + int(link_karma) if isinstance(comment_karma, (int, float)) and isinstance(link_karma, (int, float)) else 0
+        total_karma = int(comment_karma) + int(link_karma) if isinstance(
+            comment_karma,
+            (int, float)) and isinstance(link_karma, (int, float)) else 0
         logger.debug(f"Total karma calculated: {total_karma}")
 
         # Save to database with proper error handling
         try:
             with SessionLocal() as db:
-                bot_probability = (1 - final_score) * 100  # Convert to percentage
-                logger.debug(f"Calculated bot_probability for database: {bot_probability}")
-                analysis_result = AnalysisResult.get_or_create(db, username, bot_probability)
+                bot_probability = (1 -
+                                   final_score) * 100  # Convert to percentage
+                logger.debug(
+                    f"Calculated bot_probability for database: {bot_probability}"
+                )
+                analysis_result = AnalysisResult.get_or_create(
+                    db, username, bot_probability)
                 db.commit()
-                logger.info(f"Successfully saved analysis results to database for user: {username}")
-                logger.debug(f"Database record: id={analysis_result.id}, "
-                           f"analysis_count={analysis_result.analysis_count}, "
-                           f"last_analyzed={analysis_result.last_analyzed}")
+                logger.info(
+                    f"Successfully saved analysis results to database for user: {username}"
+                )
+                logger.debug(
+                    f"Database record: id={analysis_result.id}, "
+                    f"analysis_count={analysis_result.analysis_count}, "
+                    f"last_analyzed={analysis_result.last_analyzed}")
         except Exception as db_error:
-            logger.error(f"Database error while saving results for {username}: {str(db_error)}", 
-                        exc_info=True)
+            logger.error(
+                f"Database error while saving results for {username}: {str(db_error)}",
+                exc_info=True)
             # Continue with analysis even if database save fails
 
         result = {
-            'username': username,
-            'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
-            'karma': total_karma,
+            'username':
+                username,
+            'account_age':
+                user_data['created_utc'].strftime('%Y-%m-%d'),
+            'karma':
+                total_karma,
             'risk_score': (1 - final_score) * 100,
-            'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
-            'traditional_risk_score': (1 - sum(float(v) for k, v in component_scores.items()
-                                           if k != 'ml_risk_score' and isinstance(v, (int, float))) /
-                                       max(1, len([k for k in component_scores
-                                           if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
-            'user_data': user_data,
-            'activity_patterns': activity_patterns,
-            'text_metrics': text_metrics,
-            'component_scores': component_scores,
-            'comments_df': comments_df,
-            'submissions_df': submissions_df,
-            'bot_probability': text_metrics.get('bot_probability', 0) * 100
+            'ml_risk_score':
+                component_scores.get('ml_risk_score', 0.5) * 100,
+            'traditional_risk_score': (1 - sum(
+                float(v) for k, v in component_scores.items()
+                if k != 'ml_risk_score' and isinstance(v, (int, float))) / max(
+                1,
+                len([
+                    k for k in component_scores if k != 'ml_risk_score'
+                    and isinstance(component_scores[k], (int, float))
+                ]))) * 100,
+            'user_data':
+                user_data,
+            'activity_patterns':
+                activity_patterns,
+            'text_metrics':
+                text_metrics,
+            'component_scores':
+                component_scores,
+            'comments_df':
+                comments_df,
+            'submissions_df':
+                submissions_df,
+            'bot_probability':
+                text_metrics.get('bot_probability', 0) * 100
         }
 
         logger.debug("Analysis complete, putting success result in queue")
@@ -146,7 +177,9 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         error_details = f"Error during analysis: {str(e)}\nFull traceback: {traceback.format_exc()}"
         result_queue.put(('error', error_details))
 
-def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
+
+def analyze_single_user(username, reddit_analyzer, text_analyzer,
+                        account_scorer):
     # Analyze a single user with background processing
     try:
         logger.debug(f"Starting analysis for user: {username}")
@@ -165,11 +198,11 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         logger.debug("Created result queue")
 
         # Start analysis in background thread
-        analysis_thread = threading.Thread(
-            target=perform_analysis,
-            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue),
-            daemon=True
-        )
+        analysis_thread = threading.Thread(target=perform_analysis,
+                                           args=(username, reddit_analyzer,
+                                                 text_analyzer, account_scorer,
+                                                 result_queue),
+                                           daemon=True)
         analysis_thread.start()
         logger.debug("Started analysis thread")
 
@@ -203,10 +236,12 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                     <div class="mentat-litany visible">
                         {litany_text}
                     </div>
-                """, unsafe_allow_html=True)
+                """,
+                                     unsafe_allow_html=True)
                 time.sleep(1)
             except Exception as e:
-                logger.error(f"Error during analysis loop: {str(e)}", exc_info=True)
+                logger.error(f"Error during analysis loop: {str(e)}",
+                             exc_info=True)
                 st.session_state.analysis_error = f"Error during analysis: {str(e)}"
                 st.session_state.analysis_complete = True
                 break
@@ -222,8 +257,12 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
         # Return result or error
         if st.session_state.analysis_error:
-            logger.error(f"Returning error result: {st.session_state.analysis_error}")
-            return {'username': username, 'error': st.session_state.analysis_error}
+            logger.error(
+                f"Returning error result: {st.session_state.analysis_error}")
+            return {
+                'username': username,
+                'error': st.session_state.analysis_error
+            }
 
         logger.debug("Returning successful analysis result")
         return st.session_state.analysis_result
@@ -232,6 +271,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         logger.error(f"Error in analyze_single_user: {str(e)}", exc_info=True)
         st.session_state.analysis_complete = True
         return {'username': username, 'error': str(e)}
+
 
 def load_css():
     st.markdown("""
@@ -509,107 +549,123 @@ def load_css():
         // Expose the function globally for Streamlit to call
         window.fadeOutPreviousResults = fadeOutPreviousResults;
         </script>
-    """,
-        unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+
+
+def load_shader_code():
+    """Return shader code as a JavaScript block"""
+    return """
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform float time;
+            uniform vec2 resolution;
+            varying vec2 vUv;
+
+            float rand(vec2 n) { 
+                return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+            }
+
+            float noise(vec2 p) {
+                vec2 ip = floor(p);
+                vec2 u = fract(p);
+                u = u*u*(3.0-2.0*u);
+
+                float res = mix(
+                    mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
+                    mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
+                return res*res;
+            }
+
+            void main() {
+                vec2 uv = vUv;
+                float nx = noise(uv * 8.0 + time * 0.2);
+                float ny = noise(uv * 8.0 - time * 0.2);
+                vec3 sandColor1 = vec3(0.76, 0.45, 0.2);
+                vec3 sandColor2 = vec3(0.55, 0.35, 0.15);
+                vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
+                float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
+                color += vec3(sparkle);
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        window.SAND_SHADERS = {
+            vertexShader,
+            fragmentShader
+        };
+    """
+
 
 def load_js():
-    #Load JavaScript dependencies only when needed
-    st.markdown("""
+    """Load all JavaScript code including shaders and Three.js initialization"""
+    st.markdown(f"""
         <div id="sand-background"></div>
+        <script src="http://localhost:5001/static/shaders.js"></script>
         <script>
-        if (!window.threeJsLoaded) {
+        // Initialize Three.js and create sand effect
+        if (!window.threeJsLoaded) {{
             const script = document.createElement('script');
             script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
-            script.onload = function() {
+            script.onload = function() {{
                 window.threeJsLoaded = true;
                 initSandEffect();
-            };
+            }};
             document.body.appendChild(script);
-        }
+        }}
 
-        function initSandEffect() {
+        function initSandEffect() {{
             const container = document.getElementById('sand-background');
             if (!container) return;
 
             const scene = new THREE.Scene();
             const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            const renderer = new THREE.WebGLRenderer({{ alpha: true }});
 
-            function resize() {
+            function resize() {{
                 renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            }}
             window.addEventListener('resize', resize);
             resize();
-
             container.appendChild(renderer.domElement);
 
-            const uniforms = {
-                time: { value: 0 },
-                resolution: { value: new THREE.Vector2() }
-            };
+            const uniforms = {{
+                time: {{ value: 0 }},
+                resolution: {{ value: new THREE.Vector2() }}
+            }};
 
-            const material = new THREE.ShaderMaterial({
+            const material = new THREE.ShaderMaterial({{
                 uniforms: uniforms,
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform float time;
-                    uniform vec2 resolution;
-                    varying vec2 vUv;
-
-                    float rand(vec2 n) { 
-                        return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-                    }
-
-                    float noise(vec2 p) {
-                        vec2 ip = floor(p);
-                        vec2 u = fract(p);
-                        u = u*u*(3.0-2.0*u);
-
-                        float res = mix(
-                            mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
-                            mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
-                        return res*res;
-                    }
-
-                    void main() {
-                        vec2 uv = vUv;
-                        float nx = noise(uv * 8.0 + time * 0.2);
-                        float ny = noise(uv * 8.0 - time * 0.2);
-                        vec3 sandColor1 = vec3(0.76, 0.45, 0.2);
-                        vec3 sandColor2 = vec3(0.55, 0.35, 0.15);
-                        vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
-                        float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
-                        color += vec3(sparkle);
-                        gl_FragColor = vec4(color, 1.0);
-                    }
-                `
-            });
+                vertexShader: window.SAND_SHADERS.vertexShader,
+                fragmentShader: window.SAND_SHADERS.fragmentShader
+            }});
 
             const geometry = new THREE.PlaneGeometry(2, 2);
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
 
-            function animate(time) {
+            function animate(time) {{
                 if (!window.threeJsLoaded) return;
                 uniforms.time.value = time * 0.001;
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
-            }
+            }}
             requestAnimationFrame(animate);
-        }
-        </script>
-    """, unsafe_allow_html=True)
+        }}
+        </script>""", unsafe_allow_html=True)
+
 
 def render_stats_page():
     #Render the statistics page with analysis history
     st.title("Analysis Statistics")
 
+    df = pd.DataFrame()  # Initialize df as an empty DataFrame
     try:
         # Get analysis results from database with retry
         for attempt in range(3):  # Try up to 3 times
@@ -618,7 +674,9 @@ def render_stats_page():
                 break
             except Exception as e:
                 if attempt == 2:  # Last attempt
-                    logger.error(f"Failed to fetch analysis stats after 3 attempts: {str(e)}")
+                    logger.error(
+                        f"Failed to fetch analysis stats after 3 attempts: {str(e)}"
+                    )
                     st.error("""
                         Unable to fetch analysis statistics. 
                         Please try refreshing the page in a few moments.
@@ -626,10 +684,13 @@ def render_stats_page():
                         If the problem persists, the database might be temporarily unavailable.
                     """)
                     return
-                logger.warning(f"Attempt {attempt + 1} failed, retrying... Error: {str(e)}")
+                logger.warning(
+                    f"Attempt {attempt + 1} failed, retrying... Error: {str(e)}"
+                )
                 time.sleep(1)  # Wait before retry
 
         if df.empty:
+
             st.info("No analysis results found in the database yet.")
             return
 
@@ -639,37 +700,35 @@ def render_stats_page():
             df = df[df['Username'].str.contains(search, case=False)]
 
         # Configure the table
-        st.dataframe(
-            df,
-            column_config={
-                "Username": st.column_config.TextColumn(
-                    "Username",
-                    help="Reddit username",
-                    max_chars=50
-                ),
-                "Last Analyzed": st.column_config.DatetimeColumn(
-                    "Last Analyzed",
-                    help="When the analysis was last performed",
-                    format="D MMM YYYY, HH:mm"
-                ),
-                "Analysis Count": st.column_config.NumberColumn(
-                    "Times Analyzed",
-                    help="Number of times this account was analyzed"
-                ),
-                "Bot Probability": st.column_config.TextColumn(
-                    "Bot Probability",
-                    help="Likelihood of being a bot"
-                )
-            },
-            hide_index=True,
-            use_container_width=True
-        )
+        st.dataframe(df,
+                     column_config={
+                         "Username":
+                         st.column_config.TextColumn("Username",
+                                                     help="Reddit username",
+                                                     max_chars=50),
+                         "Last Analyzed":
+                         st.column_config.DatetimeColumn(
+                             "Last Analyzed",
+                             help="When the analysis was last performed",
+                             format="D MMM YYYY, HH:mm"),
+                         "Analysis Count":
+                         st.column_config.NumberColumn(
+                             "Times Analyzed",
+                             help="Number of times this account was analyzed"),
+                         "Bot Probability":
+                         st.column_config.TextColumn(
+                             "Bot Probability",
+                             help="Likelihood of being a bot")
+                     },
+                     hide_index=True,
+                     use_container_width=True)
     except Exception as e:
         logger.error(f"Error rendering stats page: {str(e)}", exc_info=True)
         st.error("""
             An error occurred while loading the statistics page.
             Please try refreshing the page.
         """)
+
 
 def get_risk_class(risk_score):
     if risk_score > 70:
@@ -681,10 +740,9 @@ def get_risk_class(risk_score):
 
 def main():
     try:
-        st.set_page_config(
-            page_title="Reddit Mentat Detector | Arrakis",
-            layout="wide",
-            initial_sidebar_state="collapsed")
+        st.set_page_config(page_title="Reddit Mentat Detector | Arrakis",
+                           layout="wide",
+                           initial_sidebar_state="collapsed")
 
         load_css()
 
@@ -705,7 +763,8 @@ def main():
                 to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail.
             """)
 
-            analysis_mode = st.radio("Analysis Mode:", ["Single Account", "Bulk Detection"])
+            analysis_mode = st.radio("Analysis Mode:",
+                                     ["Single Account", "Bulk Detection"])
 
             if analysis_mode == "Single Account":
                 username = st.text_input("Enter Reddit Username:", "")
@@ -723,18 +782,26 @@ def main():
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
                             #Added this line to remove previous results before showing new ones.
-                            st.markdown("<script>fadeOutPreviousResults()</script>", unsafe_allow_html=True)
-                            result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
+                            st.markdown(
+                                "<script>fadeOutPreviousResults()</script>",
+                                unsafe_allow_html=True)
+                            result = analyze_single_user(
+                                username, reddit_analyzer, text_analyzer,
+                                account_scorer)
                             if 'error' in result:
-                                st.error(f"Error analyzing account: {result['error']}")
-                                with st.expander("See detailed error information"):
+                                st.error(
+                                    f"Error analyzing account: {result['error']}"
+                                )
+                                with st.expander(
+                                        "See detailed error information"):
                                     st.code(result['error'])
                                 return
 
                             # Main scores row
                             col1, col2 = st.columns(2)
                             with col1:
-                                risk_class = get_risk_class(result['risk_score'])
+                                risk_class = get_risk_class(
+                                    result['risk_score'])
                                 st.markdown(f"""
                                     <div class="risk-score {risk_class}">
                                         {result['risk_score']:.1f}% Thinking Machine Probability
@@ -746,7 +813,8 @@ def main():
                                             • ML-based behavior assessment (25%)
                                         </span></span>
                                     </div>
-                                """, unsafe_allow_html=True)
+                                """,
+                                            unsafe_allow_html=True)
 
                             with col2:
                                 bot_prob = result['bot_probability']
@@ -758,24 +826,31 @@ def main():
                                             Based on:
                                             • Repetitive phrase patterns
                                             • Template response detection
-                                            • Timing analysis
+                                            •Timing analysis
                                             • Language complexity
                                             • Suspicious behavior patterns
                                         </span></span>
                                     </div>
-                                """, unsafe_allow_html=True)
+                                """,
+                                            unsafe_allow_html=True)
 
                             # Account Overview section
                             st.subheader("Account Overview")
                             col3, col4 = st.columns(2)
                             with col3:
-                                st.markdown(f"**Account Age:** {result['account_age']}")
-                                st.markdown(f"**Total Karma:** {result['karma']:,}")
+                                st.markdown(
+                                    f"**Account Age:** {result['account_age']}"
+                                )
+                                st.markdown(
+                                    f"**Total Karma:** {result['karma']:,}")
 
                             with col4:
                                 st.markdown("**Top Subreddits**")
-                                for subreddit, count in result['activity_patterns']['top_subreddits'].items():
-                                    st.markdown(f"• {subreddit}: {count} posts")
+                                for subreddit, count in result[
+                                        'activity_patterns'][
+                                            'top_subreddits'].items():
+                                    st.markdown(
+                                        f"• {subreddit}: {count} posts")
 
                             # Activity and Risk Analysis
                             st.subheader("Analysis Results")
@@ -783,15 +858,18 @@ def main():
                             with col5:
                                 st.markdown("#### Activity Overview")
                                 activity_data = create_monthly_activity_table(
-                                    result['comments_df'], result['submissions_df'])
+                                    result['comments_df'],
+                                    result['submissions_df'])
                                 st.plotly_chart(
-                                    create_monthly_activity_chart(activity_data),
+                                    create_monthly_activity_chart(
+                                        activity_data),
                                     use_container_width=True,
                                     config={'displayModeBar': False})
 
                             with col6:
                                 st.markdown("#### Risk Analysis")
-                                radar_chart = create_score_radar_chart(result['component_scores'])
+                                radar_chart = create_score_radar_chart(
+                                    result['component_scores'])
                                 st.plotly_chart(
                                     radar_chart,
                                     use_container_width=True,
@@ -803,17 +881,14 @@ def main():
                                 Detailed analysis of text patterns, timing patterns, and suspicious behaviors.
                                 Higher scores indicate more bot-like characteristics.
                             """)
-                            st.plotly_chart(
-                                create_bot_analysis_chart(
-                                    result['text_metrics'],
-                                    result['activity_patterns']
-                                ),
-                                use_container_width=True,
-                                config={'displayModeBar': False}
-                            )
+                            st.plotly_chart(create_bot_analysis_chart(
+                                result['text_metrics'],
+                                result['activity_patterns']),
+                                            use_container_width=True,
+                                            config={'displayModeBar': False})
 
                             # Suspicious Patterns
-                            st.subheader("Suspicious Patterns Detected")
+                            st.subheader("Suspicious PatternsDetected")
                             col7, col8 = st.columns(2)
                             with col7:
                                 st.markdown("""
@@ -826,12 +901,14 @@ def main():
                                 """)
 
                             with col8:
-                                suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
-                                for pattern, count in suspicious_patterns.items():
+                                suspicious_patterns = result[
+                                    'text_metrics'].get(
+                                        'suspicious_patterns', {})
+                                for pattern, count in suspicious_patterns.items(
+                                ):
                                     st.metric(
                                         pattern.replace('_', ' ').title(),
-                                        f"{count}%"
-                                    )
+                                        f"{count}%")
 
                             # Mentat Feedback Section
                             st.markdown("---")
@@ -843,40 +920,45 @@ def main():
 
                             feedback_col1, feedback_col2 = st.columns(2)
                             with feedback_col1:
-                                if st.button("Mark as Human Account", key="human-account-btn"):
+                                if st.button("Mark as Human Account",
+                                             key="human-account-btn"):
                                     account_scorer.ml_analyzer.add_training_example(
                                         result['user_data'],
                                         result['activity_patterns'],
                                         result['text_metrics'],
-                                        is_legitimate=True
-                                    )
-                                    st.success(                                    "Thank you for marking this as a human account! "
-                                    "This feedback helps improve our detection."
+                                        is_legitimate=True)
+                                    st.success(
+                                        "Thank you for marking this as a human account! "
+                                        "This feedback helps improve our detection."
                                     )
 
                             with feedback_col2:
-                                if st.button("Mark as Bot Account", key="bot-account-btn"):
+                                if st.button("Mark as Bot Account",
+                                             key="bot-account-btn"):
                                     account_scorer.ml_analyzer.add_training_example(
                                         result['user_data'],
                                         result['activity_patterns'],
                                         result['text_metrics'],
-                                        is_legitimate=False
-                                    )
+                                        is_legitimate=False)
                                     st.success(
                                         "Thank you for marking this as a bot account! "
                                         "This feedback helps improve our detection."
                                     )
 
                     except Exception as e:
-                        logger.error(f"Error in analysis: {str(e)}", exc_info=True)
-                        st.error(f"An error occurred during analysis: {str(e)}")
+                        logger.error(f"Error in analysis: {str(e)}",
+                                     exc_info=True)
+                        st.error(
+                            f"An error occurred during analysis: {str(e)}")
 
             else:  # Bulk Analysis
                 usernames = st.text_area(
-                    "Enter Reddit Usernames (one per line or comma-separated):", "")
+                    "Enter Reddit Usernames (one per line or comma-separated):",
+                    "")
                 if usernames:
                     usernames = [
-                        u.strip() for u in usernames.replace(',', '\n').split('\n')
+                        u.strip()
+                        for u in usernames.replace(',', '\n').split('\n')
                         if u.strip()
                     ]
 
@@ -889,9 +971,11 @@ def main():
 
                         for i, username in enumerate(usernames):
                             status_text.text(
-                                f"Analyzing {username}... ({i+1}/{len(usernames)})")
-                            result = analyze_single_user(username, reddit_analyzer,
-                                                        text_analyzer, account_scorer)
+                                f"Analyzing {username}... ({i+1}/{len(usernames)})"
+                            )
+                            result = analyze_single_user(
+                                username, reddit_analyzer, text_analyzer,
+                                account_scorer)
                             results.append(result)
                             progress_bar.progress((i + 1) / len(usernames))
 
@@ -899,29 +983,34 @@ def main():
 
                         df = pd.DataFrame([{
                             'Username':
-                            r.get('username'),
+                                r.get('username'),
                             'Account Age':
-                            r.get('account_age', 'N/A') if 'error' not in r else 'N/A',
+                                r.get('account_age', 'N/A')
+                                if 'error' not in r else 'N/A',
                             'Total Karma':
-                            r.get('karma', 'N/A') if 'error' not in r else 'N/A',
+                                r.get('karma', 'N/A')
+                                if 'error' not in r else 'N/A',
                             'Thinking Machine Probability':
-                            f"{r.get('risk_score', 'N/A'):.1f}%"
-                            if 'error' not in r else 'N/A',
+                                f"{r.get('risk_score', 'N/A'):.1f}%"
+                                if 'error' not in r else 'N/A',
                             'Status':
-                            'Success' if 'error' not in r else f"Error: {r['error']}"
+                                'Success'
+                                if 'error' not in r else f"Error: {r['error']}"
                         } for r in results])
 
                         st.subheader("Bulk Analysis Results")
                         st.dataframe(df)
 
                         csv = df.to_csv(index=False)
-                        st.download_button(label="Download Results as CSV",
-                                           data=csv,
-                                           file_name="thinkingmachine_analysis.csv",
-                                           mime="text/csv")
+                        st.download_button(
+                            label="Download Results as CSV",
+                            data=csv,
+                            file_name="thinkingmachine_analysis.csv",
+                            mime="text/csv")
 
     except Exception as e:
         st.error(f"Application error: {str(e)}")
+
 
 if __name__ == "__main__":
     main()
