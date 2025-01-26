@@ -1,13 +1,13 @@
 // Sand effect shader
-const vertexShader = `
+const vertexShader = 
   varying vec2 vUv;
   void main() {
     vUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
-`;
+;
 
-const fragmentShader = `
+const fragmentShader = 
   uniform float time;
   uniform vec2 resolution;
   varying vec2 vUv;
@@ -48,4 +48,54 @@ const fragmentShader = `
     
     gl_FragColor = vec4(color, 1.0);
   }
-`;
+;
+
+// Initialize Three.js and create sand effect
+if (!window.threeJsLoaded) {{
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+    script.onload = function() {{
+        window.threeJsLoaded = true;
+        initSandEffect();
+    }};
+    document.body.appendChild(script);
+}}
+
+function initSandEffect() {{
+    const container = document.getElementById('sand-background');
+    if (!container) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderer = new THREE.WebGLRenderer({{ alpha: true }});
+
+    function resize() {{
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }}
+    window.addEventListener('resize', resize);
+    resize();
+    container.appendChild(renderer.domElement);
+
+    const uniforms = {{
+        time: {{ value: 0 }},
+        resolution: {{ value: new THREE.Vector2() }}
+    }};
+
+    const material = new THREE.ShaderMaterial({{
+        uniforms: uniforms,
+        vertexShader: window.SAND_SHADERS.vertexShader,
+        fragmentShader: window.SAND_SHADERS.fragmentShader
+    }});
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    function animate(time) {{
+        if (!window.threeJsLoaded) return;
+        uniforms.time.value = time * 0.001;
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+    }}
+    requestAnimationFrame(animate);
+}}

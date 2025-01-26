@@ -47,8 +47,7 @@ def cycle_litany():
     return itertools.cycle(MENTAT_LITANY)
 
 
-def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer,
-                     result_queue):
+def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
     # Perform the analysis in a separate thread
     try:
         logger.debug(f"Starting perform_analysis for user: {username}")
@@ -178,8 +177,7 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer,
         result_queue.put(('error', error_details))
 
 
-def analyze_single_user(username, reddit_analyzer, text_analyzer,
-                        account_scorer):
+def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     # Analyze a single user with background processing
     try:
         logger.debug(f"Starting analysis for user: {username}")
@@ -549,65 +547,8 @@ def load_css():
         // Expose the function globally for Streamlit to call
         window.fadeOutPreviousResults = fadeOutPreviousResults;
         </script>
+        <script src="/static/sand_effect.js"></script>
     """, unsafe_allow_html=True)
-
-
-def load_js():
-    """Load all JavaScript code including shaders and Three.js initialization"""
-    st.markdown(f"""
-        <div id="sand-background"></div>
-        <script src="/static/shaders.js"></script>
-        <script>
-        // Initialize Three.js and create sand effect
-        if (!window.threeJsLoaded) {{
-            const script = document.createElement('script');
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
-            script.onload = function() {{
-                window.threeJsLoaded = true;
-                initSandEffect();
-            }};
-            document.body.appendChild(script);
-        }}
-
-        function initSandEffect() {{
-            const container = document.getElementById('sand-background');
-            if (!container) return;
-
-            const scene = new THREE.Scene();
-            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            const renderer = new THREE.WebGLRenderer({{ alpha: true }});
-
-            function resize() {{
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }}
-            window.addEventListener('resize', resize);
-            resize();
-            container.appendChild(renderer.domElement);
-
-            const uniforms = {{
-                time: {{ value: 0 }},
-                resolution: {{ value: new THREE.Vector2() }}
-            }};
-
-            const material = new THREE.ShaderMaterial({{
-                uniforms: uniforms,
-                vertexShader: window.SAND_SHADERS.vertexShader,
-                fragmentShader: window.SAND_SHADERS.fragmentShader
-            }});
-
-            const geometry = new THREE.PlaneGeometry(2, 2);
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-
-            function animate(time) {{
-                if (!window.threeJsLoaded) return;
-                uniforms.time.value = time * 0.001;
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
-            }}
-            requestAnimationFrame(animate);
-        }}
-        </script>""", unsafe_allow_html=True)
 
 
 def render_stats_page():
@@ -695,11 +636,6 @@ def main():
 
         load_css()
 
-        # Only load JS when needed
-        if st.session_state.get('load_js', True):
-            load_js()
-            st.session_state['load_js'] = False
-
         # Add page selection in sidebar
         page = st.sidebar.radio("Select Page", ["Analyzer", "Stats"])
 
@@ -709,7 +645,7 @@ def main():
             st.title("Thinking Machine Detector")
             st.markdown("""
                 Like the calculations of a Mentat, this tool uses advanced cognitive processes 
-                to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail.
+                to identify Abominable Intelligences among Reddit users. The spice must flow, but the     machines must not prevail.
             """)
 
             analysis_mode = st.radio("Analysis Mode:",
@@ -900,8 +836,7 @@ def main():
                     "Enter Reddit Usernames (one per line or comma-separated):",
                     "")
                 if usernames:
-                    usernames = [
-                        u.strip()
+                    usernames = [                        u.strip()
                         for u in usernames.replace(',', '\n').split('\n')
                         if u.strip()
                     ]
