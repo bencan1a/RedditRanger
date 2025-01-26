@@ -1,133 +1,265 @@
-/* Dune-inspired styling */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 
-/* Main container */
-.main {
-    padding: 2rem;
-    background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
+/* Make selectors more specific to override Streamlit's defaults */
+div[data-testid="stMarkdown"] .risk-score {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.8rem;
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+    letter-spacing: 0.05em;
 }
 
-/* Headers */
-h1, h2, h3 {
-    font-family: 'IBM Plex Mono', monospace;
-    letter-spacing: 0.1em;
-    color: #E6D5B8;
-    margin-bottom: 2rem;
+div[data-testid="stMarkdown"] .info-icon {
+    font-size: 1rem;
+    color: #FFB74D;
+    margin-left: 8px;
+    cursor: help;
+    display: inline-block;
+    position: relative;
 }
 
-h1 {
-    font-size: 2rem !important;
-    text-transform: uppercase;
-    border-bottom: 2px solid #ff9800;
-    padding-bottom: 1rem;
-    white-space: nowrap;
+div[data-testid="stMarkdown"] .tooltip {
+    visibility: hidden;
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+    color: #FFB74D;
+    text-align: left;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    position: absolute;
+    z-index: 1000;
+    width: 280px;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -140px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    transform: translateY(10px);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* Risk Score Display */
-.risk-score {
-    font-size: 4rem;
-    font-weight: bold;
+div[data-testid="stMarkdown"] .info-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Risk classes with more specific selectors */
+div[data-testid="stMarkdown"] .high-risk { 
+    background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
+    border: 1px solid rgba(255, 50, 0, 0.2);
+}
+
+div[data-testid="stMarkdown"] .medium-risk { 
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
+    border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+div[data-testid="stMarkdown"] .low-risk { 
+    background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
+    border: 1px solid rgba(0, 255, 50, 0.2);
+}
+
+/* Litany styling with Streamlit-specific selectors */
+div[data-testid="stMarkdown"] .mentat-litany {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.2rem;
+    color: #FFB74D;
     text-align: center;
     padding: 2rem;
+    margin: 1rem 0;
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    border: 1px solid rgba(255, 152, 0, 0.1);
     border-radius: 8px;
-    margin: 1rem 0;
+    animation: glow 1.5s ease-in-out infinite alternate;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
 }
 
-.risk-score.high-risk {
-    background: rgba(255, 68, 68, 0.1);
-    color: #ff4444;
-    border: 1px solid #ff4444;
+div[data-testid="stMarkdown"] .mentat-litany.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.risk-score.medium-risk {
-    background: rgba(255, 170, 51, 0.1);
-    color: #ffaa33;
-    border: 1px solid #ffaa33;
+/* Column styling */
+div[data-testid="column"] {
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    border: 1px solid rgba(255, 152, 0, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
+    backdrop-filter: blur(8px);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
-.risk-score.low-risk {
-    background: rgba(68, 170, 68, 0.1);
-    color: #44aa44;
-    border: 1px solid #44aa44;
+div[data-testid="column"].fade-out {
+    opacity: 0;
+    transform: translateY(20px);
 }
 
-/* Cards and containers */
-.stCard {
-    background: rgba(45, 45, 45, 0.7) !important;
-    border: 1px solid #ff9800 !important;
-    backdrop-filter: blur(10px);
-    padding: 1.5rem !important;
-    border-radius: 8px !important;
-    margin: 1rem 0;
+/* Override Streamlit's default button styles */
+.stButton>button {
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    color: #FFB74D;
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
 }
 
-/* Progress bars */
-.stProgress > div > div {
-    background-color: #ff9800 !important;
-}
-
-/* Buttons */
-.stButton > button {
-    background-color: #ff9800 !important;
-    color: #1a1a1a !important;
-    border: none !important;
-    padding: 0.5rem 2rem !important;
-    font-family: 'IBM Plex Mono', monospace !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.1em !important;
-    transition: all 0.3s ease !important;
-}
-
-.stButton > button:hover {
-    background-color: #ffa726 !important;
+.stButton>button:hover {
+    background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95));
+    border-color: rgba(255, 152, 0, 0.4);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
 }
 
-/* Text inputs */
-.stTextInput > div > div > input {
-    background-color: #2d2d2d !important;
-    border: 1px solid #ff9800 !important;
-    color: #E6D5B8 !important;
-    font-family: 'IBM Plex Mono', monospace !important;
+/* Header and background styling */
+div[data-testid="stHeader"] {
+    background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+    border-bottom: 1px solid rgba(255, 152, 0, 0.1);
 }
 
-/* Charts container */
-.chart-container {
-    background-color: rgba(45, 45, 45, 0.7) !important;
-    border: 1px solid #ff9800 !important;
-    border-radius: 8px !important;
-    padding: 1rem !important;
-    margin: 1rem 0;
+.stApp {
+    background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
+}
+
+/* Animation keyframes */
+@keyframes glow {
+    from {
+        text-shadow: 0 0 5px #FF9800, 0 0 10px #FF9800;
+        box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    }
+    to {
+        text-shadow: 0 0 10px #FF9800, 0 0 20px #FF9800;
+        box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
+    }
+}
+
+/* Streamlit layout spacing */
+div[data-testid="stVerticalBlock"] {
+    gap: 20px;
+}
+
+div[data-testid="stHorizontalBlock"] {
+    gap: 20px;
+}
+
+.grid-container {
+    display: flex;
+    gap: 20px;
     width: 100%;
+    align-items: stretch;
+    margin-bottom: 20px;
+    flex-direction: row;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
-/* DataFrames */
-.dataframe {
-    font-family: 'IBM Plex Mono', monospace !important;
+.grid-container.fade-out {
+    opacity: 0;
+    transform: translateY(20px);
 }
 
-.dataframe th {
-    background-color: #ff9800 !important;
-    color: #1a1a1a !important;
-}
-
-/* Custom spacing */
-.block-container {
-    padding: 3rem 2rem !important;
-}
-
-/* Account overview card */
-.account-overview {
-    background: rgba(45, 45, 45, 0.7);
-    border: 1px solid #ff9800;
+.grid-item {
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    border: 1px solid rgba(255, 152, 0, 0.1);
     border-radius: 8px;
-    padding: 1.5rem;
-    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
+    backdrop-filter: blur(8px);
+}
+.grid-item.half-width { flex: 0 0 50%; }
+.grid-item.full-width { flex: 0 0 100%; }
+.grid-item.quarter-width { flex: 0 0 25%; }
+
+
+.section-heading {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #FFB74D;
+    letter-spacing: 0.1em;
+    display: block;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
 }
 
-/* Charts grid */
-.charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
+/* Additional Dune-inspired elements */
+.intro-text {
+    font-family: 'Space Mono', monospace;
+    color: #FFB74D;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin: 1rem 0;
+    text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+}
+
+#sand-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+}
+
+
+/* Add loading spinner style */
+.mentat-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 20px auto;
+    border: 3px solid rgba(255, 152, 0, 0.1);
+    border-top: 3px solid #FF9800;
+    border-radius: 50%;
+    animation: spin 1s ease-in-out infinite;
+    position: relative;
+}
+
+.mentat-spinner::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 3px solid transparent;
+    border-top: 3px solid rgba(255, 152, 0, 0.3);
+    border-radius: 50%;
+    animation: spin-reverse 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes typeChar {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

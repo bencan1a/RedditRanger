@@ -1,0 +1,133 @@
+/* Dune-inspired styling */
+
+/* Main container */
+.main {
+    padding: 2rem;
+    background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+/* Headers */
+h1, h2, h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.1em;
+    color: #E6D5B8;
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 2rem !important;
+    text-transform: uppercase;
+    border-bottom: 2px solid #ff9800;
+    padding-bottom: 1rem;
+    white-space: nowrap;
+}
+
+/* Risk Score Display */
+.risk-score {
+    font-size: 4rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 2rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.risk-score.high-risk {
+    background: rgba(255, 68, 68, 0.1);
+    color: #ff4444;
+    border: 1px solid #ff4444;
+}
+
+.risk-score.medium-risk {
+    background: rgba(255, 170, 51, 0.1);
+    color: #ffaa33;
+    border: 1px solid #ffaa33;
+}
+
+.risk-score.low-risk {
+    background: rgba(68, 170, 68, 0.1);
+    color: #44aa44;
+    border: 1px solid #44aa44;
+}
+
+/* Cards and containers */
+.stCard {
+    background: rgba(45, 45, 45, 0.7) !important;
+    border: 1px solid #ff9800 !important;
+    backdrop-filter: blur(10px);
+    padding: 1.5rem !important;
+    border-radius: 8px !important;
+    margin: 1rem 0;
+}
+
+/* Progress bars */
+.stProgress > div > div {
+    background-color: #ff9800 !important;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #ff9800 !important;
+    color: #1a1a1a !important;
+    border: none !important;
+    padding: 0.5rem 2rem !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton > button:hover {
+    background-color: #ffa726 !important;
+    transform: translateY(-2px);
+}
+
+/* Text inputs */
+.stTextInput > div > div > input {
+    background-color: #2d2d2d !important;
+    border: 1px solid #ff9800 !important;
+    color: #E6D5B8 !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+
+/* Charts container */
+.chart-container {
+    background-color: rgba(45, 45, 45, 0.7) !important;
+    border: 1px solid #ff9800 !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    margin: 1rem 0;
+    width: 100%;
+}
+
+/* DataFrames */
+.dataframe {
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+
+.dataframe th {
+    background-color: #ff9800 !important;
+    color: #1a1a1a !important;
+}
+
+/* Custom spacing */
+.block-container {
+    padding: 3rem 2rem !important;
+}
+
+/* Account overview card */
+.account-overview {
+    background: rgba(45, 45, 45, 0.7);
+    border: 1px solid #ff9800;
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+/* Charts grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}

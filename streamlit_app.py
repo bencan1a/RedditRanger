@@ -270,203 +270,6 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         st.session_state.analysis_complete = True
         return {'username': username, 'error': str(e)}
 
-
-def load_css():
-    st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
-
-        /* Column styling */
-        div[data-testid="column"] {
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-            border: 1px solid rgba(255, 152, 0, 0.1);
-            border-radius: 8px;
-            padding: 20px;
-            box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
-            backdrop-filter: blur(8px);
-            opacity: 1;
-            transform: translateY(0);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-        }
-
-        div[data-testid="column"].fade-out {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        /* Maintain existing styles */
-        .grid-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            align-items: stretch;
-            margin-bottom: 20px;
-            flex-direction: row;
-        }
-
-        .risk-score {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.8rem;
-            text-align: center;
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin: 0;
-            text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
-            letter-spacing: 0.05em;
-        }
-
-        .info-icon {
-            font-size: 1rem;
-            color: #FFB74D;
-            margin-left: 8px;
-            cursor: help;
-            display: inline-block;
-            position: relative;
-        }
-
-        .tooltip {
-            visibility: hidden;
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
-            color: #FFB74D;
-            text-align: left;
-            padding: 12px 16px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 152, 0, 0.2);
-            position: absolute;
-            z-index: 1;
-            width: 280px;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -140px;
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            transform: translateY(10px);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .info-icon:hover .tooltip {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .high-risk { 
-            background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
-            border: 1px solid rgba(255, 50, 0, 0.2);
-        }
-        .medium-risk { 
-            background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
-            border: 1px solid rgba(255, 152, 0, 0.2);
-        }
-        .low-risk { 
-            background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
-            border: 1px solid rgba(0, 255, 50, 0.2);
-        }
-
-        .section-heading {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #FFB74D;
-            letter-spacing: 0.1em;
-            display: block;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-        }
-
-        /* Override Streamlit's default styles */
-        .stButton>button {
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-            color: #FFB74D;
-            border: 1px solid rgba(255, 152, 0, 0.2);
-            font-family: 'Space Mono', monospace;
-            letter-spacing: 0.05em;
-            transition: all 0.3s ease;
-        }
-
-        .stButton>button:hover {
-            background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95));
-            border-color: rgba(255, 152, 0, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
-        }
-
-        div[data-testid="stHeader"] {
-            background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
-            border-bottom: 1px solid rgba(255, 152, 0, 0.1);
-        }
-
-        .intro-text {
-            font-family: 'Space Mono', monospace;
-            color: #FFB74D;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin: 1rem 0;
-            text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-        }
-
-        #sand-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-        }
-
-        .stApp {
-            background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
-        }
-
-        .mentat-litany {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.2rem;
-            color: #FFB74D;
-            text-align: center;
-            padding: 2rem;
-            margin: 1rem 0;
-            background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-            border: 1px solid rgba(255, 152, 0, 0.1);
-            border-radius: 8px;
-            animation: glow 1.5s ease-in-out infinite alternate;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .mentat-litany.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @keyframes glow {
-            from {
-                text-shadow: 0 0 5px #FF9800, 0 0 10px #FF9800;
-                box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-            }
-            to {
-                text-shadow: 0 0 10px #FF9800, 0 0 20px #FF9800;
-                box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
-            }
-        }
-
-        /* Streamlit specific overrides */
-        div[data-testid="stVerticalBlock"] {
-            gap: 20px;
-        }
-
-        div[data-testid="stHorizontalBlock"] {
-            gap: 20px;
-        }
-
-        </style>
-    """, unsafe_allow_html=True)
-
 def render_stats_page():
     #Render the statistics page with analysis history
     st.title("Analysis Statistics")
@@ -548,7 +351,11 @@ def main():
                            layout="wide",
                            initial_sidebar_state="collapsed")
 
-        load_css()
+        st.markdown("""
+            <link rel="stylesheet" href="/static/style.css">
+            <script src="/static/animate.js"></script>
+            <script src="/static/sand_effect.js"></script>
+        """, unsafe_allow_html=True)
 
         # Add page selection in sidebar
         page = st.sidebar.radio("Select Page", ["Analyzer", "Stats"])
@@ -580,6 +387,10 @@ def main():
                     try:
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
+                            #Added this line to remove previous results before showing new ones.
+                            #st.markdown(
+                            #    "<script>fadeOutPreviousResults()</script>",
+                            #    unsafe_allow_html=True)
                             result = analyze_single_user(
                                 username, reddit_analyzer, text_analyzer,
                                 account_scorer)
