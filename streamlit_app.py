@@ -276,24 +276,8 @@ def load_css():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 
-        .grid-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            align-items: stretch;
-            margin-bottom: 20px;
-            flex-direction: row;
-            opacity: 1;
-            transform: translateY(0);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-        }
-
-        .grid-container.fade-out {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .grid-item {
+        /* Column styling */
+        div[data-testid="column"] {
             background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
             border: 1px solid rgba(255, 152, 0, 0.1);
             border-radius: 8px;
@@ -301,10 +285,25 @@ def load_css():
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
             backdrop-filter: blur(8px);
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
         }
-        .grid-item.half-width { flex: 0 0 50%; }
-        .grid-item.full-width { flex: 0 0 100%; }
-        .grid-item.quarter-width { flex: 0 0 25%; }
+
+        div[data-testid="column"].fade-out {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* Maintain existing styles */
+        .grid-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            align-items: stretch;
+            margin-bottom: 20px;
+            flex-direction: row;
+        }
 
         .risk-score {
             font-family: 'Space Mono', monospace;
@@ -380,7 +379,7 @@ def load_css():
             text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
         }
 
-        /* Override Streamlit's default button styles */
+        /* Override Streamlit's default styles */
         .stButton>button {
             background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
             color: #FFB74D;
@@ -397,7 +396,6 @@ def load_css():
             box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
         }
 
-        /* Additional Dune-inspired elements */
         div[data-testid="stHeader"] {
             background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
             border-bottom: 1px solid rgba(255, 152, 0, 0.1);
@@ -421,11 +419,9 @@ def load_css():
             z-index: -1;
         }
 
-        /* Add semi-transparent overlay to improve text readability */
         .stApp {
             background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
         }
-
 
         .mentat-litany {
             font-family: 'Space Mono', monospace;
@@ -448,22 +444,6 @@ def load_css():
             transform: translateY(0);
         }
 
-        .mentat-litany .char {
-            opacity: 0;
-            animation: typeChar 0.1s ease-in-out forwards;
-        }
-
-        @keyframes typeChar {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         @keyframes glow {
             from {
                 text-shadow: 0 0 5px #FF9800, 0 0 10px #FF9800;
@@ -475,81 +455,17 @@ def load_css():
             }
         }
 
-        /* Add loading spinner style */
-        .mentat-spinner {
-            width: 40px;
-            height: 40px;
-            margin: 20px auto;
-            border: 3px solid rgba(255, 152, 0, 0.1);
-            border-top: 3px solid #FF9800;
-            border-radius: 50%;
-            animation: spin 1s ease-in-out infinite;
-            position: relative;
+        /* Streamlit specific overrides */
+        div[data-testid="stVerticalBlock"] {
+            gap: 20px;
         }
 
-        .mentat-spinner::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border: 3px solid transparent;
-            border-top: 3px solid rgba(255, 152, 0, 0.3);
-            border-radius: 50%;
-            animation: spin-reverse 2s linear infinite;
+        div[data-testid="stHorizontalBlock"] {
+            gap: 20px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes spin-reverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
-        }
         </style>
-
-        <script>
-        function animateText(text) {
-            const container = document.querySelector('.mentat-litany');
-            if (!container) return;
-
-            container.innerHTML = '';
-            container.classList.remove('visible');
-
-            // Add characters with delay
-            [...text].forEach((char, i) => {
-                const span = document.createElement('span');
-                span.textContent = char;
-                span.className = 'char';
-                span.style.animationDelay = `${i * 50}ms`;
-                container.appendChild(span);
-            });
-
-            // Show container
-            requestAnimationFrame(() => {
-                container.classList.add('visible');
-            });
-        }
-
-        function fadeOutPreviousResults() {
-            const containers = document.querySelectorAll('.grid-container');
-            containers.forEach(container => {
-                container.classList.add('fade-out');
-                setTimeout(() => {
-                    container.remove();
-                }, 300); // Match transition duration
-            });
-        }
-
-        // Expose the function globally for Streamlit to call
-        window.fadeOutPreviousResults = fadeOutPreviousResults;
-        </script>
-        <script src="/static/sand_effect.js"></script>
     """, unsafe_allow_html=True)
-
 
 def render_stats_page():
     #Render the statistics page with analysis history
@@ -619,14 +535,12 @@ def render_stats_page():
             Please try refreshing the page.
         """)
 
-
 def get_risk_class(risk_score):
     if risk_score > 70:
         return "high-risk"
     elif risk_score > 40:
         return "medium-risk"
     return "low-risk"
-
 
 def main():
     try:
@@ -666,10 +580,6 @@ def main():
                     try:
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
-                            #Added this line to remove previous results before showing new ones.
-                            st.markdown(
-                                "<script>fadeOutPreviousResults()</script>",
-                                unsafe_allow_html=True)
                             result = analyze_single_user(
                                 username, reddit_analyzer, text_analyzer,
                                 account_scorer)
@@ -836,7 +746,8 @@ def main():
                     "Enter Reddit Usernames (one per line or comma-separated):",
                     "")
                 if usernames:
-                    usernames = [                        u.strip()
+                    usernames = [
+                        u.strip()
                         for u in usernames.replace(',', '\n').split('\n')
                         if u.strip()
                     ]
