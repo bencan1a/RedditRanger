@@ -32,22 +32,33 @@ class TextAnalyzer:
                 min_df=1,
                 max_df=0.95
             )
-            # Initialize NLTK data directory
+            # Only create directory if it doesn't exist
             if not os.path.exists(self._nltk_data_dir):
                 os.makedirs(self._nltk_data_dir)
             nltk.data.path.append(self._nltk_data_dir)
             self._initialized = True
-            # Pre-download NLTK resources during initialization
-            self._ensure_nltk_resources()
 
     def _ensure_nltk_resources(self):
-        """Pre-download NLTK resources during initialization"""
+        """Lazy load NLTK resources only when needed"""
         if not self._nltk_initialized:
             try:
-                logger.info("Pre-downloading NLTK resources...")
-                nltk.download(['punkt', 'stopwords', 'averaged_perceptron_tagger'], 
-                            quiet=True, 
-                            download_dir=self._nltk_data_dir)
+                resources = ['punkt', 'stopwords', 'averaged_perceptron_tagger']
+                missing_resources = []
+
+                # Check which resources need to be downloaded
+                for resource in resources:
+                    try:
+                        nltk.data.find(f'tokenizers/{resource}' if resource == 'punkt' else resource)
+                        logger.debug(f"Resource {resource} already exists")
+                    except LookupError:
+                        missing_resources.append(resource)
+
+                if missing_resources:
+                    logger.info(f"Downloading missing NLTK resources: {missing_resources}")
+                    nltk.download(missing_resources, 
+                                quiet=True, 
+                                download_dir=self._nltk_data_dir)
+
                 self.stop_words = set(stopwords.words('english'))
                 self._nltk_initialized = True
                 logger.info("NLTK initialization complete")
@@ -57,7 +68,9 @@ class TextAnalyzer:
 
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
         """Analyze comments for bot-like patterns."""
-        
+        # Initialize NLTK resources only when analyzing comments
+        self._ensure_nltk_resources()
+
         if not comments:
             logger.warning("No comments provided for analysis")
             return self._get_empty_metrics()
@@ -197,7 +210,7 @@ class TextAnalyzer:
             # Calculate time differences
             sorted_times = sorted(timestamps)
             time_diffs = np.array([(t2 - t1).total_seconds() 
-                                 for t1, t2 in zip(sorted_times[:-1], sorted_times[1:])])
+                                    for t1, t2 in zip(sorted_times[:-1], sorted_times[1:])])
 
             if len(time_diffs) == 0:
                 return 0.5
