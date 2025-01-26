@@ -270,6 +270,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         st.session_state.analysis_complete = True
         return {'username': username, 'error': str(e)}
 
+
 def render_stats_page():
     #Render the statistics page with analysis history
     st.title("Analysis Statistics")
@@ -338,12 +339,14 @@ def render_stats_page():
             Please try refreshing the page.
         """)
 
+
 def get_risk_class(risk_score):
     if risk_score > 70:
         return "high-risk"
     elif risk_score > 40:
         return "medium-risk"
     return "low-risk"
+
 
 def main():
     try:
@@ -387,10 +390,6 @@ def main():
                     try:
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
-                            #Added this line to remove previous results before showing new ones.
-                            #st.markdown(
-                            #    "<script>fadeOutPreviousResults()</script>",
-                            #    unsafe_allow_html=True)
                             result = analyze_single_user(
                                 username, reddit_analyzer, text_analyzer,
                                 account_scorer)

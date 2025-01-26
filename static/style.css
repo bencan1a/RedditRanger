@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 
-/* Make selectors more specific to override Streamlit's defaults */
-div[data-testid="stMarkdown"] .risk-score {
+/* Make selectors target Streamlit's wrapper structure */
+div[data-testid="stMarkdownContainer"] .risk-score {
     font-family: 'Space Mono', monospace;
     font-size: 1.8rem;
     text-align: center;
@@ -12,7 +12,7 @@ div[data-testid="stMarkdown"] .risk-score {
     letter-spacing: 0.05em;
 }
 
-div[data-testid="stMarkdown"] .info-icon {
+div[data-testid="stMarkdownContainer"] .info-icon {
     font-size: 1rem;
     color: #FFB74D;
     margin-left: 8px;
@@ -21,7 +21,7 @@ div[data-testid="stMarkdown"] .info-icon {
     position: relative;
 }
 
-div[data-testid="stMarkdown"] .tooltip {
+div[data-testid="stMarkdownContainer"] .tooltip {
     visibility: hidden;
     background: linear-gradient(145deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
     color: #FFB74D;
@@ -44,30 +44,28 @@ div[data-testid="stMarkdown"] .tooltip {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-div[data-testid="stMarkdown"] .info-icon:hover .tooltip {
+div[data-testid="stMarkdownContainer"] .info-icon:hover .tooltip {
     visibility: visible;
     opacity: 1;
     transform: translateY(0);
 }
 
-/* Risk classes with more specific selectors */
-div[data-testid="stMarkdown"] .high-risk { 
+div[data-testid="stMarkdownContainer"] .high-risk { 
     background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
     border: 1px solid rgba(255, 50, 0, 0.2);
 }
 
-div[data-testid="stMarkdown"] .medium-risk { 
+div[data-testid="stMarkdownContainer"] .medium-risk { 
     background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
     border: 1px solid rgba(255, 152, 0, 0.2);
 }
 
-div[data-testid="stMarkdown"] .low-risk { 
+div[data-testid="stMarkdownContainer"] .low-risk { 
     background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
     border: 1px solid rgba(0, 255, 50, 0.2);
 }
 
-/* Litany styling with Streamlit-specific selectors */
-div[data-testid="stMarkdown"] .mentat-litany {
+div[data-testid="stMarkdownContainer"] .mentat-litany {
     font-family: 'Space Mono', monospace;
     font-size: 1.2rem;
     color: #FFB74D;
@@ -83,7 +81,45 @@ div[data-testid="stMarkdown"] .mentat-litany {
     transition: opacity 0.5s ease-out, transform 0.5s ease-out;
 }
 
-div[data-testid="stMarkdown"] .mentat-litany.visible {
+div[data-testid="stMarkdownContainer"] .mentat-litany.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Risk classes with more specific selectors */
+div[data-testid="stMarkdownContainer"] .high-risk { 
+    background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
+    border: 1px solid rgba(255, 50, 0, 0.2);
+}
+
+div[data-testid="stMarkdownContainer"] .medium-risk { 
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
+    border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+div[data-testid="stMarkdownContainer"] .low-risk { 
+    background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
+    border: 1px solid rgba(0, 255, 50, 0.2);
+}
+
+/* Litany styling with Streamlit-specific selectors */
+div[data-testid="stMarkdownContainer"] .mentat-litany {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.2rem;
+    color: #FFB74D;
+    text-align: center;
+    padding: 2rem;
+    margin: 1rem 0;
+    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    border: 1px solid rgba(255, 152, 0, 0.1);
+    border-radius: 8px;
+    animation: glow 1.5s ease-in-out infinite alternate;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+div[data-testid="stMarkdownContainer"] .mentat-litany.visible {
     opacity: 1;
     transform: translateY(0);
 }
