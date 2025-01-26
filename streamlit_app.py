@@ -147,7 +147,7 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         result_queue.put(('error', error_details))
 
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
-    #Analyze a single user with background processing
+    # Analyze a single user with background processing
     try:
         logger.debug(f"Starting analysis for user: {username}")
 
@@ -155,6 +155,10 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None
         st.session_state.analysis_error = None
+
+        # Create results placeholder and clear it immediately
+        results_placeholder = st.empty()
+        results_placeholder.empty()
 
         # Create a queue for thread communication
         result_queue = Queue()
@@ -241,7 +245,16 @@ def load_css():
             align-items: stretch;
             margin-bottom: 20px;
             flex-direction: row;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
         }
+
+        .grid-container.fade-out {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
         .grid-item {
             background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
             border: 1px solid rgba(255, 152, 0, 0.1);
@@ -482,6 +495,19 @@ def load_css():
                 container.classList.add('visible');
             });
         }
+
+        function fadeOutPreviousResults() {
+            const containers = document.querySelectorAll('.grid-container');
+            containers.forEach(container => {
+                container.classList.add('fade-out');
+                setTimeout(() => {
+                    container.remove();
+                }, 300); // Match transition duration
+            });
+        }
+
+        // Expose the function globally for Streamlit to call
+        window.fadeOutPreviousResults = fadeOutPreviousResults;
         </script>
     """,
         unsafe_allow_html=True)
@@ -696,6 +722,8 @@ def main():
                     try:
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
+                            #Added this line to remove previous results before showing new ones.
+                            st.markdown("<script>fadeOutPreviousResults()</script>", unsafe_allow_html=True)
                             result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
                             if 'error' in result:
                                 st.error(f"Error analyzing account: {result['error']}")
@@ -780,7 +808,7 @@ def main():
                                     result['text_metrics'],
                                     result['activity_patterns']
                                 ),
-                                                               use_container_width=True,
+                                use_container_width=True,
                                 config={'displayModeBar': False}
                             )
 
