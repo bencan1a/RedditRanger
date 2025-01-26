@@ -237,7 +237,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer,
                         {litany_text}
                     </div>
                 """,
-                                     unsafe_allow_html=True)
+                                    unsafe_allow_html=True)
                 time.sleep(1)
             except Exception as e:
                 logger.error(f"Error during analysis loop: {str(e)}",
@@ -552,62 +552,11 @@ def load_css():
     """, unsafe_allow_html=True)
 
 
-def load_shader_code():
-    """Return shader code as a JavaScript block"""
-    return """
-        const vertexShader = `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-
-        const fragmentShader = `
-            uniform float time;
-            uniform vec2 resolution;
-            varying vec2 vUv;
-
-            float rand(vec2 n) { 
-                return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-            }
-
-            float noise(vec2 p) {
-                vec2 ip = floor(p);
-                vec2 u = fract(p);
-                u = u*u*(3.0-2.0*u);
-
-                float res = mix(
-                    mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
-                    mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
-                return res*res;
-            }
-
-            void main() {
-                vec2 uv = vUv;
-                float nx = noise(uv * 8.0 + time * 0.2);
-                float ny = noise(uv * 8.0 - time * 0.2);
-                vec3 sandColor1 = vec3(0.76, 0.45, 0.2);
-                vec3 sandColor2 = vec3(0.55, 0.35, 0.15);
-                vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
-                float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
-                color += vec3(sparkle);
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        window.SAND_SHADERS = {
-            vertexShader,
-            fragmentShader
-        };
-    """
-
-
 def load_js():
     """Load all JavaScript code including shaders and Three.js initialization"""
     st.markdown(f"""
         <div id="sand-background"></div>
-        <script src="http://localhost:5001/static/shaders.js"></script>
+        <script src="/static/shaders.js"></script>
         <script>
         // Initialize Three.js and create sand effect
         if (!window.threeJsLoaded) {{
@@ -828,7 +777,7 @@ def main():
                                             • Template response detection
                                             •Timing analysis
                                             • Language complexity
-                                            • Suspicious behavior patterns
+                                            •Suspicious behavior patterns
                                         </span></span>
                                     </div>
                                 """,
@@ -884,28 +833,23 @@ def main():
                             st.plotly_chart(create_bot_analysis_chart(
                                 result['text_metrics'],
                                 result['activity_patterns']),
-                                            use_container_width=True,
+                                                                           use_container_width=True,
                                             config={'displayModeBar': False})
 
                             # Suspicious Patterns
-                            st.subheader("Suspicious PatternsDetected")
+                            st.subheader("Suspicious Patterns Detected")
                             col7, col8 = st.columns(2)
                             with col7:
-                                st.markdown("""
-                                    Shows the percentage of comments that contain specific patterns 
-                                    often associated with bots:
-                                    - Identical Greetings: Generic hello/hi messages
-                                    - URL Patterns: Frequency of link sharing
-                                    - Promotional Phrases: Marketing-like language
-                                    - Generic Responses: Very basic/template-like replies
-                                """)
+                                st.markdown("#### Pattern Analysis")
+                                for pattern, value in result['activity_patterns'].items():
+                                    if isinstance(value, (int, float)):
+                                        st.write(f"• {pattern}: {value}")
 
                             with col8:
                                 suspicious_patterns = result[
                                     'text_metrics'].get(
                                         'suspicious_patterns', {})
-                                for pattern, count in suspicious_patterns.items(
-                                ):
+                                for pattern, count in suspicious_patterns.items():
                                     st.metric(
                                         pattern.replace('_', ' ').title(),
                                         f"{count}%")
