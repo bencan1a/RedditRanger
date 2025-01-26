@@ -47,172 +47,10 @@ def cycle_litany():
     """Creates a cycling iterator of the Mentat litany"""
     return itertools.cycle(MENTAT_LITANY)
 
-def clear_analysis():
-    """Clear all analysis-related session state variables"""
-    if 'analysis_complete' in st.session_state:
-        del st.session_state.analysis_complete
-    if 'analysis_result' in st.session_state:
-        del st.session_state.analysis_result
-    if 'analysis_error' in st.session_state:
-        del st.session_state.analysis_error
-
-def render_analysis(result):
-    """Render the analysis results in the Streamlit interface"""
-    try:
-        if 'error' in result:
-            st.error(f"Error analyzing account: {result['error']}")
-            with st.expander("See detailed error information"):
-                st.code(result['error'])
-            return
-
-        # Main scores row
-        col1, col2 = st.columns(2)
-        with col1:
-            risk_class = get_risk_class(result['risk_score'])
-            st.markdown(f"""
-                <div class="risk-score {risk_class}">
-                    {result['risk_score']:.1f}% Thinking Machine Probability
-                    <span class="info-icon">ⓘ<span class="tooltip">
-                        Score breakdown:
-                        • Account age, karma & activity (25%)
-                        • Posting patterns & subreddit diversity (25%)
-                        • Comment analysis & vocabulary (25%)
-                        • ML-based behavior assessment (25%)
-                    </span></span>
-                </div>
-            """, unsafe_allow_html=True)
-
-        with col2:
-            bot_prob = result['bot_probability']
-            bot_risk_class = get_risk_class(bot_prob)
-            st.markdown(f"""
-                <div class="risk-score {bot_risk_class}">
-                    {bot_prob:.1f}% Bot Probability
-                    <span class="info-icon">ⓘ<span class="tooltip">
-                        Based on:
-                        • Repetitive phrase patterns
-                        • Template response detection
-                        • Timing analysis
-                        • Language complexity
-                        • Suspicious behavior patterns
-                    </span></span>
-                </div>
-            """, unsafe_allow_html=True)
-
-        # Account Overview section
-        st.subheader("Account Overview")
-        col3, col4 = st.columns(2)
-        with col3:
-            st.markdown(f"**Account Age:** {result['account_age']}")
-            st.markdown(f"**Total Karma:** {result['karma']:,}")
-
-        with col4:
-            st.markdown("**Top Subreddits**")
-            for subreddit, count in result['activity_patterns']['top_subreddits'].items():
-                st.markdown(f"• {subreddit}: {count} posts")
-
-        # Activity and Risk Analysis
-        st.subheader("Analysis Results")
-        col5, col6 = st.columns(2)
-        with col5:
-            st.markdown("#### Activity Overview")
-            activity_data = create_monthly_activity_table(
-                result['comments_df'], result['submissions_df'])
-            st.plotly_chart(
-                create_monthly_activity_chart(activity_data),
-                use_container_width=True,
-                config={'displayModeBar': False})
-
-        with col6:
-            st.markdown("#### Risk Analysis")
-            radar_chart = create_score_radar_chart(result['component_scores'])
-            st.plotly_chart(
-                radar_chart,
-                use_container_width=True,
-                config={'displayModeBar': False})
-
-        # Bot Behavior Analysis
-        st.subheader("Bot Behavior Analysis")
-        st.markdown("""
-            Detailed analysis of text patterns, timing patterns, and suspicious behaviors.
-            Higher scores indicate more bot-like characteristics.
-        """)
-        st.plotly_chart(
-            create_bot_analysis_chart(
-                result['text_metrics'],
-                result['activity_patterns']
-            ),
-            use_container_width=True,
-            config={'displayModeBar': False}
-        )
-
-        # Suspicious Patterns
-        st.subheader("Suspicious Patterns Detected")
-        col7, col8 = st.columns(2)
-        with col7:
-            st.markdown("""
-                Shows the percentage of comments that contain specific patterns 
-                often associated with bots:
-                - Identical Greetings: Generic hello/hi messages
-                - URL Patterns: Frequency of link sharing
-                - Promotional Phrases: Marketing-like language
-                - Generic Responses: Very basic/template-like replies
-            """)
-
-        with col8:
-            suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
-            for pattern, count in suspicious_patterns.items():
-                st.metric(
-                    pattern.replace('_', ' ').title(),
-                    f"{count}%"
-                )
-
-        # Mentat Feedback Section
-        st.markdown("---")
-        st.subheader("Improve the Mentat")
-        st.markdown("""
-            Help us improve our detection capabilities by providing feedback 
-            on the account classification.
-        """)
-
-        feedback_col1, feedback_col2 = st.columns(2)
-        with feedback_col1:
-            if st.button("Mark as Human Account", key="human-account-btn"):
-                account_scorer.ml_analyzer.add_training_example(
-                    result['user_data'],
-                    result['activity_patterns'],
-                    result['text_metrics'],
-                    is_legitimate=True
-                )
-                st.success(
-                    "Thank you for marking this as a human account! "
-                    "This feedback helps improve our detection."
-                )
-
-        with feedback_col2:
-            if st.button("Mark as Bot Account", key="bot-account-btn"):
-                account_scorer.ml_analyzer.add_training_example(
-                    result['user_data'],
-                    result['activity_patterns'],
-                    result['text_metrics'],
-                    is_legitimate=False
-                )
-                st.success(
-                    "Thank you for marking this as a bot account! "
-                    "This feedback helps improve our detection."
-                )
-
-    except Exception as e:
-        logger.error(f"Error rendering analysis: {str(e)}", exc_info=True)
-        st.error("An error occurred while rendering the analysis results.")
-
 def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
     """Perform the analysis in a separate thread"""
     try:
         logger.debug(f"Starting perform_analysis for user: {username}")
-
-        # Clear existing analysis from session state
-        clear_analysis()
 
         # Set a timeout for the entire analysis
         logger.debug("Fetching user data...")
@@ -272,9 +110,9 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             'risk_score': (1 - final_score) * 100,
             'ml_risk_score': component_scores.get('ml_risk_score', 0.5) * 100,
             'traditional_risk_score': (1 - sum(float(v) for k, v in component_scores.items()
-                                               if k != 'ml_risk_score' and isinstance(v, (int, float))) /
-                                           max(1, len([k for k in component_scores
-                                               if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
+                                           if k != 'ml_risk_score' and isinstance(v, (int, float))) /
+                                       max(1, len([k for k in component_scores
+                                           if k != 'ml_risk_score' and isinstance(component_scores[k], (int, float))]))) * 100,
             'user_data': user_data,
             'activity_patterns': activity_patterns,
             'text_metrics': text_metrics,
@@ -292,14 +130,15 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         error_details = f"Error during analysis: {str(e)}\nFull traceback: {traceback.format_exc()}"
         result_queue.put(('error', error_details))
 
-
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
     """Analyze a single user with background processing"""
     try:
         logger.debug(f"Starting analysis for user: {username}")
 
         # Reset state for new analysis
-        clear_analysis()
+        st.session_state.analysis_complete = False
+        st.session_state.analysis_result = None
+        st.session_state.analysis_error = None
 
         # Create a queue for thread communication
         result_queue = Queue()
@@ -797,6 +636,7 @@ def get_risk_class(risk_score):
         return "medium-risk"
     return "low-risk"
 
+
 def main():
     try:
         st.set_page_config(
@@ -815,7 +655,6 @@ def main():
         page = st.sidebar.radio("Select Page", ["Analyzer", "Stats"])
 
         if page == "Stats":
-            clear_analysis()  # Clear analysis when switching to stats
             render_stats_page()
         else:
             st.title("Thinking Machine Detector")
@@ -829,8 +668,153 @@ def main():
             if analysis_mode == "Single Account":
                 username = st.text_input("Enter Reddit Username:", "")
                 if username:
-                    result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
-                    render_analysis(result)
+                    try:
+                        result = analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer)
+                        if 'error' in result:
+                            st.error(f"Error analyzing account: {result['error']}")
+                            with st.expander("See detailed error information"):
+                                st.code(result['error'])
+                            return
+
+                        # Main scores row
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            risk_class = get_risk_class(result['risk_score'])
+                            st.markdown(f"""
+                                <div class="risk-score {risk_class}">
+                                    {result['risk_score']:.1f}% Thinking Machine Probability
+                                    <span class="info-icon">ⓘ<span class="tooltip">
+                                        Score breakdown:
+                                        • Account age, karma & activity (25%)
+                                        • Posting patterns & subreddit diversity (25%)
+                                        • Comment analysis & vocabulary (25%)
+                                        • ML-based behavior assessment (25%)
+                                    </span></span>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                        with col2:
+                            bot_prob = result['bot_probability']
+                            bot_risk_class = get_risk_class(bot_prob)
+                            st.markdown(f"""
+                                <div class="risk-score {bot_risk_class}">
+                                    {bot_prob:.1f}% Bot Probability
+                                    <span class="info-icon">ⓘ<span class="tooltip">
+                                        Based on:
+                                        • Repetitive phrase patterns
+                                        • Template response detection
+                                        • Timing analysis
+                                        • Language complexity
+                                        • Suspicious behavior patterns
+                                    </span></span>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                        # Account Overview section
+                        st.subheader("Account Overview")
+                        col3, col4 = st.columns(2)
+                        with col3:
+                            st.markdown(f"**Account Age:** {result['account_age']}")
+                            st.markdown(f"**Total Karma:** {result['karma']:,}")
+
+                        with col4:
+                            st.markdown("**Top Subreddits**")
+                            for subreddit, count in result['activity_patterns']['top_subreddits'].items():
+                                st.markdown(f"• {subreddit}: {count} posts")
+
+                        # Activity and Risk Analysis
+                        st.subheader("Analysis Results")
+                        col5, col6 = st.columns(2)
+                        with col5:
+                            st.markdown("#### Activity Overview")
+                            activity_data = create_monthly_activity_table(
+                                result['comments_df'], result['submissions_df'])
+                            st.plotly_chart(
+                                create_monthly_activity_chart(activity_data),
+                                use_container_width=True,
+                                config={'displayModeBar': False})
+
+                        with col6:
+                            st.markdown("#### Risk Analysis")
+                            radar_chart = create_score_radar_chart(result['component_scores'])
+                            st.plotly_chart(
+                                radar_chart,
+                                use_container_width=True,
+                                config={'displayModeBar': False})
+
+                        # Bot Behavior Analysis
+                        st.subheader("Bot Behavior Analysis")
+                        st.markdown("""
+                            Detailed analysis of text patterns, timing patterns, and suspicious behaviors.
+                            Higher scores indicate more bot-like characteristics.
+                        """)
+                        st.plotly_chart(
+                            create_bot_analysis_chart(
+                                result['text_metrics'],
+                                result['activity_patterns']
+                            ),
+                            use_container_width=True,
+                            config={'displayModeBar': False}
+                        )
+
+                        # Suspicious Patterns
+                        st.subheader("Suspicious Patterns Detected")
+                        col7, col8 = st.columns(2)
+                        with col7:
+                            st.markdown("""
+                                Shows the percentage of comments that contain specific patterns 
+                                often associated with bots:
+                                - Identical Greetings: Generic hello/hi messages
+                                - URL Patterns: Frequency of link sharing
+                                - Promotional Phrases: Marketing-like language
+                                - Generic Responses: Very basic/template-like replies
+                            """)
+
+                        with col8:
+                            suspicious_patterns = result['text_metrics'].get('suspicious_patterns', {})
+                            for pattern, count in suspicious_patterns.items():
+                                st.metric(
+                                    pattern.replace('_', ' ').title(),
+                                    f"{count}%"
+                                )
+
+                        # Mentat Feedback Section
+                        st.markdown("---")
+                        st.subheader("Improve the Mentat")
+                        st.markdown("""
+                            Help us improve our detection capabilities by providing feedback 
+                            on the account classification.
+                        """)
+
+                        feedback_col1, feedback_col2 = st.columns(2)
+                        with feedback_col1:
+                            if st.button("Mark as Human Account", key="human-account-btn"):
+                                account_scorer.ml_analyzer.add_training_example(
+                                    result['user_data'],
+                                    result['activity_patterns'],
+                                    result['text_metrics'],
+                                    is_legitimate=True
+                                )
+                                st.success(                                    "Thank you for marking this as a human account! "
+                                    "This feedback helps improve our detection."
+                                )
+
+                        with feedback_col2:
+                            if st.button("Mark as Bot Account", key="bot-account-btn"):
+                                account_scorer.ml_analyzer.add_training_example(
+                                    result['user_data'],
+                                    result['activity_patterns'],
+                                    result['text_metrics'],
+                                    is_legitimate=False
+                                )
+                                st.success(
+                                    "Thank you for marking this as a bot account! "
+                                    "This feedback helps improve our detection."
+                                )
+
+                    except Exception as e:
+                        logger.error(f"Error in analysis: {str(e)}", exc_info=True)
+                        st.error(f"An error occurred during analysis: {str(e)}")
 
             else:  # Bulk Analysis
                 usernames = st.text_area(
@@ -852,31 +836,34 @@ def main():
                             status_text.text(
                                 f"Analyzing {username}... ({i+1}/{len(usernames)})")
                             result = analyze_single_user(username, reddit_analyzer,
-                                                      text_analyzer, account_scorer)
+                                                        text_analyzer, account_scorer)
                             results.append(result)
                             progress_bar.progress((i + 1) / len(usernames))
 
                         status_text.text("Analysis complete!")
 
                         df = pd.DataFrame([{
-                            'Username': r.get('username'),
-                            'Account Age': r.get('account_age', 'N/A') if 'error' not in r else 'N/A',
-                            'Total Karma': r.get('karma', 'N/A') if 'error' not in r else 'N/A',
+                            'Username':
+                            r.get('username'),
+                            'Account Age':
+                            r.get('account_age', 'N/A') if 'error' not in r else 'N/A',
+                            'Total Karma':
+                            r.get('karma', 'N/A') if 'error' not in r else 'N/A',
                             'Thinking Machine Probability':
-                                f"{r.get('risk_score', 'N/A'):.1f}%"
-                                if 'error' not in r else 'N/A',
-                            'Status': 'Success' if 'error' not in r else f"Error: {r['error']}"
+                            f"{r.get('risk_score', 'N/A'):.1f}%"
+                            if 'error' not in r else 'N/A',
+                            'Status':
+                            'Success' if 'error' not in r else f"Error: {r['error']}"
                         } for r in results])
 
                         st.subheader("Bulk Analysis Results")
                         st.dataframe(df)
 
                         csv = df.to_csv(index=False)
-                        st.download_button(
-                            label="Download Results as CSV",
-                            data=csv,
-                            file_name="thinkingmachine_analysis.csv",
-                            mime="text/csv")
+                        st.download_button(label="Download Results as CSV",
+                                           data=csv,
+                                           file_name="thinkingmachine_analysis.csv",
+                                           mime="text/csv")
 
     except Exception as e:
         st.error(f"Application error: {str(e)}")
