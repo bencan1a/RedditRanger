@@ -467,105 +467,102 @@ def load_css():
             });
         }
         </script>
-
-        <!-- Add shader code -->
-        <script type="x-shader/x-vertex" id="vertex-shader">
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        </script>
-
-        <script type="x-shader/x-fragment" id="fragment-shader">
-            uniform float time;
-            uniform vec2 resolution;
-            varying vec2 vUv;
-
-            float rand(vec2 n) { 
-                return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-            }
-
-            float noise(vec2 p) {
-                vec2 ip = floor(p);
-                vec2 u = fract(p);
-                u = u*u*(3.0-2.0*u);
-
-                float res = mix(
-                    mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
-                    mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
-                return res*res;
-            }
-
-            void main() {
-                vec2 uv = vUv;
-
-                float nx = noise(uv * 8.0 + time * 0.2);
-                float ny = noise(uv * 8.0 - time * 0.2);
-
-                vec3 sandColor1 = vec3(0.76, 0.45, 0.2);  // Spice orange
-                vec3 sandColor2 = vec3(0.55, 0.35, 0.15); // Dark sand
-
-                vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
-
-                float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
-                color += vec3(sparkle);
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        </script>
-
-        <!-- Add Three.js -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-        <!-- Add sand effect container -->
-        <div id="sand-background"></div>
-
-        <script>
-        // Initialize sand effect
-        const container = document.getElementById('sand-background');
-        const scene = new THREE.Scene();
-        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-
-        // Set canvas size
-        function resize() {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        // Add to container
-        container.appendChild(renderer.domElement);
-
-        // Create shader material
-        const uniforms = {
-            time: { value: 0 },
-            resolution: { value: new THREE.Vector2() }
-        };
-
-        const material = new THREE.ShaderMaterial({
-            uniforms: uniforms,
-            vertexShader: document.getElementById('vertex-shader').textContent,
-            fragmentShader: document.getElementById('fragment-shader').textContent
-        });
-
-        // Create mesh
-        const geometry = new THREE.PlaneGeometry(2, 2);
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-
-        // Animation loop
-        function animate(time) {
-            uniforms.time.value = time * 0.001;
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-        </script>
     """,
         unsafe_allow_html=True)
 
+def load_js():
+    """Load JavaScript dependencies only when needed"""
+    st.markdown("""
+        <div id="sand-background"></div>
+        <script>
+        if (!window.threeJsLoaded) {
+            const script = document.createElement('script');
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+            script.onload = function() {
+                window.threeJsLoaded = true;
+                initSandEffect();
+            };
+            document.body.appendChild(script);
+        }
+
+        function initSandEffect() {
+            const container = document.getElementById('sand-background');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            container.appendChild(renderer.domElement);
+
+            const uniforms = {
+                time: { value: 0 },
+                resolution: { value: new THREE.Vector2() }
+            };
+
+            const material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec2 resolution;
+                    varying vec2 vUv;
+
+                    float rand(vec2 n) { 
+                        return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+                    }
+
+                    float noise(vec2 p) {
+                        vec2 ip = floor(p);
+                        vec2 u = fract(p);
+                        u = u*u*(3.0-2.0*u);
+
+                        float res = mix(
+                            mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
+                            mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
+                        return res*res;
+                    }
+
+                    void main() {
+                        vec2 uv = vUv;
+                        float nx = noise(uv * 8.0 + time * 0.2);
+                        float ny = noise(uv * 8.0 - time * 0.2);
+                        vec3 sandColor1 = vec3(0.76, 0.45, 0.2);
+                        vec3 sandColor2 = vec3(0.55, 0.35, 0.15);
+                        vec3 color = mix(sandColor1, sandColor2, noise(uv * 4.0 + vec2(nx, ny)));
+                        float sparkle = pow(rand(uv + time * 0.1), 20.0) * 0.3;
+                        color += vec3(sparkle);
+                        gl_FragColor = vec4(color, 1.0);
+                    }
+                `
+            });
+
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            function animate(time) {
+                if (!window.threeJsLoaded) return;
+                uniforms.time.value = time * 0.001;
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+        </script>
+    """, unsafe_allow_html=True)
 
 def render_stats_page():
     """Render the statistics page with analysis history"""
@@ -648,6 +645,11 @@ def main():
             initial_sidebar_state="collapsed")
 
         load_css()
+
+        # Only load JS when needed
+        if st.session_state.get('load_js', True):
+            load_js()
+            st.session_state['load_js'] = False
 
         # Add page selection in sidebar
         page = st.sidebar.radio("Select Page", ["Analyzer", "Stats"])
