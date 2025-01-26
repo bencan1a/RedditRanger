@@ -8,7 +8,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "http://localhost:5001/*"
+    "https://*.repl.co/*"
   ],
   "content_scripts": [
     {

@@ -135,11 +135,6 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
     try:
         logger.debug(f"Starting analysis for user: {username}")
 
-        #Check Database Connection
-        if not account_scorer.db_connection_ok():
-            logger.error("Database connection failed. Cannot proceed with analysis.")
-            return {'username': username, 'error': "Database connection failed."}
-
         # Reset state for new analysis
         st.session_state.analysis_complete = False
         st.session_state.analysis_result = None

@@ -21,7 +21,11 @@ args = "Reddit Analyzer API"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start application"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Streamlit App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -43,7 +47,7 @@ args = "python main.py"
 waitForPort = 5001
 
 [[workflows.workflow]]
-name = "Start application"
+name = "API Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -54,7 +58,22 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run streamlit_app.py --server.port 5000 --server.address 0.0.0.0"
+args = "python main.py"
+waitForPort = 5001
+
+[[workflows.workflow]]
+name = "Streamlit App"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run streamlit_app.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -69,7 +88,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "uvicorn main:app --host 0.0.0.0 --port 5001 --reload"
 waitForPort = 5001
 
 [[ports]]
