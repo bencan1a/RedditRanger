@@ -44,11 +44,11 @@ MENTAT_LITANY = [
 ]
 
 def cycle_litany():
-    """Creates a cycling iterator of the Mentat litany"""
+    #Creates a cycling iterator of the Mentat litany
     return itertools.cycle(MENTAT_LITANY)
 
 def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
-    """Perform the analysis in a separate thread"""
+    #Perform the analysis in a separate thread
     try:
         logger.debug(f"Starting perform_analysis for user: {username}")
 
@@ -131,7 +131,7 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         result_queue.put(('error', error_details))
 
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
-    """Analyze a single user with background processing"""
+    # Analyze a single user with background processing
     try:
         logger.debug(f"Starting analysis for user: {username}")
 
@@ -565,7 +565,7 @@ def load_js():
     """, unsafe_allow_html=True)
 
 def render_stats_page():
-    """Render the statistics page with analysis history"""
+    #Render the statistics page with analysis history
     st.title("Analysis Statistics")
 
     try:
@@ -674,7 +674,11 @@ def main():
                 if username:
                     # Clear any previous results immediately when username changes
                     if 'prev_username' not in st.session_state or st.session_state.prev_username != username:
+                        # Clear existing content before starting new analysis
                         results_placeholder.empty()
+                        st.session_state.analysis_complete = False
+                        st.session_state.analysis_result = None
+                        st.session_state.analysis_error = None
                         st.session_state.prev_username = username
 
                     try:
