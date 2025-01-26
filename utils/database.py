@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 import os
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 import logging
 from functools import lru_cache
 import pandas as pd

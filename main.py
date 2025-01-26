@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from utils.reddit_analyzer import RedditAnalyzer
@@ -8,7 +9,7 @@ from utils.rate_limiter import RateLimiter
 from utils.database import init_db, get_db, AnalysisResult
 from sqlalchemy.orm import Session
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from config import get_settings, Settings
 import logging
@@ -16,10 +17,27 @@ import logging
 # Configure application logger
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize application resources"""
+    try:
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {str(e)}")
+        raise
+
+    settings = get_settings()
+    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
+    logger.info(f"Server running on {settings.HOST}:{settings.PORT}")
+    yield
+
 app = FastAPI(
     title="Reddit Ranger API",
     version=get_settings().VERSION,
-    description="Reddit account analysis API with ML-powered credibility insights"
+    description="Reddit account analysis API with ML-powered credibility insights",
+    lifespan=lifespan
 )
 
 settings = get_settings()
@@ -44,25 +62,13 @@ class AnalysisResponse(BaseModel):
     summary: dict
     analysis_count: int
     last_analyzed: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class HealthResponse(BaseModel):
     status: str
     version: str
     timestamp: str
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database and log application startup"""
-    try:
-        init_db()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.error(f"Database initialization failed: {str(e)}")
-        raise
-
-    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
-    logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
-    logger.info(f"Server running on {settings.HOST}:{settings.PORT}")
+    model_config = ConfigDict(from_attributes=True)
 
 @app.get("/health")
 async def health_check():
@@ -135,7 +141,7 @@ async def analyze_user(
 
         # Add rate limit headers to response
         return {
-            **response.dict(),
+            **response.model_dump(),
             "headers": rate_limit_headers
         }
 

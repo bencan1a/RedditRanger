@@ -176,10 +176,14 @@ class RedditAnalyzer:
         bot_patterns = self._analyze_timing_patterns(comments_df)
 
         # Original activity pattern analysis
-        all_subreddits = pd.concat([
-            comments_df['subreddit'] if not comments_df.empty else pd.Series(),
-            submissions_df['subreddit'] if submissions_df is not None and not submissions_df.empty else pd.Series()
-        ])
+        # Filter out empty DataFrames before concatenation
+        valid_dataframes = []
+        if not comments_df.empty:
+            valid_dataframes.append(comments_df['subreddit'])
+        if submissions_df is not None and not submissions_df.empty:
+            valid_dataframes.append(submissions_df['subreddit'])
+
+        all_subreddits = pd.concat(valid_dataframes) if valid_dataframes else pd.Series()
 
         # Log activity stats
         logger.info(f"Total comments: {len(comments_df)}")
@@ -190,11 +194,14 @@ class RedditAnalyzer:
         comments_avg = comments_df['score'].mean() if not comments_df.empty else 0
         submissions_avg = submissions_df['score'].mean() if submissions_df is not None and not submissions_df.empty else 0
 
-        # Combine timestamps for activity analysis
-        all_times = pd.concat([
-            comments_df['created_utc'] if not comments_df.empty else pd.Series(),
-            submissions_df['created_utc'] if submissions_df is not None and not submissions_df.empty else pd.Series()
-        ])
+        # Filter out empty DataFrames before concatenating timestamps
+        valid_time_dataframes = []
+        if not comments_df.empty:
+            valid_time_dataframes.append(comments_df['created_utc'])
+        if submissions_df is not None and not submissions_df.empty:
+            valid_time_dataframes.append(submissions_df['created_utc'])
+
+        all_times = pd.concat(valid_time_dataframes) if valid_time_dataframes else pd.Series()
 
         patterns = {
             'total_comments': len(comments_df),
@@ -202,8 +209,8 @@ class RedditAnalyzer:
             'unique_subreddits': all_subreddits.nunique(),
             'avg_comment_score': comments_avg,
             'avg_submission_score': submissions_avg,
-            'activity_hours': all_times.dt.hour.value_counts().to_dict(),
-            'top_subreddits': all_subreddits.value_counts().head(5).to_dict(),
+            'activity_hours': all_times.dt.hour.value_counts().to_dict() if not all_times.empty else {},
+            'top_subreddits': all_subreddits.value_counts().head(5).to_dict() if not all_subreddits.empty else {},
             'bot_patterns': bot_patterns
         }
 
