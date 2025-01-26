@@ -4,7 +4,7 @@ import traceback
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
-from utils.database import AnalysisResult
+from utils.database import AnalysisResult, SessionLocal
 from utils.visualizations import (create_score_radar_chart,
                               create_monthly_activity_table,
                               create_subreddit_distribution,
@@ -48,7 +48,7 @@ def cycle_litany():
     return itertools.cycle(MENTAT_LITANY)
 
 def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
-    #Perform the analysis in a separate thread
+    # Perform the analysis in a separate thread
     try:
         logger.debug(f"Starting perform_analysis for user: {username}")
 
@@ -103,6 +103,22 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         total_karma = int(comment_karma) + int(link_karma) if isinstance(comment_karma, (int, float)) and isinstance(link_karma, (int, float)) else 0
         logger.debug(f"Total karma calculated: {total_karma}")
 
+        # Save to database with proper error handling
+        try:
+            with SessionLocal() as db:
+                bot_probability = (1 - final_score) * 100  # Convert to percentage
+                logger.debug(f"Calculated bot_probability for database: {bot_probability}")
+                analysis_result = AnalysisResult.get_or_create(db, username, bot_probability)
+                db.commit()
+                logger.info(f"Successfully saved analysis results to database for user: {username}")
+                logger.debug(f"Database record: id={analysis_result.id}, "
+                           f"analysis_count={analysis_result.analysis_count}, "
+                           f"last_analyzed={analysis_result.last_analyzed}")
+        except Exception as db_error:
+            logger.error(f"Database error while saving results for {username}: {str(db_error)}", 
+                        exc_info=True)
+            # Continue with analysis even if database save fails
+
         result = {
             'username': username,
             'account_age': user_data['created_utc'].strftime('%Y-%m-%d'),
@@ -131,7 +147,7 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         result_queue.put(('error', error_details))
 
 def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
-    # Analyze a single user with background processing
+    #Analyze a single user with background processing
     try:
         logger.debug(f"Starting analysis for user: {username}")
 
@@ -674,11 +690,7 @@ def main():
                 if username:
                     # Clear any previous results immediately when username changes
                     if 'prev_username' not in st.session_state or st.session_state.prev_username != username:
-                        # Clear existing content before starting new analysis
                         results_placeholder.empty()
-                        st.session_state.analysis_complete = False
-                        st.session_state.analysis_result = None
-                        st.session_state.analysis_error = None
                         st.session_state.prev_username = username
 
                     try:
@@ -768,7 +780,7 @@ def main():
                                     result['text_metrics'],
                                     result['activity_patterns']
                                 ),
-                                use_container_width=True,
+                                                               use_container_width=True,
                                 config={'displayModeBar': False}
                             )
 
