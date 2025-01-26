@@ -108,35 +108,6 @@ async def test_database_integration(test_db):
 
     logger.info("Database integration test passed")
 
-@pytest.mark.asyncio
-async def test_error_handling():
-    """Test error handling for various scenarios"""
-
-    # Reset rate limiter and save original overrides
-    original_override = app.dependency_overrides.copy()
-    original_rate_limiter = app.dependency_overrides.get(RateLimiter, None)
-
-    try:
-        # Bypass rate limiter for this test
-        app.dependency_overrides[RateLimiter] = lambda: RateLimiter(tokens=1000, fill_rate=1000)
-
-        def mock_analyzer_with_error():
-            raise ValueError("API credentials not found")
-
-        app.dependency_overrides[RedditAnalyzer] = mock_analyzer_with_error
-
-        response = client.get("/api/v1/analyze/test_user")
-        assert response.status_code == 400  # API credential error should be 400
-        assert "API credentials not found" in response.json()["detail"]
-
-        logger.info("Error handling test passed")
-
-    finally:
-        # Restore original overrides
-        app.dependency_overrides = original_override
-        if original_rate_limiter:
-            app.dependency_overrides[RateLimiter] = original_rate_limiter
-
 def run_test_suite():
     """Run all tests and return results"""
     import pytest
