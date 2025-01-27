@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "streamlit run streamlit_app.py --server.port 5000"]
 
 [workflows]
-runButton = "Streamlit App"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -17,31 +17,11 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Reddit Analyzer API"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Streamlit App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "FastAPI Server"
-
-[[workflows.workflow]]
-name = "Reddit Analyzer API"
-mode = "sequential"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5001
 
 [[workflows.workflow]]
 name = "Streamlit App"
