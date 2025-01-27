@@ -5,6 +5,7 @@ from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.database import AnalysisResult, SessionLocal
+from utils.i18n import _, i18n, SUPPORTED_LANGUAGES
 from utils.visualizations import (create_score_radar_chart,
                                   create_monthly_activity_table,
                                   create_subreddit_distribution,
@@ -382,103 +383,93 @@ def load_styles():
 
 def main():
     try:
-        st.set_page_config(page_title="Reddit Mentat Detector | Arrakis",
-                           layout="wide",
-                           initial_sidebar_state="collapsed")
+        st.set_page_config(
+            page_title="Reddit Mentat Detector | Arrakis",
+            layout="wide",
+            initial_sidebar_state="collapsed"
+        )
 
         load_styles()
 
-        # Add page selection in sidebar
-        page = st.sidebar.radio("Select Page", ["Analyzer", "Stats"])
+        # Add language selector in sidebar
+        st.sidebar.selectbox(
+            "Language / Idioma / Langue",
+            options=list(SUPPORTED_LANGUAGES.keys()),
+            format_func=lambda x: SUPPORTED_LANGUAGES[x],
+            key="language"
+        )
 
-        if page == "Stats":
+        # Add page selection in sidebar
+        page = st.sidebar.radio(_("Select Page"), [_("Analyzer"), _("Stats")])
+
+        if page == _("Stats"):
             render_stats_page()
         else:
-            st.title("Thinking Machine Detector")
-            st.markdown("""
+            st.title(_("Thinking Machine Detector"))
+            st.markdown(_("""
                 Like the calculations of a Mentat, this tool uses advanced cognitive processes 
-                to identify Abominable Intelligences among Reddit users. The spice must flow, but the     machines must not prevail.
-            """)
+                to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail.
+            """))
 
-            analysis_mode = st.radio("Analysis Mode:",
-                                     ["Single Account", "Bulk Detection"])
+            analysis_mode = st.radio(_("Analysis Mode:"),
+                                   [_("Single Account"), _("Bulk Detection")])
 
-            if analysis_mode == "Single Account":
-                username = st.text_input("Enter Reddit Username:", "")
+            if analysis_mode == _("Single Account"):
+                username = st.text_input(_("Enter Reddit Username:"), "")
 
                 # Create a placeholder for results at the top level
                 results_placeholder = st.empty()
 
                 if username:
-                    # Clear any previous results immediately when username changes
-                    if 'prev_username' not in st.session_state or st.session_state.prev_username != username:
-                        results_placeholder.empty()
-                        st.session_state.prev_username = username
-
                     try:
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
-                            result = analyze_single_user(
-                                username, reddit_analyzer, text_analyzer,
-                                account_scorer)
+                            result = analyze_single_user(username, reddit_analyzer,
+                                                       text_analyzer, account_scorer)
+
                             if 'error' in result:
                                 st.error(
-                                    f"Error analyzing account: {result['error']}"
+                                    f"{_('Error analyzing account')}: {result['error']}"
                                 )
-                                with st.expander(
-                                        "See detailed error information"):
-                                    st.code(result['error'])
                                 return
 
                             # Main scores row
                             col1, col2 = st.columns(2)
                             with col1:
-                                risk_class = get_risk_class(
-                                    result['risk_score'])
-                                st.markdown(f"""
+                                risk_class = get_risk_class(result['risk_score'])
+                                st.markdown(
+                                    f"""
                                     <div class="risk-score {risk_class}">
-                                        {result['risk_score']:.1f}% Thinking Machine Probability
-                                        <span class="info-icon">ⓘ<span class="tooltip">
-                                            Score breakdown:
-                                            • Account age, karma & activity (25%)
-                                            • Posting patterns & subreddit diversity (25%)
-                                            • Comment analysis & vocabulary (25%)
-                                            • ML-based behavior assessment (25%)
-                                        </span></span>
+                                        {result['risk_score']:.1f}% {_("Thinking Machine Probability")}
                                     </div>
-                                """,
-                                            unsafe_allow_html=True)
+                                    """,
+                                    unsafe_allow_html=True
+                                )
 
                             with col2:
                                 bot_prob = result['bot_probability']
                                 bot_risk_class = get_risk_class(bot_prob)
-                                st.markdown(f"""
+                                st.markdown(
+                                    f"""
                                     <div class="risk-score {bot_risk_class}">
-                                        {bot_prob:.1f}% Bot Probability
-                                        <span class="info-icon">ⓘ<span class="tooltip">
-                                            Based on:
-                                            • Repetitive phrase patterns
-                                            • Template response detection
-                                            •Timing analysis
-                                            • Language complexity
-                                            •Suspicious behavior patterns
-                                        </span></span>
+                                        {bot_prob:.1f}% {_("Bot Probability")}
                                     </div>
-                                """,
-                                            unsafe_allow_html=True)
+                                    """,
+                                    unsafe_allow_html=True
+                                )
 
                             # Account Overview section
-                            st.subheader("Account Overview")
+                            st.subheader(_("Account Overview"))
                             col3, col4 = st.columns(2)
                             with col3:
                                 st.markdown(
-                                    f"**Account Age:** {result['account_age']}"
+                                    f"**{_('Account Age')}:** {result['account_age']}"
                                 )
                                 st.markdown(
-                                    f"**Total Karma:** {result['karma']:,}")
+                                    f"**{_('Total Karma')}:** {result['karma']:,}")
 
                             with col4:
-                                st.markdown("**Top Subreddits**")
+                                st.markdown(_("**Top Subreddits**"))
                                 for subreddit, count in result[
                                         'activity_patterns'][
                                             'top_subreddits'].items():
@@ -486,10 +477,10 @@ def main():
                                         f"• {subreddit}: {count} posts")
 
                             # Activity and Risk Analysis
-                            st.subheader("Analysis Results")
+                            st.subheader(_("Analysis Results"))
                             col5, col6 = st.columns(2)
                             with col5:
-                                st.markdown("#### Activity Overview")
+                                st.markdown("#### " + _("Activity Overview"))
                                 activity_data = create_monthly_activity_table(
                                     result['comments_df'],
                                     result['submissions_df'])
@@ -500,7 +491,7 @@ def main():
                                     config={'displayModeBar': False})
 
                             with col6:
-                                st.markdown("#### Risk Analysis")
+                                st.markdown("#### " + _("Risk Analysis"))
                                 radar_chart = create_score_radar_chart(
                                     result['component_scores'])
                                 st.plotly_chart(
@@ -509,11 +500,11 @@ def main():
                                     config={'displayModeBar': False})
 
                             # Bot Behavior Analysis
-                            st.subheader("Bot Behavior Analysis")
-                            st.markdown("""
+                            st.subheader(_("Bot Behavior Analysis"))
+                            st.markdown(_("""
                                 Detailed analysis of text patterns, timing patterns, and suspicious behaviors.
                                 Higher scores indicate more bot-like characteristics.
-                            """)
+                            """))
                             st.plotly_chart(create_bot_analysis_chart(
                                 result['text_metrics'],
                                 result['activity_patterns']),
@@ -521,10 +512,10 @@ def main():
                                 config={'displayModeBar': False})
 
                             # Suspicious Patterns
-                            st.subheader("Suspicious Patterns Detected")
+                            st.subheader(_("Suspicious Patterns Detected"))
                             col7, col8 = st.columns(2)
                             with col7:
-                                st.markdown("#### Pattern Analysis")
+                                st.markdown("#### " + _("Pattern Analysis"))
                                 for pattern, value in result['activity_patterns'].items():
                                     if isinstance(value, (int, float)):
                                         st.write(f"• {pattern}: {value}")
@@ -540,48 +531,40 @@ def main():
 
                             # Mentat Feedback Section
                             st.markdown("---")
-                            st.subheader("Improve the Mentat")
-                            st.markdown("""
+                            st.subheader(_("Improve the Mentat"))
+                            st.markdown(_("""
                                 Help us improve our detection capabilities by providing feedback 
-                                                               on the account classification.
-                            """)
+                                                                on the account classification.
+                            """))
 
                             feedback_col1, feedback_col2 = st.columns(2)
                             with feedback_col1:
-                                if st.button("Mark as Human Account",
-                                             key="human-account-btn"):
+                                if st.button(_("Mark as Human Account")):
                                     account_scorer.ml_analyzer.add_training_example(
                                         result['user_data'],
                                         result['activity_patterns'],
                                         result['text_metrics'],
                                         is_legitimate=True)
-                                    st.success(
-                                        "Thank you for marking this as a human account! "
-                                        "This feedback helps improve our detection."
-                                    )
+                                    st.success(_("Thank you for marking this as a human account!"))
 
                             with feedback_col2:
-                                if st.button("Mark as Bot Account",
-                                             key="bot-account-btn"):
+                                if st.button(_("Mark as Bot Account")):
                                     account_scorer.ml_analyzer.add_training_example(
                                         result['user_data'],
                                         result['activity_patterns'],
                                         result['text_metrics'],
                                         is_legitimate=False)
-                                    st.success(
-                                        "Thank you for marking this as a bot account! "
-                                        "This feedback helps improve our detection."
-                                    )
+                                    st.success(_("Thank you for marking this as a bot account!"))
 
                     except Exception as e:
                         logger.error(f"Error in analysis: {str(e)}",
                                      exc_info=True)
                         st.error(
-                            f"An error occurred during analysis: {str(e)}")
+                            f"{_('An error occurred during analysis')}: {str(e)}")
 
             else:  # Bulk Analysis
                 usernames = st.text_area(
-                    "Enter Reddit Usernames (one per line or comma-separated):",
+                    _("Enter Reddit Usernames (one per line or comma-separated):"),
                     "")
                 if usernames:
                     usernames = [
@@ -591,7 +574,7 @@ def main():
                     ]
 
                     if st.button(
-                            f"Analyze {len(usernames)} Accounts for Thinking Machines"
+                            f"{_('Analyze')} {len(usernames)} { _('Accounts for Thinking Machines')}"
                     ):
                         results = []
                         progress_bar = st.progress(0)
@@ -599,7 +582,7 @@ def main():
 
                         for i, username in enumerate(usernames):
                             status_text.text(
-                                f"Analyzing {username}... ({i+1}/{len(usernames)})"
+                                f"{_('Analyzing')} {username}... ({i+1}/{len(usernames)})"
                             )
                             result = analyze_single_user(
                                 username, reddit_analyzer, text_analyzer,
@@ -607,7 +590,7 @@ def main():
                             results.append(result)
                             progress_bar.progress((i + 1) / len(usernames))
 
-                        status_text.text("Analysis complete!")
+                        status_text.text(_("Analysis complete!"))
 
                         df = pd.DataFrame([{
                             'Username':
@@ -626,18 +609,18 @@ def main():
                                 if 'error' not in r else f"Error: {r['error']}"
                         } for r in results])
 
-                        st.subheader("Bulk Analysis Results")
+                        st.subheader(_("Bulk Analysis Results"))
                         st.dataframe(df)
 
                         csv = df.to_csv(index=False)
                         st.download_button(
-                            label="Download Results as CSV",
+                            label=_("Download Results as CSV"),
                             data=csv,
                             file_name="thinkingmachine_analysis.csv",
                             mime="text/csv")
 
     except Exception as e:
-        st.error(f"Application error: {str(e)}")
+        st.error(f"{_('Application error')}: {str(e)}")
 
 
 if __name__ == "__main__":

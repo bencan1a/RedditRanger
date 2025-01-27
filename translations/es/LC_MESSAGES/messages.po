@@ -1,0 +1,54 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Reddit Mentat Detector\n"
+"POT-Creation-Date: 2025-01-27\n"
+"PO-Revision-Date: 2025-01-27\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Thinking Machine Detector"
+msgstr "Detector de Máquinas Pensantes"
+
+msgid "Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."
+msgstr "Como los cálculos de un Mentat, esta herramienta utiliza procesos cognitivos avanzados para identificar Inteligencias Abominables entre los usuarios de Reddit. La especia debe fluir, pero las máquinas no deben prevalecer."
+
+msgid "Analysis Mode:"
+msgstr "Modo de Análisis:"
+
+msgid "Single Account"
+msgstr "Cuenta Individual"
+
+msgid "Bulk Detection"
+msgstr "Detección Masiva"
+
+msgid "Enter Reddit Username:"
+msgstr "Ingrese el Usuario de Reddit:"
+
+msgid "Account Overview"
+msgstr "Resumen de la Cuenta"
+
+msgid "Analysis Results"
+msgstr "Resultados del Análisis"
+
+msgid "Activity Overview"
+msgstr "Resumen de Actividad"
+
+msgid "Risk Analysis"
+msgstr "Análisis de Riesgo"
+
+msgid "Bot Behavior Analysis"
+msgstr "Análisis de Comportamiento Bot"
+
+msgid "Suspicious Patterns Detected"
+msgstr "Patrones Sospechosos Detectados"
+
+msgid "Improve the Mentat"
+msgstr "Mejorar el Mentat"
+
+msgid "Mark as Human Account"
+msgstr "Marcar como Cuenta Humana"
+
+msgid "Mark as Bot Account"
+msgstr "Marcar como Cuenta Bot"
