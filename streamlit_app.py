@@ -38,10 +38,11 @@ except Exception as e:
 
 # Mentat Sapho Juice Litany
 MENTAT_LITANY = [
-    "It is by will alone I set my mind in motion.",
-    "It is by the juice of Sapho that thoughts acquire speed,",
-    "The lips acquire stains,", "The stains become a warning.",
-    "It is by will alone I set my mind in motion."
+    _("It is by will alone I set my mind in motion."),
+    _("It is by the juice of Sapho that thoughts acquire speed,"),
+    _("The lips acquire stains,"),
+    _("The stains become a warning."),
+    _("It is by will alone I set my mind in motion.")
 ]
 
 

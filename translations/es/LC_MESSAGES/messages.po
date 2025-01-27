@@ -52,3 +52,15 @@ msgstr "Marcar como Cuenta Humana"
 
 msgid "Mark as Bot Account"
 msgstr "Marcar como Cuenta Bot"
+
+msgid "It is by will alone I set my mind in motion."
+msgstr "Es por voluntad solamente que pongo mi mente en movimiento."
+
+msgid "It is by the juice of Sapho that thoughts acquire speed,"
+msgstr "Es por el jugo de Sapho que los pensamientos adquieren velocidad,"
+
+msgid "The lips acquire stains,"
+msgstr "Los labios adquieren manchas,"
+
+msgid "The stains become a warning."
+msgstr "Las manchas se convierten en una advertencia."
