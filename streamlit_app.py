@@ -363,7 +363,7 @@ def load_styles():
 
         # Apply combined CSS
         st.markdown(
-            f'<style>{"\n".join(css_content)}</style>',
+            '<style>' + '\n'.join(css_content) + '</style>',
             unsafe_allow_html=True
         )
 

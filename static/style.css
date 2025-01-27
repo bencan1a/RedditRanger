@@ -86,7 +86,7 @@
 }
 
 .tooltip {
-    visibility: hidden;
+    display: none;  /* Changed from visibility: hidden for better hover handling */
     width: 280px;
     background: var(--gradient-primary);
     color: var(--primary-color);
@@ -95,32 +95,30 @@
     border-radius: 6px;
     border: 1px solid var(--border-color);
 
-    /* Positioning */
+    /* Position tooltip */
     position: absolute;
     z-index: 1000;
     bottom: 125%;
     left: 50%;
     margin-left: -140px;
 
-    /* Initial state */
+    /* Fade animation */
     opacity: 0;
     transform: translateY(10px);
-
-    /* Transition */
     transition: opacity var(--transition-speed) var(--transition-function),
-                transform var(--transition-speed) var(--transition-function),
-                visibility var(--transition-speed) var(--transition-function);
+                transform var(--transition-speed) var(--transition-function);
 
     /* Additional styling */
     font-family: var(--font-family-primary);
     font-size: 0.85rem;
     line-height: 1.4;
     box-shadow: var(--shadow-large);
+    pointer-events: none;  /* Prevent tooltip from interfering with hover */
 }
 
 /* Show tooltip on hover */
 .info-icon:hover .tooltip {
-    visibility: visible;
+    display: block;  /* Show the tooltip */
     opacity: 1;
     transform: translateY(0);
 }
