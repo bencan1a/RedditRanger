@@ -1,0 +1,33 @@
+:root {
+    /* Colors */
+    --primary-color: #FFB74D;
+    --primary-dark: #FF9800;
+    --background-dark: rgba(35, 20, 12, 0.85);
+    --background-light: rgba(44, 26, 15, 0.9);
+    --border-color: rgba(255, 152, 0, 0.1);
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
+    --gradient-header: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
+    
+    /* Typography */
+    --font-family-primary: 'Space Mono', monospace;
+    --font-size-base: 1rem;
+    --font-size-large: 1.5rem;
+    --font-size-xlarge: 1.8rem;
+    
+    /* Spacing */
+    --spacing-small: 0.5rem;
+    --spacing-medium: 1rem;
+    --spacing-large: 1.5rem;
+    --spacing-xlarge: 2rem;
+    
+    /* Effects */
+    --shadow-small: 0 4px 12px rgba(255, 152, 0, 0.05);
+    --shadow-large: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --glow-text: 0 0 10px rgba(255, 152, 0, 0.2);
+    
+    /* Animations */
+    --transition-speed: 0.3s;
+    --transition-function: ease-out;
+}

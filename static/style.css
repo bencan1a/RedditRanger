@@ -1,15 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+@import 'theme.css';
 
+/* Layout Components */
 .grid-container {
     display: flex;
-    gap: 20px;
+    gap: var(--spacing-large);
     width: 100%;
     align-items: stretch;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-large);
     flex-direction: row;
     opacity: 1;
     transform: translateY(0);
-    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    transition: opacity var(--transition-speed) var(--transition-function),
+                transform var(--transition-speed) var(--transition-function);
 }
 
 .grid-container.fade-out {
@@ -18,91 +21,93 @@
 }
 
 .grid-item {
-    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-    border: 1px solid rgba(255, 152, 0, 0.1);
+    background: var(--gradient-primary);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 20px;
+    padding: var(--spacing-large);
     box-sizing: border-box;
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.05);
+    box-shadow: var(--shadow-small);
     backdrop-filter: blur(8px);
 }
+
+/* Grid Sizes */
 .grid-item.half-width { flex: 0 0 50%; }
 .grid-item.full-width { flex: 0 0 100%; }
 .grid-item.quarter-width { flex: 0 0 25%; }
 
+/* Typography */
 .section-heading {
-    font-family: 'Space Mono', monospace;
-    font-size: 1.5rem;
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-large);
     font-weight: 700;
-    margin-bottom: 1.5rem;
-    color: #FFB74D;
+    margin-bottom: var(--spacing-large);
+    color: var(--primary-color);
     letter-spacing: 0.1em;
     display: block;
     text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    text-shadow: var(--glow-text);
 }
 
-/* Override Streamlit's default button styles */
-.stButton>button {
-    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-    color: #FFB74D;
-    border: 1px solid rgba(255, 152, 0, 0.2);
-    font-family: 'Space Mono', monospace;
+/* Risk Score Display */
+.risk-score {
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-xlarge);
+    text-align: center;
+    padding: var(--spacing-xlarge);
+    border-radius: 8px;
+    margin: 0;
+    text-shadow: var(--glow-text);
     letter-spacing: 0.05em;
-    transition: all 0.3s ease;
+}
+
+.high-risk { 
+    background: linear-gradient(145deg, rgba(180, 30, 0, 0.2), rgba(140, 20, 0, 0.3));
+    border: 1px solid rgba(255, 50, 0, 0.2);
+}
+
+.medium-risk { 
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.2), rgba(200, 120, 0, 0.3));
+    border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+.low-risk { 
+    background: linear-gradient(145deg, rgba(0, 180, 0, 0.2), rgba(0, 140, 0, 0.3));
+    border: 1px solid rgba(0, 255, 50, 0.2);
+}
+
+/* Streamlit Overrides */
+.stButton>button {
+    background: var(--gradient-primary);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    font-family: var(--font-family-primary);
+    letter-spacing: 0.05em;
+    transition: all var(--transition-speed) ease;
 }
 
 .stButton>button:hover {
     background: linear-gradient(145deg, rgba(54, 36, 25, 0.8), rgba(45, 30, 22, 0.95));
     border-color: rgba(255, 152, 0, 0.4);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
+    box-shadow: var(--shadow-small);
 }
 
-/* Additional Dune-inspired elements */
-div[data-testid="stHeader"] {
-    background: linear-gradient(180deg, rgba(44, 26, 15, 0.95), rgba(35, 20, 12, 0.98));
-    border-bottom: 1px solid rgba(255, 152, 0, 0.1);
-}
-
-.intro-text {
-    font-family: 'Space Mono', monospace;
-    color: #FFB74D;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    margin: 1rem 0;
-    text-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-}
-
-#sand-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-}
-
-/* Add semi-transparent overlay to improve text readability */
-.stApp {
-    background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
-}
-
-
+/* Mentat Elements */
 .mentat-litany {
-    font-family: 'Space Mono', monospace;
-    font-size: 1.2rem;
-    color: #FFB74D;
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-large);
+    color: var(--primary-color);
     text-align: center;
-    padding: 2rem;
-    margin: 1rem 0;
-    background: linear-gradient(145deg, rgba(44, 26, 15, 0.8), rgba(35, 20, 12, 0.95));
-    border: 1px solid rgba(255, 152, 0, 0.1);
+    padding: var(--spacing-xlarge);
+    margin: var(--spacing-medium) 0;
+    background: var(--gradient-primary);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     animation: glow 1.5s ease-in-out infinite alternate;
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    transition: opacity var(--transition-speed) var(--transition-function),
+                transform var(--transition-speed) var(--transition-function);
 }
 
 .mentat-litany.visible {
@@ -113,6 +118,18 @@ div[data-testid="stHeader"] {
 .mentat-litany .char {
     opacity: 0;
     animation: typeChar 0.1s ease-in-out forwards;
+}
+
+/* Animations */
+@keyframes glow {
+    from {
+        text-shadow: 0 0 5px var(--primary-dark), 0 0 10px var(--primary-dark);
+        box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    }
+    to {
+        text-shadow: 0 0 10px var(--primary-dark), 0 0 20px var(--primary-dark);
+        box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
+    }
 }
 
 @keyframes typeChar {
@@ -126,24 +143,13 @@ div[data-testid="stHeader"] {
     }
 }
 
-@keyframes glow {
-    from {
-        text-shadow: 0 0 5px #FF9800, 0 0 10px #FF9800;
-        box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
-    }
-    to {
-        text-shadow: 0 0 10px #FF9800, 0 0 20px #FF9800;
-        box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
-    }
-}
-
-/* Add loading spinner style */
+/* Loading Spinner */
 .mentat-spinner {
     width: 40px;
     height: 40px;
     margin: 20px auto;
-    border: 3px solid rgba(255, 152, 0, 0.1);
-    border-top: 3px solid #FF9800;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-dark);
     border-radius: 50%;
     animation: spin 1s ease-in-out infinite;
     position: relative;
@@ -170,4 +176,17 @@ div[data-testid="stHeader"] {
 @keyframes spin-reverse {
     0% { transform: rotate(360deg); }
     100% { transform: rotate(0deg); }
+}
+
+#sand-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+}
+
+.stApp {
+    background: linear-gradient(rgba(35, 20, 12, 0.85), rgba(44, 26, 15, 0.9));
 }
