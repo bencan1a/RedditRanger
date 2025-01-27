@@ -75,6 +75,57 @@
     border: 1px solid rgba(0, 255, 50, 0.2);
 }
 
+/* Tooltip Styles */
+.info-icon {
+    font-size: 1rem;
+    color: var(--primary-color);
+    margin-left: 8px;
+    cursor: help;
+    display: inline-block;
+    position: relative;
+}
+
+.tooltip {
+    visibility: hidden;
+    width: 280px;
+    background: var(--gradient-primary);
+    color: var(--primary-color);
+    text-align: left;
+    padding: var(--spacing-medium);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+
+    /* Positioning */
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -140px;
+
+    /* Initial state */
+    opacity: 0;
+    transform: translateY(10px);
+
+    /* Transition */
+    transition: opacity var(--transition-speed) var(--transition-function),
+                transform var(--transition-speed) var(--transition-function),
+                visibility var(--transition-speed) var(--transition-function);
+
+    /* Additional styling */
+    font-family: var(--font-family-primary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    box-shadow: var(--shadow-large);
+}
+
+/* Show tooltip on hover */
+.info-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
 /* Streamlit Overrides */
 .stButton>button {
     background: var(--gradient-primary);

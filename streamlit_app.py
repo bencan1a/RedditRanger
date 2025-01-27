@@ -16,6 +16,7 @@ import itertools
 import threading
 from queue import Queue, Empty
 import os
+from config.theme import load_theme_files
 
 # Configure logging
 logging.basicConfig(
@@ -350,40 +351,33 @@ def get_risk_class(risk_score):
 
 
 def load_styles():
-    # Load all required CSS files
-    import os
+    """Load and apply all theme styles and scripts."""
+    try:
+        theme_files = load_theme_files()
 
-    # Get the directory where the script is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    css_files = [
-        os.path.join(current_dir, 'static', 'theme.css'),
-        os.path.join(current_dir, 'static', 'style.css')
-    ]
+        # Combine all CSS content
+        css_content = [
+            theme_files['css_variables'],  # CSS variables first
+            *theme_files['css_files'].values()  # Then other CSS files
+        ]
 
-    css_content = ""
-    for css_file in css_files:
-        try:
-            with open(css_file) as f:
-                css_content += f.read()
-                logger.debug(f"Successfully loaded CSS file: {css_file}")
-        except Exception as e:
-            logger.error(f"Error loading CSS file {css_file}: {e}")
-            st.warning(f"Failed to load some styles. The application may not look correct.")
+        # Apply combined CSS
+        st.markdown(
+            f'<style>{"\n".join(css_content)}</style>',
+            unsafe_allow_html=True
+        )
 
-    # Add the combined CSS content
-    if css_content:
-        st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
-        logger.debug("Applied CSS styles")
+        # Add JavaScript with proper paths
+        js_content = "\n".join([
+            f"<script>{js_code}</script>"
+            for js_code in theme_files['js_files'].values()
+        ])
+        st.markdown(js_content, unsafe_allow_html=True)
 
-    # Add JavaScript files with absolute paths
-    js_content = """
-        <script src="%s"></script>
-        <script src="%s"></script>
-    """ % (
-        os.path.join(current_dir, 'static', 'animate.js'),
-        os.path.join(current_dir, 'static', 'sand_effect.js')
-    )
-    st.markdown(js_content, unsafe_allow_html=True)
+        logger.debug("Successfully loaded and applied all theme files")
+    except Exception as e:
+        logger.error(f"Error in load_styles: {str(e)}")
+        st.warning("Some styles failed to load. The application may not look correct.")
 
 
 def main():
