@@ -26,6 +26,34 @@ args = "streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=50
 waitForPort = 5000
 
 [[workflows.workflow]]
+name = "Streamlit App"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=5000"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Streamlit App"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "FastAPI Server"
+
+[[workflows.workflow]]
 name = "FastAPI Server"
 author = "agent"
 
