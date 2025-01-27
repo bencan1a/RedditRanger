@@ -435,7 +435,9 @@ def main():
                             with col1:
                                 risk_class = get_risk_class(result['risk_score'])
                                 # Pre-translate the label
-                                thinking_machine_label = _("Thinking Machine Probability")
+                                original_label = "Thinking Machine Probability"
+                                thinking_machine_label = _(original_label)
+                                logger.debug(f"Translation attempt - Original: '{original_label}' -> Translated: '{thinking_machine_label}'")
                                 st.markdown(
                                     f"""
                                     <div class="risk-score {risk_class}">
@@ -449,7 +451,9 @@ def main():
                                 bot_prob = result['bot_probability']
                                 bot_risk_class = get_risk_class(bot_prob)
                                 # Pre-translate the label
-                                bot_probability_label = _("Bot Probability")
+                                original_bot_label = "Bot Probability"
+                                bot_probability_label = _(original_bot_label)
+                                logger.debug(f"Translation attempt - Original: '{original_bot_label}' -> Translated: '{bot_probability_label}'")
                                 st.markdown(
                                     f"""
                                     <div class="risk-score {bot_risk_class}">
