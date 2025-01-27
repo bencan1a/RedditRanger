@@ -9,11 +9,11 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Reddit Mentat Detector"
     VERSION: str = "1.0.0"
     HOST: str = "0.0.0.0"
-    PORT: int = 5001  # Changed from 5002 to 5001
+    PORT: int = 5001
     LOG_LEVEL: str = "INFO"
 
     # Authentication settings
-    ENABLE_AUTH: bool = os.getenv("ENABLE_AUTH", "false").lower() == "true"
+    ENABLE_AUTH: bool = True  # Default to True to enable authentication
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
 
     # Reddit API settings
