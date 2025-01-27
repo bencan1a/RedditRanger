@@ -31,12 +31,8 @@ author = "agent"
 agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "uvicorn main:app --host 0.0.0.0 --port 5002"
-waitForPort = 5002
+args = "uvicorn main:app --host 0.0.0.0 --port 5000"
 
 [[workflows.workflow]]
 name = "Streamlit App"
