@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # Server Settings
     HOST: str = "0.0.0.0"
-    PORT: int = 5000
+    PORT: int = 5002
 
     # Logging Settings
     LOG_LEVEL: str = "INFO"
