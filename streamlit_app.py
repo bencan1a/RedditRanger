@@ -523,24 +523,26 @@ def main():
                                 st.markdown("#### " + _("Pattern Analysis"))
                                 for pattern, value in result['activity_patterns'].items():
                                     if isinstance(value, (int, float)):
-                                        st.write(f"• {_(pattern)}: {value}")
+                                        # Ensure pattern key is translated
+                                        translated_pattern = _(pattern)
+                                        st.write(f"• {translated_pattern}: {value}")
 
                             with col8:
                                 suspicious_patterns = result[
                                     'text_metrics'].get(
                                         'suspicious_patterns', {})
                                 for pattern, count in suspicious_patterns.items():
+                                    # Translate the pattern name
+                                    translated_pattern = _(pattern.replace('_', ' ').title())
                                     st.metric(
-                                        pattern.replace('_', ' ').title(),
+                                        translated_pattern,
                                         f"{count}%")
 
                             # Mentat Feedback Section
                             st.markdown("---")
                             st.subheader(_("Improve the Mentat"))
-                            st.markdown(_("""
-                                Help us improve our detection capabilities by providing feedback 
-                                on the account classification.
-                            """))
+                            st.markdown(_("""Help us improve our detection capabilities by providing feedback 
+                                on the account classification."""))
 
                             feedback_col1, feedback_col2 = st.columns(2)
                             with feedback_col1:

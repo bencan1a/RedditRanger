@@ -85,3 +85,33 @@ msgstr "Probabilidad de Máquina Pensante"
 
 msgid "Bot Probability"
 msgstr "Probabilidad de Bot"
+
+msgid "Detailed analysis of text patterns, timing patterns, and suspicious behaviors. Higher scores indicate more bot-like characteristics."
+msgstr "Análisis detallado de patrones de texto, patrones de tiempo y comportamientos sospechosos. Puntuaciones más altas indican características más similares a un bot."
+
+msgid "total_comments"
+msgstr "Comentarios Totales"
+
+msgid "total_submissions"
+msgstr "Publicaciones Totales"
+
+msgid "unique_subreddits"
+msgstr "Subreddits Únicos"
+
+msgid "avg_comment_score"
+msgstr "Puntuación Media de Comentarios"
+
+msgid "avg_submission_score"
+msgstr "Puntuación Media de Publicaciones"
+
+msgid "Identical Greetings"
+msgstr "Saludos Idénticos"
+
+msgid "Url Patterns"
+msgstr "Patrones de URL"
+
+msgid "Promotional Phrases"
+msgstr "Frases Promocionales"
+
+msgid "Generic Responses"
+msgstr "Respuestas Genéricas"
