@@ -39,19 +39,13 @@ except Exception as e:
 # Function to get the translated Mentat litany.
 def get_mentat_litany():
     """Get the translated Mentat litany."""
-    # Force translation reload when language changes
-    if "current_language" not in st.session_state:
-        st.session_state.current_language = "en"
-
-    litany_texts = [
-        "It is by will alone I set my mind in motion.",
-        "It is by the juice of Sapho that thoughts acquire speed,",
-        "The lips acquire stains,",
-        "The stains become a warning.",
-        "It is by will alone I set my mind in motion."
+    return [
+        _("It is by will alone I set my mind in motion."),
+        _("It is by the juice of Sapho that thoughts acquire speed,"),
+        _("The lips acquire stains,"),
+        _("The stains become a warning."),
+        _("It is by will alone I set my mind in motion.")
     ]
-    # Translate each line at runtime with current language context
-    return [_(text) for text in litany_texts]
 
 def cycle_litany():
     """Creates a cycling iterator of the Mentat litany"""
@@ -397,19 +391,13 @@ def main():
 
         load_styles()
 
-        # Add language selector in sidebar with explicit language change handling
-        selected_language = st.sidebar.selectbox(
+        # Add language selector in sidebar
+        st.sidebar.selectbox(
             "Language / Idioma / Langue",
             options=list(SUPPORTED_LANGUAGES.keys()),
             format_func=lambda x: SUPPORTED_LANGUAGES[x],
             key="language"
         )
-
-        # Update language in session state if changed
-        if "current_language" not in st.session_state or st.session_state.current_language != selected_language:
-            st.session_state.current_language = selected_language
-            i18n.set_locale(selected_language)  # Update the locale explicitly
-            st.experimental_rerun()  # Force Streamlit to rerun with new language
 
         # Add page selection in sidebar
         page = st.sidebar.radio(_("Select Page"), [_("Analyzer"), _("Stats")])
