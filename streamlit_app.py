@@ -276,7 +276,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
 def render_stats_page():
     #Render the statistics page with analysis history
-    st.title("Analysis Statistics")
+    st.title(_("Analysis Statistics"))
 
     df = pd.DataFrame()  # Initialize df as an empty DataFrame
     try:
@@ -290,12 +290,7 @@ def render_stats_page():
                     logger.error(
                         f"Failed to fetch analysis stats after 3 attempts: {str(e)}"
                     )
-                    st.error("""
-                        Unable to fetch analysis statistics. 
-                        Please try refreshing the page in a few moments.
-
-                        If the problem persists, the database might be temporarily unavailable.
-                    """)
+                    st.error(_("Unable to fetch analysis statistics. Please try refreshing the page in a few moments. If the problem persists, the database might be temporarily unavailable."))
                     return
                 logger.warning(
                     f"Attempt {attempt + 1} failed, retrying... Error: {str(e)}"
@@ -303,12 +298,11 @@ def render_stats_page():
                 time.sleep(1)  # Wait before retry
 
         if df.empty:
-
-            st.info("No analysis results found in the database yet.")
+            st.info(_("No analysis results found in the database yet."))
             return
 
         # Add search box for username
-        search = st.text_input("Search by username")
+        search = st.text_input(_("Search by username"))
         if search:
             df = df[df['Username'].str.contains(search, case=False)]
 
@@ -316,32 +310,28 @@ def render_stats_page():
         st.dataframe(df,
                      column_config={
                          "Username":
-                         st.column_config.TextColumn("Username",
-                                                     help="Reddit username",
+                         st.column_config.TextColumn(_("Username"),
+                                                     help=_("Reddit username"),
                                                      max_chars=50),
                          "Last Analyzed":
                          st.column_config.DatetimeColumn(
-                             "Last Analyzed",
-                             help="When the analysis was last performed",
+                             _("Last Analyzed"),
+                             help=_("When the analysis was last performed"),
                              format="D MMM YYYY, HH:mm"),
                          "Analysis Count":
                          st.column_config.NumberColumn(
-                             "Times Analyzed",
-                             help="Number of times this account was analyzed"),
+                             _("Times Analyzed"),
+                             help=_("Number of times this account was analyzed")),
                          "Bot Probability":
                          st.column_config.TextColumn(
-                             "Bot Probability",
-                             help="Likelihood of being a bot")
+                             _("Bot Probability"),
+                             help=_("Likelihood of being a bot"))
                      },
                      hide_index=True,
                      use_container_width=True)
     except Exception as e:
         logger.error(f"Error rendering stats page: {str(e)}", exc_info=True)
-        st.error("""
-            An error occurred while loading the statistics page.
-            Please try refreshing the page.
-        """)
-
+        st.error(_("An error occurred while loading the statistics page. Please try refreshing the page."))
 
 def get_risk_class(risk_score):
     if risk_score > 70:

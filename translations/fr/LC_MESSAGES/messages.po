@@ -118,3 +118,36 @@ msgstr "Réponses Génériques"
 
 msgid "Top Subreddits"
 msgstr "Subreddits Principaux"
+
+msgid "Analysis Statistics"
+msgstr "Statistiques d'Analyse"
+
+msgid "Unable to fetch analysis statistics. Please try refreshing the page in a few moments. If the problem persists, the database might be temporarily unavailable."
+msgstr "Impossible de récupérer les statistiques d'analyse. Veuillez rafraîchir la page dans quelques instants. Si le problème persiste, la base de données pourrait être temporairement indisponible."
+
+msgid "No analysis results found in the database yet."
+msgstr "Aucun résultat d'analyse trouvé dans la base de données pour le moment."
+
+msgid "Search by username"
+msgstr "Rechercher par nom d'utilisateur"
+
+msgid "Reddit username"
+msgstr "Nom d'utilisateur Reddit"
+
+msgid "Last Analyzed"
+msgstr "Dernière Analyse"
+
+msgid "When the analysis was last performed"
+msgstr "Quand l'analyse a été effectuée pour la dernière fois"
+
+msgid "Times Analyzed"
+msgstr "Nombre d'Analyses"
+
+msgid "Number of times this account was analyzed"
+msgstr "Nombre de fois que ce compte a été analysé"
+
+msgid "Likelihood of being a bot"
+msgstr "Probabilité d'être un bot"
+
+msgid "An error occurred while loading the statistics page. Please try refreshing the page."
+msgstr "Une erreur s'est produite lors du chargement de la page des statistiques. Veuillez rafraîchir la page."

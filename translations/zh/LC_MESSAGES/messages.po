@@ -118,3 +118,36 @@ msgstr "通用回复"
 
 msgid "Top Subreddits"
 msgstr "热门子版块"
+
+msgid "Analysis Statistics"
+msgstr "分析统计"
+
+msgid "Unable to fetch analysis statistics. Please try refreshing the page in a few moments. If the problem persists, the database might be temporarily unavailable."
+msgstr "无法获取分析统计数据。请稍后刷新页面。如果问题仍然存在，数据库可能暂时不可用。"
+
+msgid "No analysis results found in the database yet."
+msgstr "数据库中尚未找到分析结果。"
+
+msgid "Search by username"
+msgstr "按用户名搜索"
+
+msgid "Reddit username"
+msgstr "Reddit用户名"
+
+msgid "Last Analyzed"
+msgstr "最后分析时间"
+
+msgid "When the analysis was last performed"
+msgstr "最后一次执行分析的时间"
+
+msgid "Times Analyzed"
+msgstr "分析次数"
+
+msgid "Number of times this account was analyzed"
+msgstr "此账户被分析的次数"
+
+msgid "Likelihood of being a bot"
+msgstr "是机器人的可能性"
+
+msgid "An error occurred while loading the statistics page. Please try refreshing the page."
+msgstr "加载统计页面时发生错误。请刷新页面。"

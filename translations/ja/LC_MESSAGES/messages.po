@@ -118,3 +118,36 @@ msgstr "一般的な応答"
 
 msgid "Top Subreddits"
 msgstr "トップサブレディット"
+
+msgid "Analysis Statistics"
+msgstr "分析統計"
+
+msgid "Unable to fetch analysis statistics. Please try refreshing the page in a few moments. If the problem persists, the database might be temporarily unavailable."
+msgstr "分析統計を取得できません。しばらくしてからページを更新してください。問題が解決しない場合は、データベースが一時的に利用できない可能性があります。"
+
+msgid "No analysis results found in the database yet."
+msgstr "まだデータベースに分析結果が見つかりません。"
+
+msgid "Search by username"
+msgstr "ユーザー名で検索"
+
+msgid "Reddit username"
+msgstr "Redditユーザー名"
+
+msgid "Last Analyzed"
+msgstr "最終分析"
+
+msgid "When the analysis was last performed"
+msgstr "最後に分析が実行された日時"
+
+msgid "Times Analyzed"
+msgstr "分析回数"
+
+msgid "Number of times this account was analyzed"
+msgstr "このアカウントが分析された回数"
+
+msgid "Likelihood of being a bot"
+msgstr "ボットである可能性"
+
+msgid "An error occurred while loading the statistics page. Please try refreshing the page."
+msgstr "統計ページの読み込み中にエラーが発生しました。ページを更新してください。"
