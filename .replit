@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "streamlit run streamlit_app.py --server.port 5000"]
 
 [workflows]
-runButton = "Project"
+runButton = "Reddit Analyzer API"
 
 [[workflows.workflow]]
 name = "Project"
