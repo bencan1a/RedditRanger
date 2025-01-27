@@ -29,6 +29,15 @@ msgstr "Ingrese el Usuario de Reddit:"
 msgid "Account Overview"
 msgstr "Resumen de la Cuenta"
 
+msgid "Account Age"
+msgstr "Edad de la Cuenta"
+
+msgid "Total Karma"
+msgstr "Karma Total"
+
+msgid "posts"
+msgstr "publicaciones"
+
 msgid "Analysis Results"
 msgstr "Resultados del Análisis"
 
@@ -44,8 +53,14 @@ msgstr "Análisis de Comportamiento Bot"
 msgid "Suspicious Patterns Detected"
 msgstr "Patrones Sospechosos Detectados"
 
+msgid "Pattern Analysis"
+msgstr "Análisis de Patrones"
+
 msgid "Improve the Mentat"
 msgstr "Mejorar el Mentat"
+
+msgid "Help us improve our detection capabilities by providing feedback on the account classification."
+msgstr "Ayúdanos a mejorar nuestras capacidades de detección proporcionando retroalimentación sobre la clasificación de la cuenta."
 
 msgid "Mark as Human Account"
 msgstr "Marcar como Cuenta Humana"

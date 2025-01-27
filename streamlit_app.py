@@ -475,7 +475,7 @@ def main():
                                         'activity_patterns'][
                                             'top_subreddits'].items():
                                     st.markdown(
-                                        f"• {subreddit}: {count} posts")
+                                        f"• {subreddit}: {count} {_('posts')}")
 
                             # Activity and Risk Analysis
                             st.subheader(_("Analysis Results"))
@@ -519,7 +519,7 @@ def main():
                                 st.markdown("#### " + _("Pattern Analysis"))
                                 for pattern, value in result['activity_patterns'].items():
                                     if isinstance(value, (int, float)):
-                                        st.write(f"• {pattern}: {value}")
+                                        st.write(f"• {_(pattern)}: {value}")
 
                             with col8:
                                 suspicious_patterns = result[
@@ -535,7 +535,7 @@ def main():
                             st.subheader(_("Improve the Mentat"))
                             st.markdown(_("""
                                 Help us improve our detection capabilities by providing feedback 
-                                                                on the account classification.
+                                on the account classification.
                             """))
 
                             feedback_col1, feedback_col2 = st.columns(2)

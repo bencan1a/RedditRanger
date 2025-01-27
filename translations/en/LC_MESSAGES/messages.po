@@ -29,6 +29,15 @@ msgstr "Enter Reddit Username:"
 msgid "Account Overview"
 msgstr "Account Overview"
 
+msgid "Account Age"
+msgstr "Account Age"
+
+msgid "Total Karma"
+msgstr "Total Karma"
+
+msgid "posts"
+msgstr "posts"
+
 msgid "Analysis Results"
 msgstr "Analysis Results"
 
@@ -44,8 +53,14 @@ msgstr "Bot Behavior Analysis"
 msgid "Suspicious Patterns Detected"
 msgstr "Suspicious Patterns Detected"
 
+msgid "Pattern Analysis"
+msgstr "Pattern Analysis"
+
 msgid "Improve the Mentat"
 msgstr "Improve the Mentat"
+
+msgid "Help us improve our detection capabilities by providing feedback on the account classification."
+msgstr "Help us improve our detection capabilities by providing feedback on the account classification."
 
 msgid "Mark as Human Account"
 msgstr "Mark as Human Account"
