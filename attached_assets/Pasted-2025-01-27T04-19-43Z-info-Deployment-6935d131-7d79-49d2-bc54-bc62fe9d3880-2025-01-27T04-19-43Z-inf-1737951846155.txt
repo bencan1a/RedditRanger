@@ -1,0 +1,35 @@
+2025-01-27T04:19:43Z info: Deployment: 6935d131-7d79-49d2-bc54-bc62fe9d3880
+2025-01-27T04:19:43Z info: Build: 6aefcec4-13cc-42f6-848c-2629ccb112eb
+2025-01-27T04:19:43Z info: Connecting to builder
+2025-01-27T04:19:47Z info: Builder connected
+2025-01-27T04:19:47Z info: Installing packages
+2025-01-27T04:19:48Z info: Skipping Build as no Build command set
+2025-01-27T04:19:48Z info: Pushing pid1 binary layer...
+2025-01-27T04:19:50Z info: Created pid1 binary layer
+2025-01-27T04:19:51Z info: Pushing Repl layer...
+2025-01-27T04:19:51Z info: Pushing hosting layer...
+2025-01-27T04:19:51Z info: Retrieved cached nix layer
+2025-01-27T04:19:51Z info: Created hosting layer
+2025-01-27T04:20:53Z info: Created Repl layer
+2025-01-27T04:20:53Z info: Pushing Repl (cache) layer...
+2025-01-27T04:20:53Z info: Created Repl (cache) layer
+2025-01-27T04:20:54Z info: Pushed image manifest
+2025-01-27T04:20:54Z info: Pushed soci index manifest
+2025-01-27T04:20:58Z info: Creating Autoscale service
+starting up user application
+forwarding local port 5000 to external port 80
+INFO:     Waiting for application startup.
+2025-01-27 04:21:51,336 - utils.database - INFO - Database engine initialized successfully
+starting up user application
+forwarding local port 5000 to external port 80
+2025-01-27 04:21:52,896 - utils.database - INFO - Database tables created and connection tested successfully
+INFO:     Application startup complete.
+healthcheck ping failed
+2025-01-27 04:22:06,766 - main - INFO - Environment: CORS Origins configured for ['http://localhost:5000', 'http://0.0.0.0:5000', 'https://*.repl.co']
+INFO:     Application startup complete.
+INFO:     Started server process [25]
+healthcheck ping failed
+a port configuration was specified but the required port was never opened
+a port configuration was specified but the required port was never opened
+starting up user application
+2025-01-27T04:22:54Z error: The application must serve traffic on either port 80 (if configured) or the first port in the port configuration. This port was never opened. Check the logs for more information.
