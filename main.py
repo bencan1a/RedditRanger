@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
-    logger.info(f"Server running on {settings.HOST}:{settings.PORT}")
+    logger.info(f"Server running on {settings.HOST}:5001")
     yield
 
 app = FastAPI(
@@ -49,7 +49,7 @@ settings = get_settings()
 # Configure CORS with settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[*settings.CORS_ORIGINS, "http://0.0.0.0:5001"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=settings.HOST,
-        port=settings.PORT,  # Using port from settings
+        port=5001,
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
         workers=1  # Ensure single worker to avoid port conflicts
