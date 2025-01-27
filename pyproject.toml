@@ -24,4 +24,5 @@ dependencies = [
     "pytest-asyncio>=0.25.2",
     "httpx>=0.28.1",
     "openai>=1.60.1",
+    "svgwrite>=1.4.3",
 ]
