@@ -31,8 +31,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
-    port = int(os.getenv('PORT', '80'))
-    logger.info(f"Server running on {settings.HOST}:{port}")
+    logger.info(f"Server running on {settings.HOST}:5001")
     yield
 
 app = FastAPI(
@@ -155,11 +154,10 @@ async def analyze_user(
         raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
-    port = int(os.getenv('PORT', '80'))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=port,
+        port=5001,
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
         workers=1
