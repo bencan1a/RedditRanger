@@ -17,7 +17,7 @@ msgstr "Seleccionar Idioma"
 msgid "Thinking Machine Detector"
 msgstr "Detector de Máquinas Pensantes"
 
-msgid "Mentat Description"
+msgid "mentat_description"
 msgstr "Como los cálculos de un Mentat, esta herramienta utiliza procesos cognitivos avanzados para identificar Inteligencias Abominables entre los usuarios de Reddit. La especia debe fluir, pero las máquinas no deben prevalecer."
 
 msgid "Analysis Mode:"
@@ -59,16 +59,16 @@ msgstr "Marcar como Cuenta Humana"
 msgid "Mark as Bot Account"
 msgstr "Marcar como Cuenta Bot"
 
-msgid "Mentat Litany"
+msgid "mentat_litany"
 msgstr "Es por voluntad propia que pongo mi mente en movimiento."
 
-msgid "Sapho Juice"
+msgid "sapho_juice"
 msgstr "Es por el jugo de Sapho que los pensamientos adquieren velocidad,"
 
-msgid "Stained Lips"
+msgid "stained_lips"
 msgstr "Los labios adquieren manchas,"
 
-msgid "Warning Stains"
+msgid "warning_stains"
 msgstr "Las manchas se convierten en advertencia."
 
 msgid "Bot Probability"

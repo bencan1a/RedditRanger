@@ -16,28 +16,11 @@ SUPPORTED_LANGUAGES = {
 }
 
 class I18n:
-    _instance = None
-    _initialized = False
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(I18n, cls).__new__(cls)
-        return cls._instance
-
     def __init__(self):
-        if not self._initialized:
-            self._translations = {}
-            self._ensure_session_state()
-            self._load_translations()
-            self._initialized = True
-
-    def _ensure_session_state(self):
-        """Ensure session state is properly initialized"""
-        if not hasattr(st, 'session_state'):
-            return
-
+        self._translations = {}
         if 'language' not in st.session_state:
-            st.session_state['language'] = 'en'
+            st.session_state.language = 'en'
+        self._load_translations()
 
     def _load_translations(self):
         """Load all available translations"""
@@ -58,15 +41,11 @@ class I18n:
                 self._translations[lang_code] = lambda x: x
 
     def get_language(self) -> str:
-        """Get the current language from session state"""
-        self._ensure_session_state()
-        return st.session_state.get('language', 'en')
+        return st.session_state.language
 
     def set_language(self, lang_code: str) -> None:
-        """Set the current language if it's supported"""
         if lang_code in SUPPORTED_LANGUAGES:
-            self._ensure_session_state()
-            st.session_state['language'] = lang_code
+            st.session_state.language = lang_code
 
     def translate(self, text: str) -> str:
         """Translate text using current language"""
