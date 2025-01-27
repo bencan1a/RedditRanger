@@ -55,10 +55,6 @@ args = "streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=50
 waitForPort = 5000
 
 [[ports]]
-localPort = 80
-externalPort = 3003
-
-[[ports]]
 localPort = 5000
 externalPort = 80
 
