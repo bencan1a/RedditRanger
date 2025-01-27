@@ -434,7 +434,7 @@ def main():
                             col1, col2 = st.columns(2)
                             with col1:
                                 risk_class = get_risk_class(result['risk_score'])
-                                # Store translated string before HTML markup
+                                # Pre-translate the label
                                 thinking_machine_label = _("Thinking Machine Probability")
                                 st.markdown(
                                     f"""
@@ -448,7 +448,7 @@ def main():
                             with col2:
                                 bot_prob = result['bot_probability']
                                 bot_risk_class = get_risk_class(bot_prob)
-                                # Store translated string before HTML markup
+                                # Pre-translate the label
                                 bot_probability_label = _("Bot Probability")
                                 st.markdown(
                                     f"""
