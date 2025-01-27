@@ -406,10 +406,7 @@ def main():
             render_stats_page()
         else:
             st.title(_("Thinking Machine Detector"))
-            st.markdown(_("""
-                Like the calculations of a Mentat, this tool uses advanced cognitive processes 
-                to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail.
-            """))
+            st.markdown(_("Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."))
 
             analysis_mode = st.radio(_("Analysis Mode:"),
                                    [_("Single Account"), _("Bulk Detection")])
