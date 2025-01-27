@@ -8,23 +8,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "It is by will alone I set my mind in motion."
-msgstr "Es por voluntad propia que pongo mi mente en movimiento."
+msgid "Reddit Mentat Detector | Arrakis"
+msgstr "Detector Mentat de Reddit | Arrakis"
 
-msgid "It is by the juice of Sapho that thoughts acquire speed,"
-msgstr "Es por el jugo de Sapho que los pensamientos adquieren velocidad,"
-
-msgid "The lips acquire stains,"
-msgstr "Los labios adquieren manchas,"
-
-msgid "The stains become a warning."
-msgstr "Las manchas se convierten en advertencia."
-
-msgid "Bot Probability"
-msgstr "Probabilidad de Bot"
-
-msgid "Thinking Machine Probability"
-msgstr "Probabilidad de Máquina Pensante"
+msgid "Select Language"
+msgstr "Seleccionar Idioma"
 
 msgid "Thinking Machine Detector"
 msgstr "Detector de Máquinas Pensantes"
@@ -70,3 +58,30 @@ msgstr "Marcar como Cuenta Humana"
 
 msgid "Mark as Bot Account"
 msgstr "Marcar como Cuenta Bot"
+
+msgid "It is by will alone I set my mind in motion."
+msgstr "Es por voluntad propia que pongo mi mente en movimiento."
+
+msgid "It is by the juice of Sapho that thoughts acquire speed,"
+msgstr "Es por el jugo de Sapho que los pensamientos adquieren velocidad,"
+
+msgid "The lips acquire stains,"
+msgstr "Los labios adquieren manchas,"
+
+msgid "The stains become a warning."
+msgstr "Las manchas se convierten en advertencia."
+
+msgid "Bot Probability"
+msgstr "Probabilidad de Bot"
+
+msgid "Thinking Machine Probability"
+msgstr "Probabilidad de Máquina Pensante"
+
+msgid "Select Page"
+msgstr "Seleccionar Página"
+
+msgid "Stats"
+msgstr "Estadísticas"
+
+msgid "Analyzer"
+msgstr "Analizador"

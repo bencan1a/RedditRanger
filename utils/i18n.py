@@ -24,7 +24,7 @@ class I18n:
         """Load all available translations"""
         if not TRANSLATIONS_DIR.exists():
             TRANSLATIONS_DIR.mkdir(parents=True)
-            
+
         for lang_code in SUPPORTED_LANGUAGES:
             try:
                 translator = gettext.translation(
@@ -41,8 +41,6 @@ class I18n:
 
     def get_language_from_browser(self) -> str:
         """Get the preferred language from browser settings"""
-        # In Streamlit we don't have direct access to browser language
-        # so we'll store it in session state
         if 'language' not in st.session_state:
             st.session_state.language = 'en'
         return st.session_state.language
@@ -51,6 +49,17 @@ class I18n:
         """Set the current language"""
         if lang_code in SUPPORTED_LANGUAGES:
             st.session_state.language = lang_code
+            # Reload translations for the new language
+            try:
+                translator = gettext.translation(
+                    'messages',
+                    localedir=str(TRANSLATIONS_DIR),
+                    languages=[lang_code],
+                    fallback=True
+                )
+                self._translations[lang_code] = translator.gettext
+            except Exception as e:
+                print(f"Failed to reload translation for {lang_code}: {e}")
 
     def translate(self, text: str) -> str:
         """Translate text to current language"""

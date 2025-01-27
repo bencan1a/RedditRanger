@@ -8,6 +8,12 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+msgid "Reddit Mentat Detector | Arrakis"
+msgstr "Reddit Mentat Detector | Arrakis"
+
+msgid "Select Language"
+msgstr "Select Language"
+
 msgid "Thinking Machine Detector"
 msgstr "Thinking Machine Detector"
 
@@ -70,3 +76,12 @@ msgstr "Bot Probability"
 
 msgid "Thinking Machine Probability"
 msgstr "Thinking Machine Probability"
+
+msgid "Select Page"
+msgstr "Select Page"
+
+msgid "Stats"
+msgstr "Stats"
+
+msgid "Analyzer"
+msgstr "Analyzer"

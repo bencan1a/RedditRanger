@@ -385,7 +385,7 @@ def load_styles():
 def main():
     try:
         st.set_page_config(
-            page_title="Reddit Mentat Detector | Arrakis",
+            page_title=_("Reddit Mentat Detector | Arrakis"),
             layout="wide",
             initial_sidebar_state="collapsed"
         )
@@ -393,12 +393,19 @@ def main():
         load_styles()
 
         # Add language selector in sidebar
-        st.sidebar.selectbox(
-            "Language / Idioma / Langue",
+        selected_lang = st.sidebar.selectbox(
+            _("Select Language"),
             options=list(SUPPORTED_LANGUAGES.keys()),
             format_func=lambda x: SUPPORTED_LANGUAGES[x],
             key="language"
         )
+
+        # Update language when selection changes
+        if selected_lang and selected_lang != st.session_state.get('prev_lang'):
+            i18n.set_language(selected_lang)
+            st.session_state.prev_lang = selected_lang
+            # Force rerun to update all translations
+            st.rerun()
 
         # Add page selection in sidebar
         page = st.sidebar.radio(_("Select Page"), [_("Analyzer"), _("Stats")])
@@ -434,7 +441,7 @@ def main():
                                 )
                                 return
 
-                            # Main scores row
+                            # Main scores row with proper translations
                             col1, col2 = st.columns(2)
                             with col1:
                                 risk_class = get_risk_class(result['risk_score'])
