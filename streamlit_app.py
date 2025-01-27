@@ -18,7 +18,6 @@ import threading
 from queue import Queue, Empty
 import os
 from config.theme import load_theme_files
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -396,21 +395,8 @@ def main():
         if page == _("Stats"):
             render_stats_page()
         else:
-            # Display logo and title in columns
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                icon_path = Path("static/fremen_snoo.svg")
-                if icon_path.exists():
-                    with open(icon_path) as f:
-                        svg_content = f.read()
-                        st.markdown(f"""
-                            <div style="width: 100px; margin-top: 20px;">
-                                {svg_content}
-                            </div>
-                        """, unsafe_allow_html=True)
-            with col2:
-                st.title(_("Thinking Machine Detector"))
-                st.markdown(_("Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."))
+            st.title(_("Thinking Machine Detector"))
+            st.markdown(_("Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."))
 
             analysis_mode = st.radio(_("Analysis Mode:"),
                                    [_("Single Account"), _("Bulk Detection")])

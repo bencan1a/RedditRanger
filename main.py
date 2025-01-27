@@ -157,7 +157,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=settings.HOST,
-        port=5001,  # Changed to 5001 to avoid conflict with Streamlit
+        port=5000,  # Using port 5000 for deployment compatibility
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
         workers=1  # Ensure single worker to avoid port conflicts
