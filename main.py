@@ -31,8 +31,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
-    # Use port 80 in production, 5001 in development
-    port = int(os.getenv('PORT', '80')) if os.getenv('ENVIRONMENT') == 'production' else 5001
+    port = int(os.getenv('PORT', '80'))
     logger.info(f"Server running on {settings.HOST}:{port}")
     yield
 
@@ -51,7 +50,7 @@ settings = get_settings()
 # Configure CORS with settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[*settings.CORS_ORIGINS, "http://0.0.0.0:5001"],
+    allow_origins=[*settings.CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -156,13 +155,12 @@ async def analyze_user(
         raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
-    # Use port 80 in production, 5001 in development
-    port = int(os.getenv('PORT', '80')) if os.getenv('ENVIRONMENT') == 'production' else 5001
+    port = int(os.getenv('PORT', '80'))
     uvicorn.run(
         "main:app",
-        host=settings.HOST,
+        host="0.0.0.0",
         port=port,
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
-        workers=1  # Ensure single worker to avoid port conflicts
+        workers=1
     )
