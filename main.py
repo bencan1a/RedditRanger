@@ -157,7 +157,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=settings.HOST,
-        port=5002,  # Using port 5002 as configured in .replit
+        port=settings.PORT,  # Using port from settings
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
         workers=1  # Ensure single worker to avoid port conflicts
