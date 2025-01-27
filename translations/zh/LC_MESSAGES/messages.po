@@ -1,0 +1,120 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Reddit Mentat Detector\n"
+"POT-Creation-Date: 2025-01-27\n"
+"PO-Revision-Date: 2025-01-27\n"
+"Language: zh\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Thinking Machine Detector"
+msgstr "思维机器检测器"
+
+msgid "Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."
+msgstr "像明智者的计算一样，此工具使用高级认知过程来识别Reddit用户中的可憎智能。香料必须流动，但机器不能占上风。"
+
+msgid "Analysis Mode:"
+msgstr "分析模式："
+
+msgid "Single Account"
+msgstr "单个账户"
+
+msgid "Bulk Detection"
+msgstr "批量检测"
+
+msgid "Enter Reddit Username:"
+msgstr "输入Reddit用户名："
+
+msgid "Account Overview"
+msgstr "账户概览"
+
+msgid "Account Age"
+msgstr "账户年龄"
+
+msgid "Total Karma"
+msgstr "总业力"
+
+msgid "posts"
+msgstr "帖子"
+
+msgid "Analysis Results"
+msgstr "分析结果"
+
+msgid "Activity Overview"
+msgstr "活动概览"
+
+msgid "Risk Analysis"
+msgstr "风险分析"
+
+msgid "Bot Behavior Analysis"
+msgstr "机器人行为分析"
+
+msgid "Suspicious Patterns Detected"
+msgstr "检测到可疑模式"
+
+msgid "Pattern Analysis"
+msgstr "模式分析"
+
+msgid "Improve the Mentat"
+msgstr "改进明智者"
+
+msgid "Help us improve our detection capabilities by providing feedback on the account classification."
+msgstr "通过对账户分类提供反馈来帮助我们提高检测能力。"
+
+msgid "Mark as Human Account"
+msgstr "标记为人类账户"
+
+msgid "Mark as Bot Account"
+msgstr "标记为机器人账户"
+
+msgid "It is by will alone I set my mind in motion."
+msgstr "唯有意志能使我心智运转。"
+
+msgid "It is by the juice of Sapho that thoughts acquire speed,"
+msgstr "通过萨福汁液使思维加速，"
+
+msgid "The lips acquire stains,"
+msgstr "嘴唇染上色斑，"
+
+msgid "The stains become a warning."
+msgstr "色斑成为警示。"
+
+msgid "Thinking Machine Probability"
+msgstr "思维机器概率"
+
+msgid "Bot Probability"
+msgstr "机器人概率"
+
+msgid "Detailed analysis of text patterns, timing patterns, and suspicious behaviors. Higher scores indicate more bot-like characteristics."
+msgstr "对文本模式、时间模式和可疑行为的详细分析。较高的分数表明更多机器人特征。"
+
+msgid "total_comments"
+msgstr "总评论数"
+
+msgid "total_submissions"
+msgstr "总提交数"
+
+msgid "unique_subreddits"
+msgstr "独特子版块"
+
+msgid "avg_comment_score"
+msgstr "平均评论分数"
+
+msgid "avg_submission_score"
+msgstr "平均提交分数"
+
+msgid "Identical Greetings"
+msgstr "相同问候语"
+
+msgid "Url Patterns"
+msgstr "网址模式"
+
+msgid "Promotional Phrases"
+msgstr "推广语句"
+
+msgid "Generic Responses"
+msgstr "通用回复"
+
+msgid "Top Subreddits"
+msgstr "热门子版块"

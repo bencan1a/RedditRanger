@@ -1,0 +1,120 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Reddit Mentat Detector\n"
+"POT-Creation-Date: 2025-01-27\n"
+"PO-Revision-Date: 2025-01-27\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Thinking Machine Detector"
+msgstr "Détecteur de Machine Pensante"
+
+msgid "Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."
+msgstr "Tel les calculs d'un Mentat, cet outil utilise des processus cognitifs avancés pour identifier les Intelligences Abominables parmi les utilisateurs de Reddit. L'épice doit couler, mais les machines ne doivent pas prévaloir."
+
+msgid "Analysis Mode:"
+msgstr "Mode d'Analyse :"
+
+msgid "Single Account"
+msgstr "Compte Unique"
+
+msgid "Bulk Detection"
+msgstr "Détection en Masse"
+
+msgid "Enter Reddit Username:"
+msgstr "Entrer le nom d'utilisateur Reddit :"
+
+msgid "Account Overview"
+msgstr "Aperçu du Compte"
+
+msgid "Account Age"
+msgstr "Âge du Compte"
+
+msgid "Total Karma"
+msgstr "Karma Total"
+
+msgid "posts"
+msgstr "publications"
+
+msgid "Analysis Results"
+msgstr "Résultats de l'Analyse"
+
+msgid "Activity Overview"
+msgstr "Aperçu de l'Activité"
+
+msgid "Risk Analysis"
+msgstr "Analyse des Risques"
+
+msgid "Bot Behavior Analysis"
+msgstr "Analyse du Comportement Bot"
+
+msgid "Suspicious Patterns Detected"
+msgstr "Motifs Suspects Détectés"
+
+msgid "Pattern Analysis"
+msgstr "Analyse des Motifs"
+
+msgid "Improve the Mentat"
+msgstr "Améliorer le Mentat"
+
+msgid "Help us improve our detection capabilities by providing feedback on the account classification."
+msgstr "Aidez-nous à améliorer nos capacités de détection en fournissant des commentaires sur la classification du compte."
+
+msgid "Mark as Human Account"
+msgstr "Marquer comme Compte Humain"
+
+msgid "Mark as Bot Account"
+msgstr "Marquer comme Compte Bot"
+
+msgid "It is by will alone I set my mind in motion."
+msgstr "C'est par la volonté seule que je mets mon esprit en mouvement."
+
+msgid "It is by the juice of Sapho that thoughts acquire speed,"
+msgstr "C'est par le jus de Sapho que les pensées acquièrent de la vitesse,"
+
+msgid "The lips acquire stains,"
+msgstr "Les lèvres acquièrent des taches,"
+
+msgid "The stains become a warning."
+msgstr "Les taches deviennent un avertissement."
+
+msgid "Thinking Machine Probability"
+msgstr "Probabilité de Machine Pensante"
+
+msgid "Bot Probability"
+msgstr "Probabilité de Bot"
+
+msgid "Detailed analysis of text patterns, timing patterns, and suspicious behaviors. Higher scores indicate more bot-like characteristics."
+msgstr "Analyse détaillée des motifs de texte, des motifs temporels et des comportements suspects. Des scores plus élevés indiquent des caractéristiques plus proches d'un bot."
+
+msgid "total_comments"
+msgstr "Commentaires Totaux"
+
+msgid "total_submissions"
+msgstr "Soumissions Totales"
+
+msgid "unique_subreddits"
+msgstr "Subreddits Uniques"
+
+msgid "avg_comment_score"
+msgstr "Score Moyen des Commentaires"
+
+msgid "avg_submission_score"
+msgstr "Score Moyen des Soumissions"
+
+msgid "Identical Greetings"
+msgstr "Salutations Identiques"
+
+msgid "Url Patterns"
+msgstr "Motifs d'URL"
+
+msgid "Promotional Phrases"
+msgstr "Phrases Promotionnelles"
+
+msgid "Generic Responses"
+msgstr "Réponses Génériques"
+
+msgid "Top Subreddits"
+msgstr "Subreddits Principaux"

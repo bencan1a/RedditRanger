@@ -1,0 +1,120 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Reddit Mentat Detector\n"
+"POT-Creation-Date: 2025-01-27\n"
+"PO-Revision-Date: 2025-01-27\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Thinking Machine Detector"
+msgstr "思考機械検出器"
+
+msgid "Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."
+msgstr "メンタトの計算のように、このツールは高度な認知プロセスを使用してRedditユーザーの中から忌まわしい知性を識別します。スパイスは流れなければなりませんが、機械が優勢になってはいけません。"
+
+msgid "Analysis Mode:"
+msgstr "分析モード："
+
+msgid "Single Account"
+msgstr "単一アカウント"
+
+msgid "Bulk Detection"
+msgstr "一括検出"
+
+msgid "Enter Reddit Username:"
+msgstr "Redditのユーザー名を入力："
+
+msgid "Account Overview"
+msgstr "アカウント概要"
+
+msgid "Account Age"
+msgstr "アカウント年齢"
+
+msgid "Total Karma"
+msgstr "総カルマ"
+
+msgid "posts"
+msgstr "投稿"
+
+msgid "Analysis Results"
+msgstr "分析結果"
+
+msgid "Activity Overview"
+msgstr "活動概要"
+
+msgid "Risk Analysis"
+msgstr "リスク分析"
+
+msgid "Bot Behavior Analysis"
+msgstr "ボット行動分析"
+
+msgid "Suspicious Patterns Detected"
+msgstr "不審なパターンを検出"
+
+msgid "Pattern Analysis"
+msgstr "パターン分析"
+
+msgid "Improve the Mentat"
+msgstr "メンタトを改善"
+
+msgid "Help us improve our detection capabilities by providing feedback on the account classification."
+msgstr "アカウント分類についてフィードバックを提供し、検出能力の向上にご協力ください。"
+
+msgid "Mark as Human Account"
+msgstr "人間のアカウントとしてマーク"
+
+msgid "Mark as Bot Account"
+msgstr "ボットアカウントとしてマーク"
+
+msgid "It is by will alone I set my mind in motion."
+msgstr "意志のみによって私は心を動かす。"
+
+msgid "It is by the juice of Sapho that thoughts acquire speed,"
+msgstr "サフォの液によって思考は速度を得る、"
+
+msgid "The lips acquire stains,"
+msgstr "唇は染みを帯び、"
+
+msgid "The stains become a warning."
+msgstr "その染みは警告となる。"
+
+msgid "Thinking Machine Probability"
+msgstr "思考機械の確率"
+
+msgid "Bot Probability"
+msgstr "ボットの確率"
+
+msgid "Detailed analysis of text patterns, timing patterns, and suspicious behaviors. Higher scores indicate more bot-like characteristics."
+msgstr "テキストパターン、タイミングパターン、不審な行動の詳細な分析。スコアが高いほどボットらしい特徴を示します。"
+
+msgid "total_comments"
+msgstr "総コメント数"
+
+msgid "total_submissions"
+msgstr "総投稿数"
+
+msgid "unique_subreddits"
+msgstr "ユニークなサブレディット"
+
+msgid "avg_comment_score"
+msgstr "平均コメントスコア"
+
+msgid "avg_submission_score"
+msgstr "平均投稿スコア"
+
+msgid "Identical Greetings"
+msgstr "同一の挨拶"
+
+msgid "Url Patterns"
+msgstr "URLパターン"
+
+msgid "Promotional Phrases"
+msgstr "宣伝フレーズ"
+
+msgid "Generic Responses"
+msgstr "一般的な応答"
+
+msgid "Top Subreddits"
+msgstr "トップサブレディット"
