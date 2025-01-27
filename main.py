@@ -7,7 +7,8 @@ from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.rate_limiter import RateLimiter
-from utils.database import init_db, get_db, AnalysisResult
+from utils.database import init_db, get_db, AnalysisResult, User
+from utils.auth import get_current_user, require_auth
 from sqlalchemy.orm import Session
 import uvicorn
 from pydantic import BaseModel, ConfigDict
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
+    logger.info(f"Authentication enabled: {settings.ENABLE_AUTH}")
     logger.info(f"Server running on {settings.HOST}:5001")
     yield
 
@@ -66,12 +68,14 @@ class AnalysisResponse(BaseModel):
     summary: dict
     analysis_count: int
     last_analyzed: datetime
+    analyzed_by: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
 class HealthResponse(BaseModel):
     status: str
     version: str
     timestamp: str
+    auth_enabled: bool
     model_config = ConfigDict(from_attributes=True)
 
 @app.get("/")
@@ -79,8 +83,9 @@ async def root():
     """Root endpoint providing API information and navigation."""
     return {
         "name": "Reddit Ranger API",
-        "version": get_settings().VERSION,
+        "version": settings.VERSION,
         "description": "Reddit account analysis API with ML-powered credibility insights",
+        "auth_enabled": settings.ENABLE_AUTH,
         "endpoints": {
             "health": "/health",
             "analyze_user": "/api/v1/analyze/{username}"
@@ -95,7 +100,8 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version=settings.VERSION,
-        timestamp=datetime.utcnow().isoformat()
+        timestamp=datetime.utcnow().isoformat(),
+        auth_enabled=settings.ENABLE_AUTH
     )
 
 async def check_rate_limit(request: Request):
@@ -117,16 +123,30 @@ async def analyze_user(
     username: str,
     settings: Settings = Depends(get_settings),
     rate_limit_headers: dict = Depends(check_rate_limit),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Optional user if auth enabled
 ):
     """Analyze Reddit user account and store results"""
     logger.info(f"Analyzing user: {username}")
     try:
-        # Create a new RedditAnalyzer instance for each request using settings
-        reddit_analyzer = RedditAnalyzer(
-            client_id=settings.REDDIT_CLIENT_ID,
-            client_secret=settings.REDDIT_CLIENT_SECRET
-        )
+        # Create a new RedditAnalyzer instance
+        # Use user's Reddit OAuth tokens if available, otherwise fall back to app credentials
+        reddit_credentials = {}
+        if current_user and current_user.reddit_tokens:
+            token = current_user.reddit_tokens
+            if not token.is_expired:
+                reddit_credentials = {
+                    'access_token': token.access_token,
+                    'token_type': token.token_type
+                }
+
+        if not reddit_credentials:
+            reddit_credentials = {
+                'client_id': settings.REDDIT_CLIENT_ID,
+                'client_secret': settings.REDDIT_CLIENT_SECRET
+            }
+
+        reddit_analyzer = RedditAnalyzer(**reddit_credentials)
 
         # Fetch and analyze data
         user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(username)
@@ -140,7 +160,12 @@ async def analyze_user(
 
         # Store analysis result in database
         bot_probability = (1 - final_score) * 100
-        analysis_result = AnalysisResult.get_or_create(db, username, bot_probability)
+        analysis_result = AnalysisResult.get_or_create(
+            db, 
+            username, 
+            bot_probability,
+            user_id=current_user.id if current_user else None
+        )
         db.commit()
 
         response = AnalysisResponse(
@@ -154,7 +179,8 @@ async def analyze_user(
                 "text_analysis": text_metrics
             },
             analysis_count=analysis_result.analysis_count,
-            last_analyzed=analysis_result.last_analyzed
+            last_analyzed=analysis_result.last_analyzed,
+            analyzed_by=current_user.email if current_user else None
         )
 
         # Add rate limit headers to response

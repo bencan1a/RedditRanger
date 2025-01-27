@@ -12,9 +12,16 @@ class Settings(BaseSettings):
     PORT: int = 5002
     LOG_LEVEL: str = "INFO"
 
+    # Authentication settings
+    ENABLE_AUTH: bool = os.getenv("ENABLE_AUTH", "false").lower() == "true"
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
+
     # Reddit API settings
     REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
     REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
+    REDDIT_OAUTH_REDIRECT_URI: str = os.getenv("REDDIT_OAUTH_REDIRECT_URI", "http://localhost:5000/oauth/reddit/callback")
 
     # CORS settings
     CORS_ORIGINS: List[str] = [
