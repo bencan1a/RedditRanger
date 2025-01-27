@@ -74,6 +74,20 @@ class HealthResponse(BaseModel):
     timestamp: str
     model_config = ConfigDict(from_attributes=True)
 
+@app.get("/")
+async def root():
+    """Root endpoint providing API information and navigation."""
+    return {
+        "name": "Reddit Ranger API",
+        "version": get_settings().VERSION,
+        "description": "Reddit account analysis API with ML-powered credibility insights",
+        "endpoints": {
+            "health": "/health",
+            "analyze_user": "/api/v1/analyze/{username}"
+        },
+        "documentation": "/docs"
+    }
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint to verify API status"""
