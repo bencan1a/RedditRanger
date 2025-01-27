@@ -408,7 +408,7 @@ def main():
         # Update language in session state if changed
         if "current_language" not in st.session_state or st.session_state.current_language != selected_language:
             st.session_state.current_language = selected_language
-            i18n.set_language(selected_language)  # Use set_language instead of set_locale
+            i18n.set_locale(selected_language)  # Update the locale explicitly
             st.experimental_rerun()  # Force Streamlit to rerun with new language
 
         # Add page selection in sidebar
