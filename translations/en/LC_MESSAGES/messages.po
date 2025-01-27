@@ -8,16 +8,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Reddit Mentat Detector | Arrakis"
-msgstr "Reddit Mentat Detector | Arrakis"
-
-msgid "Select Language"
-msgstr "Select Language"
-
 msgid "Thinking Machine Detector"
 msgstr "Thinking Machine Detector"
 
-msgid "mentat_description"
+msgid "Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."
 msgstr "Like the calculations of a Mentat, this tool uses advanced cognitive processes to identify Abominable Intelligences among Reddit users. The spice must flow, but the machines must not prevail."
 
 msgid "Analysis Mode:"
@@ -58,30 +52,3 @@ msgstr "Mark as Human Account"
 
 msgid "Mark as Bot Account"
 msgstr "Mark as Bot Account"
-
-msgid "mentat_litany"
-msgstr "It is by will alone I set my mind in motion."
-
-msgid "sapho_juice"
-msgstr "It is by the juice of Sapho that thoughts acquire speed,"
-
-msgid "stained_lips"
-msgstr "The lips acquire stains,"
-
-msgid "warning_stains"
-msgstr "The stains become a warning."
-
-msgid "Bot Probability"
-msgstr "Bot Probability"
-
-msgid "Thinking Machine Probability"
-msgstr "Thinking Machine Probability"
-
-msgid "Select Page"
-msgstr "Select Page"
-
-msgid "Stats"
-msgstr "Stats"
-
-msgid "Analyzer"
-msgstr "Analyzer"
