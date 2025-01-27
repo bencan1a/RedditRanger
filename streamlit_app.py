@@ -36,19 +36,26 @@ except Exception as e:
     logger.error(f"Failed to initialize analyzers: {str(e)}", exc_info=True)
     st.error(f"Failed to initialize analyzers: {str(e)}")
 
-# Mentat Sapho Juice Litany
-MENTAT_LITANY = [
-    _("It is by will alone I set my mind in motion."),
-    _("It is by the juice of Sapho that thoughts acquire speed,"),
-    _("The lips acquire stains,"),
-    _("The stains become a warning."),
-    _("It is by will alone I set my mind in motion.")
-]
+# Function to get the translated Mentat litany.
+def get_mentat_litany():
+    """Get the translated Mentat litany."""
+    # Force translation reload when language changes
+    if "current_language" not in st.session_state:
+        st.session_state.current_language = "en"
 
+    litany_texts = [
+        "It is by will alone I set my mind in motion.",
+        "It is by the juice of Sapho that thoughts acquire speed,",
+        "The lips acquire stains,",
+        "The stains become a warning.",
+        "It is by will alone I set my mind in motion."
+    ]
+    # Translate each line at runtime with current language context
+    return [_(text) for text in litany_texts]
 
 def cycle_litany():
-    #Creates a cycling iterator of the Mentat litany
-    return itertools.cycle(MENTAT_LITANY)
+    """Creates a cycling iterator of the Mentat litany"""
+    return itertools.cycle(get_mentat_litany())
 
 
 def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
@@ -200,17 +207,17 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         logger.debug("Created result queue")
 
         # Start analysis in background thread
-        analysis_thread = threading.Thread(target=perform_analysis,
-                                           args=(username, reddit_analyzer,
-                                                 text_analyzer, account_scorer,
-                                                 result_queue),
-                                           daemon=True)
+        analysis_thread = threading.Thread(
+            target=perform_analysis,
+            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue),
+            daemon=True
+        )
         analysis_thread.start()
         logger.debug("Started analysis thread")
 
         # Show loading animation while analysis runs
         placeholder = st.empty()
-        litany = cycle_litany()
+        litany = cycle_litany()  # Get fresh litany iterator for each analysis
 
         # Wait for result with timeout
         timeout = time.time() + 60  # 60 second timeout
@@ -232,18 +239,17 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
                     # No result yet, continue with animation
                     pass
 
-                # Update loading animation
+                # Update loading animation with translated litany
                 litany_text = next(litany)
                 placeholder.markdown(f"""
                     <div class="mentat-litany visible">
                         {litany_text}
                     </div>
-                """,
-                                    unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
                 time.sleep(1)
+
             except Exception as e:
-                logger.error(f"Error during analysis loop: {str(e)}",
-                             exc_info=True)
+                logger.error(f"Error during analysis loop: {str(e)}", exc_info=True)
                 st.session_state.analysis_error = f"Error during analysis: {str(e)}"
                 st.session_state.analysis_complete = True
                 break
@@ -259,8 +265,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
 
         # Return result or error
         if st.session_state.analysis_error:
-            logger.error(
-                f"Returning error result: {st.session_state.analysis_error}")
+            logger.error(f"Returning error result: {st.session_state.analysis_error}")
             return {
                 'username': username,
                 'error': st.session_state.analysis_error
@@ -392,13 +397,19 @@ def main():
 
         load_styles()
 
-        # Add language selector in sidebar
-        st.sidebar.selectbox(
+        # Add language selector in sidebar with explicit language change handling
+        selected_language = st.sidebar.selectbox(
             "Language / Idioma / Langue",
             options=list(SUPPORTED_LANGUAGES.keys()),
             format_func=lambda x: SUPPORTED_LANGUAGES[x],
             key="language"
         )
+
+        # Update language in session state if changed
+        if "current_language" not in st.session_state or st.session_state.current_language != selected_language:
+            st.session_state.current_language = selected_language
+            i18n.set_locale(selected_language)  # Update the locale explicitly
+            st.experimental_rerun()  # Force Streamlit to rerun with new language
 
         # Add page selection in sidebar
         page = st.sidebar.radio(_("Select Page"), [_("Analyzer"), _("Stats")])

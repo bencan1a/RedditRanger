@@ -64,3 +64,9 @@ msgstr "Los labios adquieren manchas,"
 
 msgid "The stains become a warning."
 msgstr "Las manchas se convierten en una advertencia."
+
+msgid "Thinking Machine Probability"
+msgstr "Probabilidad de Máquina Pensante"
+
+msgid "Bot Probability"
+msgstr "Probabilidad de Bot"

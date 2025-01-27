@@ -64,3 +64,9 @@ msgstr "The lips acquire stains,"
 
 msgid "The stains become a warning."
 msgstr "The stains become a warning."
+
+msgid "Thinking Machine Probability"
+msgstr "Thinking Machine Probability"
+
+msgid "Bot Probability"
+msgstr "Bot Probability"
