@@ -1,10 +1,11 @@
 import streamlit as st
 import logging
 import traceback
+import requests # Added for HTTP requests
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
-from utils.database import AnalysisResult, SessionLocal
+from utils.database import AnalysisResult, SessionLocal, User
 from utils.i18n import _, i18n, SUPPORTED_LANGUAGES
 from utils.visualizations import (create_score_radar_chart,
                                   create_monthly_activity_table,
@@ -18,6 +19,10 @@ import threading
 from queue import Queue, Empty
 import os
 from config.theme import load_theme_files
+from config import get_settings
+
+# Initialize settings
+settings = get_settings()
 
 # Configure logging
 logging.basicConfig(
@@ -25,7 +30,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize analyzers at the module level
+# Initialize analyzers at module level
 try:
     logger.debug("Initializing analyzers...")
     reddit_analyzer = RedditAnalyzer()
@@ -35,6 +40,96 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize analyzers: {str(e)}", exc_info=True)
     st.error(f"Failed to initialize analyzers: {str(e)}")
+
+def login_button():
+    """Add login/register buttons to sidebar"""
+    if settings.ENABLE_AUTH:
+        if "user_token" not in st.session_state:
+            # Create two columns for login and register buttons
+            col1, col2 = st.sidebar.columns(2)
+
+            with col1:
+                if st.button("Login"):
+                    st.session_state.show_login = True
+                    st.session_state.show_register = False
+
+            with col2:
+                if st.button("Register"):
+                    st.session_state.show_login = False
+                    st.session_state.show_register = True
+
+            # Login form
+            if getattr(st.session_state, 'show_login', False):
+                with st.sidebar.form("login_form"):
+                    st.write("### Login")
+                    username = st.text_input("Username")
+                    password = st.text_input("Password", type="password")
+                    submitted = st.form_submit_button("Submit")
+
+                    if submitted and username and password:
+                        try:
+                            response = requests.post(
+                                "http://localhost:5001/auth/login",
+                                data={"username": username, "password": password}
+                            )
+                            if response.status_code == 200:
+                                token_data = response.json()
+                                st.session_state.user_token = token_data["access_token"]
+                                st.session_state.username = username
+                                del st.session_state.show_login
+                                st.experimental_rerun()
+                            else:
+                                st.error("Invalid username or password")
+                        except Exception as e:
+                            st.error(f"Login failed: {str(e)}")
+
+            # Register form
+            if getattr(st.session_state, 'show_register', False):
+                with st.sidebar.form("register_form"):
+                    st.write("### Register")
+                    username = st.text_input("Username")
+                    password = st.text_input("Password", type="password")
+                    email = st.text_input("Email (optional)")
+                    submitted = st.form_submit_button("Submit")
+
+                    if submitted and username and password:
+                        try:
+                            response = requests.post(
+                                "http://localhost:5001/auth/register",
+                                json={
+                                    "username": username,
+                                    "password": password,
+                                    "email": email if email else None
+                                }
+                            )
+                            if response.status_code == 200:
+                                token_data = response.json()
+                                st.session_state.user_token = token_data["access_token"]
+                                st.session_state.username = username
+                                del st.session_state.show_register
+                                st.experimental_rerun()
+                            else:
+                                st.error("Registration failed")
+                        except Exception as e:
+                            st.error(f"Registration failed: {str(e)}")
+
+        else:
+            st.sidebar.markdown(f"Logged in as: {st.session_state.username}")
+            if st.sidebar.button("Logout"):
+                del st.session_state.user_token
+                del st.session_state.username
+                st.experimental_rerun()
+
+            # Add Reddit connection option
+            if "reddit_connected" not in st.session_state:
+                reddit_login_url = "http://localhost:5001/oauth/reddit/login"
+                st.sidebar.markdown(
+                    f'<a href="{reddit_login_url}" target="_self" class="login-button">'
+                    'Connect Reddit Account</a>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.sidebar.success("Reddit account connected!")
 
 # Function to get the translated Mentat litany.
 def get_mentat_litany():
@@ -380,6 +475,9 @@ def main():
         )
 
         load_styles()
+
+        # Add login button in sidebar
+        login_button()
 
         # Add language selector in sidebar
         st.sidebar.selectbox(

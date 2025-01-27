@@ -1,18 +1,19 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordRequestForm
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.rate_limiter import RateLimiter
-from utils.database import init_db, get_db, AnalysisResult, User
-from utils.auth import get_current_user, require_auth
+from utils.database import init_db, get_db, AnalysisResult, User, RedditOAuthToken
+from utils.auth import get_current_user, require_auth, create_access_token, require_admin
 from sqlalchemy.orm import Session
 import uvicorn
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from datetime import datetime, timedelta
 from config import get_settings, Settings
 import logging
 
@@ -33,7 +34,6 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
     logger.info(f"Authentication enabled: {settings.ENABLE_AUTH}")
-    logger.info(f"Server running on {settings.HOST}:5001")
     yield
 
 app = FastAPI(
@@ -62,6 +62,18 @@ text_analyzer = TextAnalyzer()
 account_scorer = AccountScorer()
 rate_limiter = RateLimiter(tokens=5, fill_rate=0.1)  # 5 requests per 10 seconds
 
+# Auth models
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    email: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    model_config = ConfigDict(from_attributes=True)
+
 class AnalysisResponse(BaseModel):
     username: str
     probability: float
@@ -78,6 +90,61 @@ class HealthResponse(BaseModel):
     auth_enabled: bool
     model_config = ConfigDict(from_attributes=True)
 
+@app.post("/auth/register", response_model=Token)
+async def register(
+    user_data: UserCreate,
+    db: Session = Depends(get_db)
+):
+    """Register a new user"""
+    if not settings.ENABLE_AUTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Authentication is not enabled"
+        )
+
+    # Check if username already exists
+    if db.query(User).filter(User.username == user_data.username).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+
+    # Create new user
+    user = User(username=user_data.username, email=user_data.email)
+    user.set_password(user_data.password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # Create access token
+    access_token = create_access_token({"sub": user.username})
+    return Token(access_token=access_token, token_type="bearer")
+
+@app.post("/auth/login", response_model=Token)
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """Login to get access token"""
+    if not settings.ENABLE_AUTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Authentication is not enabled"
+        )
+
+    # Find user
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not user.verify_password(form_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Create access token
+    access_token = create_access_token({"sub": user.username})
+    return Token(access_token=access_token, token_type="bearer")
+
 @app.get("/")
 async def root():
     """Root endpoint providing API information and navigation."""
@@ -88,7 +155,9 @@ async def root():
         "auth_enabled": settings.ENABLE_AUTH,
         "endpoints": {
             "health": "/health",
-            "analyze_user": "/api/v1/analyze/{username}"
+            "analyze_user": "/api/v1/analyze/{username}",
+            "register": "/auth/register",
+            "login": "/auth/login"
         },
         "documentation": "/docs"
     }
@@ -180,7 +249,7 @@ async def analyze_user(
             },
             analysis_count=analysis_result.analysis_count,
             last_analyzed=analysis_result.last_analyzed,
-            analyzed_by=current_user.email if current_user else None
+            analyzed_by=current_user.username if current_user else None
         )
 
         # Add rate limit headers to response
@@ -196,8 +265,8 @@ async def analyze_user(
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=5001,
+        host=settings.HOST,
+        port=settings.PORT,
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
         workers=1

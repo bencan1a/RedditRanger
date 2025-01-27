@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, 
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.dialects.postgresql import JSONB
+from passlib.hash import bcrypt
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +32,25 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    name = Column(String)
-    google_id = Column(String, unique=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=True)
+    password_hash = Column(String)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     reddit_tokens = relationship("RedditOAuthToken", back_populates="user", uselist=False)
     analysis_results = relationship("AnalysisResult", back_populates="user")
+
+    def set_password(self, password: str):
+        """Hash and set the user password"""
+        self.password_hash = bcrypt.hash(password)
+
+    def verify_password(self, password: str) -> bool:
+        """Verify the provided password against stored hash"""
+        return bcrypt.verify(password, self.password_hash)
 
 class RedditOAuthToken(Base):
     """Store Reddit OAuth tokens"""
@@ -135,13 +145,13 @@ class AnalysisResult(Base):
                         cls.last_analyzed,
                         cls.analysis_count,
                         cls.bot_probability,
-                        User.email
+                        User.username.label('analyzed_by')
                     ).outerjoin(User).all()
 
                     return pd.DataFrame([
                         {
                             'Username': r.username,
-                            'Analyzed By': r.email or 'System',
+                            'Analyzed By': r.analyzed_by or 'System',
                             'Last Analyzed': r.last_analyzed,
                             'Analysis Count': r.analysis_count,
                             'Bot Probability': f"{r.bot_probability:.1f}%"
