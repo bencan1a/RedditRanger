@@ -115,3 +115,6 @@ msgstr "Frases Promocionales"
 
 msgid "Generic Responses"
 msgstr "Respuestas Genéricas"
+
+msgid "Top Subreddits"
+msgstr "Subreddits Principales"

@@ -506,10 +506,9 @@ def main():
 
                             # Bot Behavior Analysis
                             st.subheader(_("Bot Behavior Analysis"))
-                            st.markdown(_("""
-                                Detailed analysis of text patterns, timing patterns, and suspicious behaviors.
-                                Higher scores indicate more bot-like characteristics.
-                            """))
+                            description_text = _("Detailed analysis of text patterns, timing patterns, and suspicious behaviors. Higher scores indicate more bot-like characteristics.")
+                            st.markdown(description_text)
+
                             st.plotly_chart(create_bot_analysis_chart(
                                 result['text_metrics'],
                                 result['activity_patterns']),
@@ -541,8 +540,8 @@ def main():
                             # Mentat Feedback Section
                             st.markdown("---")
                             st.subheader(_("Improve the Mentat"))
-                            st.markdown(_("""Help us improve our detection capabilities by providing feedback 
-                                on the account classification."""))
+                            feedback_text = _("Help us improve our detection capabilities by providing feedback on the account classification.")
+                            st.markdown(feedback_text)
 
                             feedback_col1, feedback_col2 = st.columns(2)
                             with feedback_col1:
