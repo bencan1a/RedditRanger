@@ -5,7 +5,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 5002"]
+run = ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 5000"]
 
 [workflows]
 runButton = "Project"
@@ -35,7 +35,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "uvicorn main:app --host 0.0.0.0 --port 5002"
+args = "uvicorn main:app --host 0.0.0.0 --port 5000"
 waitForPort = 5002
 
 [[workflows.workflow]]
