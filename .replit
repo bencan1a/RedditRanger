@@ -5,10 +5,13 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 5000"]
+run = [
+  "sh",
+  "-c",
+  "sh -c 'streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 5000 & uvicorn main:app --host 0.0.0.0 --port 5002'",
+]
 
 [workflows]
-runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
