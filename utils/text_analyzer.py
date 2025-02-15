@@ -10,6 +10,7 @@ from typing import List, Dict
 import re
 from datetime import datetime
 from utils.performance_monitor import timing_decorator
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,12 @@ class TextAnalyzer:
     _initialized = False
     _nltk_initialized = False
     _nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
+    _cache_file = os.path.join(os.getcwd(), 'nltk_data', 'resource_cache.json')
+    _required_resources = {
+        'punkt': 'tokenizers/punkt',
+        'stopwords': 'corpora/stopwords',
+        'averaged_perceptron_tagger': 'taggers/averaged_perceptron_tagger'
+    }
 
     def __new__(cls):
         if cls._instance is None:
@@ -33,46 +40,109 @@ class TextAnalyzer:
                 min_df=1,
                 max_df=0.95
             )
-            # Only create directory if it doesn't exist
+            # Create NLTK data directory if it doesn't exist
             if not os.path.exists(self._nltk_data_dir):
                 os.makedirs(self._nltk_data_dir)
+
             nltk.data.path.append(self._nltk_data_dir)
             self._initialized = True
+            self._cache_status = self._load_cache()
+
+    def _load_cache(self) -> dict:
+        """Load resource cache status"""
+        try:
+            if os.path.exists(self._cache_file):
+                with open(self._cache_file, 'r') as f:
+                    return json.load(f)
+            return {}
+        except Exception as e:
+            logger.error(f"Error loading cache: {str(e)}")
+            return {}
+
+    def _save_cache(self):
+        """Save resource cache status"""
+        try:
+            with open(self._cache_file, 'w') as f:
+                json.dump(self._cache_status, f)
+        except Exception as e:
+            logger.error(f"Error saving cache: {str(e)}")
+
+    def _verify_resource(self, resource: str) -> bool:
+        """Verify if a resource exists and is valid"""
+        try:
+            resource_path = self._required_resources.get(resource)
+            if not resource_path:
+                return False
+
+            nltk.data.find(resource_path)
+            return True
+        except LookupError:
+            return False
 
     @timing_decorator("nltk_resource_loading")
-    def _ensure_nltk_resources(self):
-        """Lazy load NLTK resources only when needed"""
-        if not self._nltk_initialized:
-            try:
-                resources = ['punkt', 'stopwords', 'averaged_perceptron_tagger']
-                missing_resources = []
+    def _ensure_nltk_resources(self, resources: List[str] = None):
+        """Lazy load specific NLTK resources"""
+        if resources is None:
+            resources = list(self._required_resources.keys())
 
-                # Check which resources need to be downloaded
-                for resource in resources:
+        try:
+            missing_resources = []
+            for resource in resources:
+                if not self._verify_resource(resource):
+                    missing_resources.append(resource)
+                    continue
+
+                # Update cache for verified resources
+                self._cache_status[resource] = {
+                    'downloaded': True,
+                    'last_verified': datetime.now().isoformat()
+                }
+
+            if missing_resources:
+                logger.info(f"Downloading missing NLTK resources: {missing_resources}")
+                for resource in missing_resources:
                     try:
-                        nltk.data.find(f'tokenizers/{resource}' if resource == 'punkt' else resource)
-                        logger.debug(f"Resource {resource} already exists")
-                    except LookupError:
-                        missing_resources.append(resource)
+                        nltk.download(resource, 
+                                    quiet=True, 
+                                    download_dir=self._nltk_data_dir)
+                        self._cache_status[resource] = {
+                            'downloaded': True,
+                            'last_verified': datetime.now().isoformat()
+                        }
+                    except Exception as e:
+                        logger.error(f"Error downloading {resource}: {str(e)}")
+                        self._cache_status[resource] = {
+                            'downloaded': False,
+                            'error': str(e),
+                            'last_attempt': datetime.now().isoformat()
+                        }
 
-                if missing_resources:
-                    logger.info(f"Downloading missing NLTK resources: {missing_resources}")
-                    nltk.download(missing_resources, 
-                                quiet=True, 
-                                download_dir=self._nltk_data_dir)
+            self._save_cache()
 
+            if 'stopwords' in resources:
                 self.stop_words = set(stopwords.words('english'))
-                self._nltk_initialized = True
-                logger.info("NLTK initialization complete")
-            except Exception as e:
-                logger.error(f"Error initializing NLTK: {str(e)}")
-                raise
+
+            logger.info("NLTK initialization complete")
+        except Exception as e:
+            logger.error(f"Error initializing NLTK: {str(e)}")
+            raise
+
+    def _ensure_specific_resources(self, resource_names: List[str]):
+        """Ensure specific resources are available"""
+        if not self._nltk_initialized or any(
+            resource not in self._cache_status or 
+            not self._cache_status[resource].get('downloaded', False)
+            for resource in resource_names
+        ):
+            self._ensure_nltk_resources(resource_names)
+            self._nltk_initialized = True
 
     @timing_decorator("comment_analysis")
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
         """Analyze comments for bot-like patterns."""
-        # Initialize NLTK resources only when analyzing comments
-        self._ensure_nltk_resources()
+        # Only load required resources for comment analysis
+        required_resources = ['punkt', 'stopwords']
+        self._ensure_specific_resources(required_resources)
 
         if not comments:
             logger.warning("No comments provided for analysis")
@@ -85,7 +155,7 @@ class TextAnalyzer:
             repetition_score = self._calculate_repetition_score(comments)
             template_score = self._calculate_template_score(comments)
             complexity_score = self._calculate_complexity_score(comments)
-            timing_score = self._analyze_timing_patterns(timestamps) if timestamps else 0.5  # Neutral score if no timestamps
+            timing_score = self._analyze_timing_patterns(timestamps) if timestamps else 0.5
             suspicious_patterns = self._identify_suspicious_patterns(comments)
 
             # Log individual scores for debugging
@@ -104,7 +174,7 @@ class TextAnalyzer:
                 'suspicious_patterns': suspicious_patterns,
             }
 
-            # Calculate final probability with more aggressive weighting
+            # Calculate final probability
             bot_prob = self._calculate_bot_probability(metrics)
             metrics['bot_probability'] = bot_prob
 
