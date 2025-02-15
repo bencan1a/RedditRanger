@@ -1,135 +1,71 @@
 import streamlit as st
 import logging
 import traceback
-import requests # Added for HTTP requests
+import requests
+import time
+import itertools
+from queue import Queue, Empty
+import threading
+import pandas as pd
 from utils.reddit_analyzer import RedditAnalyzer
 from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.database import AnalysisResult, SessionLocal, User
 from utils.i18n import _, i18n, SUPPORTED_LANGUAGES
 from utils.visualizations import (create_score_radar_chart,
-                                  create_monthly_activity_table,
-                                  create_subreddit_distribution,
-                                  create_monthly_activity_chart,
-                                  create_bot_analysis_chart)
-import pandas as pd
-import time
-import itertools
-import threading
-from queue import Queue, Empty
-import os
+                               create_monthly_activity_table,
+                               create_monthly_activity_chart,
+                               create_bot_analysis_chart)
 from config.theme import load_theme_files
 from config import get_settings
 
-# Initialize settings
-settings = get_settings()
-
-# Configure logging
+# Configure logging with more detailed format
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(duration).3fs'
+    if hasattr(logging.LogRecord, 'duration') else '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Initialize analyzers at module level
-try:
+# Add timing decorator
+def log_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        logger.info(f"Starting {func.__name__}")
+        result = func(*args, **kwargs)
+        duration = time.time() - start_time
+        logger.info(f"Completed {func.__name__} in {duration:.2f} seconds")
+        return result
+    return wrapper
+
+# Global analyzer instances
+reddit_analyzer = None
+text_analyzer = None
+account_scorer = None
+
+@log_execution_time
+def initialize_analyzers():
+    """Initialize analyzer instances with timing measurement"""
     logger.debug("Initializing analyzers...")
-    reddit_analyzer = RedditAnalyzer()
-    text_analyzer = TextAnalyzer()
-    account_scorer = AccountScorer()
-    logger.debug("Analyzers initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize analyzers: {str(e)}", exc_info=True)
-    st.error(f"Failed to initialize analyzers: {str(e)}")
+    try:
+        reddit = RedditAnalyzer()
+        text = TextAnalyzer()
+        scorer = AccountScorer()
+        logger.info("Analyzers initialized successfully")
+        return reddit, text, scorer
+    except Exception as e:
+        logger.error(f"Failed to initialize analyzers: {str(e)}", exc_info=True)
+        raise
 
-def login_button():
-    """Add login/register buttons to sidebar"""
-    if settings.ENABLE_AUTH:
-        if "user_token" not in st.session_state:
-            # Create two columns for login and register buttons
-            col1, col2 = st.sidebar.columns(2)
+def get_analyzers():
+    """Lazy loading function for analyzers"""
+    global reddit_analyzer, text_analyzer, account_scorer
 
-            with col1:
-                if st.button("Login"):
-                    st.session_state.show_login = True
-                    st.session_state.show_register = False
+    if any(analyzer is None for analyzer in (reddit_analyzer, text_analyzer, account_scorer)):
+        logger.debug("Lazy loading analyzers...")
+        reddit_analyzer, text_analyzer, account_scorer = initialize_analyzers()
 
-            with col2:
-                if st.button("Register"):
-                    st.session_state.show_login = False
-                    st.session_state.show_register = True
-
-            # Login form
-            if getattr(st.session_state, 'show_login', False):
-                with st.sidebar.form("login_form"):
-                    st.write("### Login")
-                    username = st.text_input("Username")
-                    password = st.text_input("Password", type="password")
-                    submitted = st.form_submit_button("Submit")
-
-                    if submitted and username and password:
-                        try:
-                            response = requests.post(
-                                "http://localhost:5001/auth/login",
-                                data={"username": username, "password": password}
-                            )
-                            if response.status_code == 200:
-                                token_data = response.json()
-                                st.session_state.user_token = token_data["access_token"]
-                                st.session_state.username = username
-                                del st.session_state.show_login
-                                st.experimental_rerun()
-                            else:
-                                st.error("Invalid username or password")
-                        except Exception as e:
-                            st.error(f"Login failed: {str(e)}")
-
-            # Register form
-            if getattr(st.session_state, 'show_register', False):
-                with st.sidebar.form("register_form"):
-                    st.write("### Register")
-                    username = st.text_input("Username")
-                    password = st.text_input("Password", type="password")
-                    email = st.text_input("Email (optional)")
-                    submitted = st.form_submit_button("Submit")
-
-                    if submitted and username and password:
-                        try:
-                            response = requests.post(
-                                "http://localhost:5001/auth/register",
-                                json={
-                                    "username": username,
-                                    "password": password,
-                                    "email": email if email else None
-                                }
-                            )
-                            if response.status_code == 200:
-                                token_data = response.json()
-                                st.session_state.user_token = token_data["access_token"]
-                                st.session_state.username = username
-                                del st.session_state.show_register
-                                st.experimental_rerun()
-                            else:
-                                st.error("Registration failed")
-                        except Exception as e:
-                            st.error(f"Registration failed: {str(e)}")
-
-        else:
-            st.sidebar.markdown(f"Logged in as: {st.session_state.username}")
-            if st.sidebar.button("Logout"):
-                del st.session_state.user_token
-                del st.session_state.username
-                st.experimental_rerun()
-
-            # Add Reddit connection option
-            if "reddit_connected" not in st.session_state:
-                reddit_login_url = "http://localhost:5001/oauth/reddit/login"
-                st.sidebar.markdown(
-                    f'<a href="{reddit_login_url}" target="_self" class="login-button">'
-                    'Connect Reddit Account</a>',
-                    unsafe_allow_html=True
-                )
-            else:
-                st.sidebar.success("Reddit account connected!")
+    return reddit_analyzer, text_analyzer, account_scorer
 
 # Function to get the translated Mentat litany.
 def get_mentat_litany():
@@ -147,14 +83,16 @@ def cycle_litany():
     return itertools.cycle(get_mentat_litany())
 
 
-def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, result_queue):
-    # Perform the analysis in a separate thread
+def perform_analysis(username, result_queue):
+    """Perform analysis with lazy-loaded analyzers"""
     try:
         logger.debug(f"Starting perform_analysis for user: {username}")
 
-        # Set a timeout for the entire analysis
+        # Get analyzers only when needed
+        reddit, text, scorer = get_analyzers()
+
         logger.debug("Fetching user data...")
-        user_data, comments_df, submissions_df = reddit_analyzer.get_user_data(
+        user_data, comments_df, submissions_df = reddit.get_user_data(
             username)
 
         logger.debug(f"User data fetched. Type: {type(user_data)}")
@@ -167,7 +105,7 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             return
 
         logger.debug("Analyzing activity patterns...")
-        activity_patterns = reddit_analyzer.analyze_activity_patterns(
+        activity_patterns = reddit.analyze_activity_patterns(
             comments_df, submissions_df)
         logger.debug(f"Activity patterns: {activity_patterns}")
 
@@ -178,8 +116,8 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         ) if not comments_df.empty else None
 
         logger.debug("Analyzing comment texts...")
-        text_metrics = text_analyzer.analyze_comments(comment_texts,
-                                                      comment_times)
+        text_metrics = text.analyze_comments(comment_texts,
+                                                    comment_times)
         logger.debug(f"Text metrics: {text_metrics}")
 
         # Create default text metrics if analysis fails
@@ -192,7 +130,7 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
             }
 
         logger.debug("Calculating final score...")
-        final_score, component_scores = account_scorer.calculate_score(
+        final_score, component_scores = scorer.calculate_score(
             user_data, activity_patterns, text_metrics)
         logger.debug(f"Final score: {final_score}")
         logger.debug(f"Component scores: {component_scores}")
@@ -276,8 +214,46 @@ def perform_analysis(username, reddit_analyzer, text_analyzer, account_scorer, r
         error_details = f"Error during analysis: {str(e)}\nFull traceback: {traceback.format_exc()}"
         result_queue.put(('error', error_details))
 
+@log_execution_time
+def load_styles():
+    """Load and apply all theme styles and scripts with timing."""
+    try:
+        start_time = time.time()
+        logger.debug("Loading theme files...")
+        theme_files = load_theme_files()
 
-def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer):
+        # Time CSS processing
+        css_start = time.time()
+        css_content = [
+            theme_files['css_variables'],
+            *theme_files['css_files'].values()
+        ]
+        logger.debug(f"CSS processing took {time.time() - css_start:.2f} seconds")
+
+        # Time CSS application
+        style_start = time.time()
+        st.markdown(
+            '<style>' + '\n'.join(css_content) + '</style>',
+            unsafe_allow_html=True
+        )
+        logger.debug(f"CSS application took {time.time() - style_start:.2f} seconds")
+
+        # Time JS processing and application
+        js_start = time.time()
+        js_content = "\n".join([
+            f"<script>{js_code}</script>"
+            for js_code in theme_files['js_files'].values()
+        ])
+        st.markdown(js_content, unsafe_allow_html=True)
+        logger.debug(f"JS processing and application took {time.time() - js_start:.2f} seconds")
+
+        total_time = time.time() - start_time
+        logger.info(f"Theme loading completed in {total_time:.2f} seconds")
+    except Exception as e:
+        logger.error(f"Error in load_styles: {str(e)}")
+        st.warning("Some styles failed to load. The application may not look correct.")
+
+def analyze_single_user(username):
     # Analyze a single user with background processing
     try:
         logger.debug(f"Starting analysis for user: {username}")
@@ -298,7 +274,7 @@ def analyze_single_user(username, reddit_analyzer, text_analyzer, account_scorer
         # Start analysis in background thread
         analysis_thread = threading.Thread(
             target=perform_analysis,
-            args=(username, reddit_analyzer, text_analyzer, account_scorer, result_queue),
+            args=(username, result_queue),
             daemon=True
         )
         analysis_thread.start()
@@ -436,36 +412,6 @@ def get_risk_class(risk_score):
     return "low-risk"
 
 
-def load_styles():
-    """Load and apply all theme styles and scripts."""
-    try:
-        theme_files = load_theme_files()
-
-        # Combine all CSS content
-        css_content = [
-            theme_files['css_variables'],  # CSS variables first
-            *theme_files['css_files'].values()  # Then other CSS files
-        ]
-
-        # Apply combined CSS
-        st.markdown(
-            '<style>' + '\n'.join(css_content) + '</style>',
-            unsafe_allow_html=True
-        )
-
-        # Add JavaScript with proper paths
-        js_content = "\n".join([
-            f"<script>{js_code}</script>"
-            for js_code in theme_files['js_files'].values()
-        ])
-        st.markdown(js_content, unsafe_allow_html=True)
-
-        logger.debug("Successfully loaded and applied all theme files")
-    except Exception as e:
-        logger.error(f"Error in load_styles: {str(e)}")
-        st.warning("Some styles failed to load. The application may not look correct.")
-
-
 def main():
     try:
         st.set_page_config(
@@ -509,8 +455,7 @@ def main():
                     try:
                         # Use results_placeholder to show analysis
                         with results_placeholder.container():
-                            result = analyze_single_user(username, reddit_analyzer,
-                                                       text_analyzer, account_scorer)
+                            result = analyze_single_user(username)
 
                             if 'error' in result:
                                 st.error(
@@ -634,7 +579,7 @@ def main():
                             feedback_col1, feedback_col2 = st.columns(2)
                             with feedback_col1:
                                 if st.button(_("Mark as Human Account")):
-                                    account_scorer.ml_analyzer.add_training_example(
+                                    scorer.ml_analyzer.add_training_example(
                                         result['user_data'],
                                         result['activity_patterns'],
                                         result['text_metrics'],
@@ -643,7 +588,7 @@ def main():
 
                             with feedback_col2:
                                 if st.button(_("Mark as Bot Account")):
-                                    account_scorer.ml_analyzer.add_training_example(
+                                    scorer.ml_analyzer.add_training_example(
                                         result['user_data'],
                                         result['activity_patterns'],
                                         result['text_metrics'],
@@ -678,9 +623,7 @@ def main():
                             status_text.text(
                                 f"{_('Analyzing')} {username}... ({i+1}/{len(usernames)})"
                             )
-                            result = analyze_single_user(
-                                username, reddit_analyzer, text_analyzer,
-                                account_scorer)
+                            result = analyze_single_user(username)
                             results.append(result)
                             progress_bar.progress((i + 1) / len(usernames))
 
