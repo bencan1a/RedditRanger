@@ -1,0 +1,30 @@
+2025-02-15 19:12:55,988 - utils.database - INFO - Database engine initialized successfully
+2025-02-15 19:12:56,040 - utils.text_analyzer - INFO - Initializing TextAnalyzer instance
+2025-02-15 19:12:56,040 - utils.text_analyzer - INFO - Basic initialization complete - NLTK resources will be loaded on demand
+2025-02-15 19:12:56,040 - utils.performance_monitor - INFO - ⏱️ Starting operation: ml_analyzer_init
+INFO:     Will watch for changes in these directories: ['/home/runner/workspace']
+INFO:     Uvicorn running on http://0.0.0.0:5002 (Press CTRL+C to quit)
+INFO:     Started reloader process [1056] using StatReload
+2025-02-15 19:12:58,790 - utils.database - INFO - Database engine initialized successfully
+2025-02-15 19:12:58,826 - utils.text_analyzer - INFO - Initializing TextAnalyzer instance
+2025-02-15 19:12:58,826 - utils.text_analyzer - INFO - Basic initialization complete - NLTK resources will be loaded on demand
+2025-02-15 19:12:58,826 - utils.performance_monitor - INFO - ⏱️ Starting operation: ml_analyzer_init
+2025-02-15 19:12:58,845 - utils.performance_monitor - INFO - ⏱️ Starting operation: ml_analyzer_init
+INFO:     Started server process [1078]
+INFO:     Waiting for application startup.
+2025-02-15 19:12:58,849 - utils.performance_monitor - INFO - ⏱️ Starting operation: app_startup
+2025-02-15 19:12:59,151 - utils.database - INFO - Database tables created and connection tested successfully
+2025-02-15 19:12:59,151 - main - INFO - Database initialized successfully
+2025-02-15 19:12:59,151 - main - INFO - Starting Reddit Mentat Detector v1.0.0
+2025-02-15 19:12:59,151 - main - INFO - Environment: CORS Origins configured for ['http://localhost:5000', 'http://0.0.0.0:5000', 'https://*.repl.co']
+2025-02-15 19:12:59,151 - main - INFO - Server running on 0.0.0.0:5002
+2025-02-15 19:12:59,151 - utils.performance_monitor - INFO - ⏱️ Performance metric - total_startup_time: 0.3022s
+INFO:     Application startup complete.
+2025-02-15 19:12:59,278 - utils.performance_monitor - INFO - ⏱️ Performance metric - request_GET_/: 0.0003s
+INFO:     172.31.128.44:58310 - "GET / HTTP/1.1" 404 Not Found
+2025-02-15 19:12:59,991 - utils.performance_monitor - INFO - ⏱️ Performance metric - request_GET_/: 0.0003s
+INFO:     172.31.128.44:58310 - "GET / HTTP/1.1" 404 Not Found
+2025-02-15 19:13:00,386 - utils.performance_monitor - INFO - ⏱️ Performance metric - request_GET_/: 0.0003s
+INFO:     172.31.128.44:58310 - "GET / HTTP/1.1" 404 Not Found
+2025-02-15 20:26:21,191 - utils.performance_monitor - INFO - ⏱️ Performance metric - request_GET_/: 0.0005s
+INFO:     172.31.128.44:54500 - "GET / HTTP/1.1" 404 Not Found

@@ -1,28 +1,54 @@
+"""Machine Learning Analyzer for Reddit user behavior."""
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 import logging
 from typing import Dict, List, Tuple, Union
 from datetime import datetime, timezone
-from utils.performance_monitor import timing_decorator
+from utils.performance_monitor import timing_decorator, performance_monitor
 
 logger = logging.getLogger(__name__)
 
 class MLAnalyzer:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(MLAnalyzer, cls).__new__(cls)
+        return cls._instance
+
     @timing_decorator("ml_analyzer_init")
     def __init__(self):
-        self.model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            random_state=42
-        )
-        self.scaler = StandardScaler()
-        self.is_trained = False
-        self._setup_basic_rules()
+        if not self._initialized:
+            performance_monitor.start_operation("ml_init")
+            try:
+                self.model = None
+                self.scaler = None
+                self._setup_basic_rules()
 
-        # Initialize training data storage
-        self.training_features = []
-        self.training_labels = []
+                # Initialize training data storage
+                self.training_features = []
+                self.training_labels = []
+                self._initialized = True
+                logger.info("MLAnalyzer base initialization complete - models will be loaded on demand")
+            finally:
+                performance_monitor.end_operation("ml_init")
+
+    def _lazy_init_models(self):
+        """Lazy initialization of ML models"""
+        if self.model is None:
+            performance_monitor.start_operation("ml_model_init")
+            try:
+                self.model = RandomForestClassifier(
+                    n_estimators=100,
+                    max_depth=10,
+                    random_state=42
+                )
+                self.scaler = StandardScaler()
+                logger.info("ML models initialized successfully")
+            finally:
+                performance_monitor.end_operation("ml_model_init")
 
     @timing_decorator("model_training")
     def _train_model(self) -> bool:
@@ -37,6 +63,7 @@ class MLAnalyzer:
             y = np.array(self.training_labels)
 
             # Fit the scaler
+            self._lazy_init_models() #Added
             X_scaled = self.scaler.fit_transform(X)
 
             # Train the model
@@ -77,6 +104,7 @@ class MLAnalyzer:
             # Reshape and scale features
             features_array = np.array(features, dtype=np.float64).reshape(1, -1)
             if self.is_trained:
+                self._lazy_init_models() #Added
                 features_array = self.scaler.transform(features_array)
 
             return features_array
@@ -90,6 +118,7 @@ class MLAnalyzer:
                           activity_patterns: Dict, text_metrics: Dict) -> float:
         """Predict risk score for given features."""
         try:
+            self._lazy_init_models() #Added
             if not self.is_trained:
                 logger.warning("Model not trained yet, using basic rules for prediction")
                 return self._apply_basic_rules(features, user_data, activity_patterns, text_metrics)
@@ -166,6 +195,7 @@ class MLAnalyzer:
     def analyze_account(self, user_data: Dict, activity_patterns: Dict, text_metrics: Dict) -> Tuple[float, Dict[str, float]]:
         """Analyze account using ML model and return risk score with feature importances."""
         try:
+            self._lazy_init_models() #Added
             features = self.extract_features(user_data, activity_patterns, text_metrics)
             risk_score = float(self.predict_risk_score(features, user_data, activity_patterns, text_metrics))
 
