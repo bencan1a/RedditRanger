@@ -1,0 +1,39 @@
+2025-02-15 19:07:16,620 - utils.performance_monitor - INFO - ⏱️ Performance metric - nltk_resource_loading: 0.0496s
+2025-02-15 19:07:16,620 - utils.performance_monitor - INFO - ⏱️ Performance metric - nltk_resource_loading: 0.0496s
+2025-02-15 19:07:16,620 - utils.text_analyzer - INFO - Starting analysis of 78 comments
+2025-02-15 19:07:16,639 - utils.text_analyzer - INFO - Max repetition: 24, Total sequences: 15363
+2025-02-15 19:07:16,709 - utils.text_analyzer - INFO - Average similarity: 0.07826819334665464, Template score: 0.2348045800399639
+2025-02-15 19:07:16,716 - utils.text_analyzer - INFO - Calculated complexity score: 0.29826701425701996
+2025-02-15 19:07:16,716 - utils.text_analyzer - INFO - Timing regularity: 0.20007805915026544, Rapid responses: 0.0
+2025-02-15 19:07:16,719 - utils.text_analyzer - INFO - Detected patterns (percentage): {'identical_greetings': 0, 'url_patterns': 15, 'promotional_phrases': 9, 'generic_responses': 0}
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Repetition score: 0.0046865846514352666
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Template score: 0.2348045800399639
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Complexity score: 0.29826701425701996
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Timing score: 0.1800702532352389
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Suspicious patterns: {'identical_greetings': 0, 'url_patterns': 15, 'promotional_phrases': 9, 'generic_responses': 0}
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - repetition_score: 0.0023432923257176333 (weight: 0.25)
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - template_score: 0.11740229001998195 (weight: 0.2)
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - complexity_score: 0.14913350712850998 (weight: 0.15)
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - timing_score: 0.09003512661761945 (weight: 0.15)
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Primary score: 0.07992210152979362, Pattern score: 0.03, Final score: 0.06993768122383491
+2025-02-15 19:07:16,720 - utils.text_analyzer - INFO - Final bot probability: 0.06993768122383491
+2025-02-15 19:07:16,720 - utils.performance_monitor - INFO - ⏱️ Performance metric - comment_analysis: 0.1498s
+2025-02-15 19:07:16,720 - utils.performance_monitor - INFO - ⏱️ Performance metric - comment_analysis: 0.1498s
+2025-02-15 19:07:16,720 - utils.scoring - INFO - === Starting score calculation ===
+2025-02-15 19:07:16,720 - utils.scoring - INFO - Processing heuristics...
+2025-02-15 19:07:16,721 - utils.scoring - INFO - === Starting weighted score calculation ===
+2025-02-15 19:07:16,721 - utils.scoring - INFO - === Available scores before weighted calculation ===
+2025-02-15 19:07:16,721 - utils.scoring - INFO - === Final normalized score: 0.78427 ===
+2025-02-15 19:07:17,077 - __main__ - INFO - Successfully saved analysis results to database for user: capnzosima
+2025-02-15 19:07:17,368 - utils.visualizations - INFO - Monthly activity data:
+2025-02-15 19:07:17,368 - utils.visualizations - INFO - Month: 2024-04, Comments: 1, Submissions: 0
+2025-02-15 19:07:17,369 - utils.visualizations - INFO - Month: 2024-05, Comments: 0, Submissions: 1
+2025-02-15 19:07:17,369 - utils.visualizations - INFO - Month: 2024-06, Comments: 0, Submissions: 0
+2025-02-15 19:07:17,370 - utils.visualizations - INFO - Month: 2024-07, Comments: 0, Submissions: 0
+2025-02-15 19:07:17,373 - utils.visualizations - INFO - Month: 2024-08, Comments: 0, Submissions: 1
+2025-02-15 19:07:17,374 - utils.visualizations - INFO - Month: 2024-09, Comments: 1, Submissions: 1
+2025-02-15 19:07:17,375 - utils.visualizations - INFO - Month: 2024-10, Comments: 1, Submissions: 0
+2025-02-15 19:07:17,375 - utils.visualizations - INFO - Month: 2024-11, Comments: 16, Submissions: 2
+2025-02-15 19:07:17,376 - utils.visualizations - INFO - Month: 2024-12, Comments: 27, Submissions: 5
+2025-02-15 19:07:17,377 - utils.visualizations - INFO - Month: 2025-01, Comments: 29, Submissions: 8
+2025-02-15 19:07:17,377 - utils.visualizations - INFO - Month: 2025-02, Comments: 1, Submissions: 0

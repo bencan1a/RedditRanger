@@ -9,7 +9,7 @@ import logging
 from typing import List, Dict
 import re
 from datetime import datetime
-from utils.performance_monitor import timing_decorator
+from utils.performance_monitor import timing_decorator, performance_monitor
 import json
 
 # Configure logging
@@ -48,6 +48,9 @@ class TextAnalyzer:
             self._initialized = True
             self._cache_status = self._load_cache()
 
+            # Don't initialize NLTK resources here, do it lazily
+            logger.info("Basic initialization complete - NLTK resources will be loaded on demand")
+
     def _load_cache(self) -> dict:
         """Load resource cache status"""
         try:
@@ -81,7 +84,9 @@ class TextAnalyzer:
 
     @timing_decorator("nltk_resource_loading")
     def _ensure_nltk_resources(self, resources: List[str] = None):
-        """Lazy load specific NLTK resources"""
+        """Lazy load specific NLTK resources with improved performance tracking"""
+        performance_monitor.start_operation("app_initialization")
+
         if resources is None:
             resources = list(self._required_resources.keys())
 
@@ -102,9 +107,12 @@ class TextAnalyzer:
                 logger.info(f"Downloading missing NLTK resources: {missing_resources}")
                 for resource in missing_resources:
                     try:
+                        performance_monitor.start_operation(f"download_resource_{resource}")
                         nltk.download(resource, 
                                     quiet=True, 
                                     download_dir=self._nltk_data_dir)
+                        performance_monitor.end_operation(f"download_resource_{resource}")
+
                         self._cache_status[resource] = {
                             'downloaded': True,
                             'last_verified': datetime.now().isoformat()
@@ -123,8 +131,11 @@ class TextAnalyzer:
                 self.stop_words = set(stopwords.words('english'))
 
             logger.info("NLTK initialization complete")
+            performance_monitor.end_operation("app_initialization")
+
         except Exception as e:
             logger.error(f"Error initializing NLTK: {str(e)}")
+            performance_monitor.end_operation("app_initialization")
             raise
 
     def _ensure_specific_resources(self, resource_names: List[str]):
@@ -137,35 +148,33 @@ class TextAnalyzer:
             self._ensure_nltk_resources(resource_names)
             self._nltk_initialized = True
 
-    @timing_decorator("comment_analysis")
+    @timing_decorator("analysis_pipeline")
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
-        """Analyze comments for bot-like patterns."""
+        """Analyze comments with comprehensive performance tracking."""
+        performance_monitor.start_operation("comment_analysis_total")
+
         # Only load required resources for comment analysis
         required_resources = ['punkt', 'stopwords']
         self._ensure_specific_resources(required_resources)
 
         if not comments:
             logger.warning("No comments provided for analysis")
+            performance_monitor.end_operation("comment_analysis_total")
             return self._get_empty_metrics()
 
         try:
             logger.info(f"Starting analysis of {len(comments)} comments")
 
-            # Calculate all scores
+            # Calculate all scores with individual timing
+            performance_monitor.start_operation("score_calculation")
             repetition_score = self._calculate_repetition_score(comments)
             template_score = self._calculate_template_score(comments)
             complexity_score = self._calculate_complexity_score(comments)
             timing_score = self._analyze_timing_patterns(timestamps) if timestamps else 0.5
             suspicious_patterns = self._identify_suspicious_patterns(comments)
+            performance_monitor.end_operation("score_calculation")
 
             # Log individual scores for debugging
-            logger.info(f"Repetition score: {repetition_score}")
-            logger.info(f"Template score: {template_score}")
-            logger.info(f"Complexity score: {complexity_score}")
-            logger.info(f"Timing score: {timing_score}")
-            logger.info(f"Suspicious patterns: {suspicious_patterns}")
-
-            # Combine all metrics
             metrics = {
                 'repetition_score': repetition_score,
                 'template_score': template_score,
@@ -175,14 +184,18 @@ class TextAnalyzer:
             }
 
             # Calculate final probability
+            performance_monitor.start_operation("probability_calculation")
             bot_prob = self._calculate_bot_probability(metrics)
             metrics['bot_probability'] = bot_prob
+            performance_monitor.end_operation("probability_calculation")
 
             logger.info(f"Final bot probability: {bot_prob}")
+            performance_monitor.end_operation("comment_analysis_total")
             return metrics
 
         except Exception as e:
             logger.error(f"Error in analyze_comments: {str(e)}")
+            performance_monitor.end_operation("comment_analysis_total")
             return self._get_empty_metrics()
 
     def _calculate_repetition_score(self, comments: List[str]) -> float:
