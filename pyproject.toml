@@ -25,9 +25,4 @@ dependencies = [
     "httpx>=0.28.1",
     "openai>=1.60.1",
     "svgwrite>=1.4.3",
-    "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
-    "python-multipart>=0.0.20",
-    "google-auth>=2.38.0",
-    "google-auth-oauthlib>=1.2.1",
 ]

@@ -9,17 +9,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Reddit Mentat Detector"
     VERSION: str = "1.0.0"
     HOST: str = "0.0.0.0"
-    PORT: int = 5001
+    PORT: int = 5002
     LOG_LEVEL: str = "INFO"
-
-    # Authentication settings
-    ENABLE_AUTH: bool = True  # Default to True to enable authentication
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
 
     # Reddit API settings
     REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
     REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
-    REDDIT_OAUTH_REDIRECT_URI: str = os.getenv("REDDIT_OAUTH_REDIRECT_URI", "http://localhost:5001/oauth/reddit/callback")
 
     # CORS settings
     CORS_ORIGINS: List[str] = [
