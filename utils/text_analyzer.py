@@ -17,9 +17,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TextAnalyzer:
+    """Singleton TextAnalyzer with improved lazy loading and caching."""
     _instance = None
     _initialized = False
-    _nltk_initialized = False
     _nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
     _cache_file = os.path.join(os.getcwd(), 'nltk_data', 'resource_cache.json')
     _required_resources = {
@@ -34,25 +34,42 @@ class TextAnalyzer:
         return cls._instance
 
     def __init__(self):
+        """Initialize only basic components, defer resource loading."""
         if not self._initialized:
-            logger.info("Initializing TextAnalyzer instance")
-            self.vectorizer = TfidfVectorizer(
-                min_df=1,
-                max_df=0.95
-            )
+            logger.info("Basic initialization of TextAnalyzer")
             # Create NLTK data directory if it doesn't exist
             if not os.path.exists(self._nltk_data_dir):
                 os.makedirs(self._nltk_data_dir)
 
             nltk.data.path.append(self._nltk_data_dir)
-            self._initialized = True
             self._cache_status = self._load_cache()
+            self._vectorizer = None
+            self._stop_words = None
+            self._initialized = True
+            logger.info("Basic TextAnalyzer initialization complete")
 
-            # Don't initialize NLTK resources here, do it lazily
-            logger.info("Basic initialization complete - NLTK resources will be loaded on demand")
+    @property
+    def vectorizer(self):
+        """Lazy load TfidfVectorizer."""
+        if self._vectorizer is None:
+            logger.debug("Initializing TfidfVectorizer")
+            self._vectorizer = TfidfVectorizer(
+                min_df=1,
+                max_df=0.95
+            )
+        return self._vectorizer
+
+    @property
+    def stop_words(self):
+        """Lazy load stop words."""
+        if self._stop_words is None:
+            logger.debug("Loading stop words")
+            self._ensure_specific_resources(['stopwords'])
+            self._stop_words = set(stopwords.words('english'))
+        return self._stop_words
 
     def _load_cache(self) -> dict:
-        """Load resource cache status"""
+        """Load resource cache status."""
         try:
             if os.path.exists(self._cache_file):
                 with open(self._cache_file, 'r') as f:
@@ -63,7 +80,7 @@ class TextAnalyzer:
             return {}
 
     def _save_cache(self):
-        """Save resource cache status"""
+        """Save resource cache status."""
         try:
             with open(self._cache_file, 'w') as f:
                 json.dump(self._cache_status, f)
@@ -71,24 +88,21 @@ class TextAnalyzer:
             logger.error(f"Error saving cache: {str(e)}")
 
     def _verify_resource(self, resource: str) -> bool:
-        """Verify if a resource exists and is valid"""
+        """Verify if a resource exists and is valid."""
         try:
             resource_path = self._required_resources.get(resource)
             if not resource_path:
                 return False
-
             nltk.data.find(resource_path)
             return True
         except LookupError:
             return False
 
     @timing_decorator("nltk_resource_loading")
-    def _ensure_nltk_resources(self, resources: List[str] = None):
-        """Lazy load specific NLTK resources with improved performance tracking"""
-        performance_monitor.start_operation("app_initialization")
-
-        if resources is None:
-            resources = list(self._required_resources.keys())
+    def _ensure_specific_resources(self, resources: List[str]):
+        """Lazy load specific NLTK resources with improved performance tracking."""
+        if not resources:
+            return
 
         try:
             missing_resources = []
@@ -126,27 +140,11 @@ class TextAnalyzer:
                         }
 
             self._save_cache()
-
-            if 'stopwords' in resources:
-                self.stop_words = set(stopwords.words('english'))
-
-            logger.info("NLTK initialization complete")
-            performance_monitor.end_operation("app_initialization")
+            logger.info("Required NLTK resources initialization complete")
 
         except Exception as e:
-            logger.error(f"Error initializing NLTK: {str(e)}")
-            performance_monitor.end_operation("app_initialization")
+            logger.error(f"Error initializing NLTK resources: {str(e)}")
             raise
-
-    def _ensure_specific_resources(self, resource_names: List[str]):
-        """Ensure specific resources are available"""
-        if not self._nltk_initialized or any(
-            resource not in self._cache_status or 
-            not self._cache_status[resource].get('downloaded', False)
-            for resource in resource_names
-        ):
-            self._ensure_nltk_resources(resource_names)
-            self._nltk_initialized = True
 
     @timing_decorator("analysis_pipeline")
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
@@ -154,7 +152,7 @@ class TextAnalyzer:
         performance_monitor.start_operation("comment_analysis_total")
 
         # Only load required resources for comment analysis
-        required_resources = ['punkt', 'stopwords']
+        required_resources = ['punkt']
         self._ensure_specific_resources(required_resources)
 
         if not comments:
@@ -174,7 +172,6 @@ class TextAnalyzer:
             suspicious_patterns = self._identify_suspicious_patterns(comments)
             performance_monitor.end_operation("score_calculation")
 
-            # Log individual scores for debugging
             metrics = {
                 'repetition_score': repetition_score,
                 'template_score': template_score,
@@ -189,7 +186,7 @@ class TextAnalyzer:
             metrics['bot_probability'] = bot_prob
             performance_monitor.end_operation("probability_calculation")
 
-            logger.info(f"Final bot probability: {bot_prob}")
+            logger.info(f"Analysis complete with bot probability: {bot_prob}")
             performance_monitor.end_operation("comment_analysis_total")
             return metrics
 

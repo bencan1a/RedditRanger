@@ -7,22 +7,67 @@ import time
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, func, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.pool import QueuePool
 
 logger = logging.getLogger(__name__)
 
-# Create database engine with proper error handling
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+class Database:
+    """Singleton database connection manager with connection pooling."""
+    _instance = None
+    _initialized = False
+    _engine = None
+    _SessionLocal = None
 
-try:
-    engine = create_engine(DATABASE_URL)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    logger.info("Database engine initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize database engine: {str(e)}")
-    raise
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Database, cls).__new__(cls)
+        return cls._instance
 
+    def __init__(self):
+        if not self._initialized:
+            self._initialized = True
+            logger.info("Database manager initialized")
+
+    @property
+    def engine(self):
+        """Lazy initialize database engine with connection pooling."""
+        if self._engine is None:
+            DATABASE_URL = os.environ.get('DATABASE_URL')
+            if not DATABASE_URL:
+                raise ValueError("DATABASE_URL environment variable is not set")
+
+            try:
+                logger.info("Initializing database engine with connection pool")
+                self._engine = create_engine(
+                    DATABASE_URL,
+                    poolclass=QueuePool,
+                    pool_size=5,
+                    max_overflow=10,
+                    pool_timeout=30,
+                    pool_recycle=1800
+                )
+                # Test connection
+                with self._engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                logger.info("Database engine initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize database engine: {str(e)}")
+                raise
+        return self._engine
+
+    @property
+    def SessionLocal(self):
+        """Lazy initialize session factory."""
+        if self._SessionLocal is None:
+            self._SessionLocal = sessionmaker(
+                autocommit=False,
+                autoflush=False,
+                bind=self.engine
+            )
+        return self._SessionLocal
+
+# Initialize singleton instance
+db = Database()
 Base = declarative_base()
 
 class AnalysisResult(Base):
@@ -41,8 +86,8 @@ class AnalysisResult(Base):
     def get_cached(cls, username: str) -> dict:
         """Get cached analysis result if it exists and is recent"""
         try:
-            with SessionLocal() as db:
-                result = db.query(cls).filter_by(username=username).first()
+            with db.SessionLocal() as session:
+                result = session.query(cls).filter_by(username=username).first()
                 if result and (datetime.utcnow() - result.last_analyzed) < timedelta(hours=1):
                     return {
                         'username': result.username,
@@ -50,7 +95,7 @@ class AnalysisResult(Base):
                         'analysis_count': result.analysis_count,
                         'last_analyzed': result.last_analyzed
                     }
-                return None
+            return None
         except SQLAlchemyError as e:
             logger.error(f"Database error in get_cached: {str(e)}")
             return None
@@ -87,7 +132,7 @@ class AnalysisResult(Base):
 
         for attempt in range(max_retries):
             try:
-                with SessionLocal() as db:
+                with db.SessionLocal() as db:
                     results = db.query(
                         cls.username,
                         cls.last_analyzed,
@@ -119,19 +164,19 @@ class AnalysisResult(Base):
 def init_db():
     """Initialize the database tables"""
     try:
-        Base.metadata.create_all(bind=engine)
-        # Test database connection with proper text() usage
-        with SessionLocal() as db:
-            db.execute(text("SELECT 1"))
-        logger.info("Database tables created and connection tested successfully")
+        Base.metadata.create_all(bind=db.engine)
+        logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
         raise
 
 def get_db():
     """Get database session"""
-    db = SessionLocal()
+    session = db.SessionLocal()
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
+
+# Export SessionLocal for backward compatibility
+SessionLocal = db.SessionLocal
