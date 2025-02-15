@@ -44,7 +44,8 @@ class Database:
                     pool_size=5,
                     max_overflow=10,
                     pool_timeout=30,
-                    pool_recycle=1800
+                    pool_recycle=1800,
+                    pool_pre_ping=True  # Added to handle stale connections
                 )
                 # Test connection
                 with self._engine.connect() as conn:
@@ -102,60 +103,77 @@ class AnalysisResult(Base):
 
     @classmethod
     def get_or_create(cls, db_session, username: str, bot_probability: float) -> 'AnalysisResult':
-        """Get existing result or create new one"""
-        try:
-            instance = db_session.query(cls).filter_by(username=username).first()
-            if instance:
-                instance.bot_probability = bot_probability
-                instance.analysis_count += 1
-                instance.last_analyzed = datetime.utcnow()
-                # Update cache
-                cls.get_cached.cache_clear()
-                logger.debug(f"Updated existing analysis for {username}")
-            else:
-                instance = cls(
-                    username=username,
-                    bot_probability=bot_probability
-                )
-                db_session.add(instance)
-                logger.debug(f"Created new analysis for {username}")
-            return instance
-        except SQLAlchemyError as e:
-            logger.error(f"Database error in get_or_create: {str(e)}")
-            raise
+        """Get existing result or create new one with retry logic"""
+        max_retries = 3
+        retry_delay = 0.5  # seconds
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                # Start a nested transaction
+                with db_session.begin_nested():
+                    instance = db_session.query(cls).filter_by(username=username).first()
+                    if instance:
+                        instance.bot_probability = bot_probability
+                        instance.analysis_count += 1
+                        instance.last_analyzed = datetime.utcnow()
+                        # Update cache
+                        cls.get_cached.cache_clear()
+                        logger.debug(f"Updated existing analysis for {username}")
+                    else:
+                        instance = cls(
+                            username=username,
+                            bot_probability=bot_probability
+                        )
+                        db_session.add(instance)
+                        logger.debug(f"Created new analysis for {username}")
+
+                    # Flush changes within the transaction
+                    db_session.flush()
+                    return instance
+
+            except SQLAlchemyError as e:
+                last_error = e
+                logger.warning(f"Database operation failed on attempt {attempt + 1}: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
+                    continue
+                logger.error(f"Database error in get_or_create after {max_retries} attempts: {str(e)}")
+                raise last_error
 
     @classmethod
     def get_all_analysis_stats(cls) -> pd.DataFrame:
-        """Get all analysis results for statistics page"""
+        """Get all analysis results for statistics page with retry logic"""
         max_retries = 3
         retry_delay = 1  # seconds
 
         for attempt in range(max_retries):
             try:
-                with db.SessionLocal() as db:
-                    results = db.query(
-                        cls.username,
-                        cls.last_analyzed,
-                        cls.analysis_count,
-                        cls.bot_probability
-                    ).all()
+                with db.SessionLocal() as session:
+                    with session.begin():  # Ensure transaction
+                        results = session.query(
+                            cls.username,
+                            cls.last_analyzed,
+                            cls.analysis_count,
+                            cls.bot_probability
+                        ).all()
 
-                    return pd.DataFrame([
-                        {
-                            'Username': r.username,
-                            'Last Analyzed': r.last_analyzed,
-                            'Analysis Count': r.analysis_count,
-                            'Bot Probability': f"{r.bot_probability:.1f}%"
-                        }
-                        for r in results
-                    ])
+                        return pd.DataFrame([
+                            {
+                                'Username': r.username,
+                                'Last Analyzed': r.last_analyzed,
+                                'Analysis Count': r.analysis_count,
+                                'Bot Probability': f"{r.bot_probability:.1f}%"
+                            }
+                            for r in results
+                        ])
 
             except Exception as e:
                 logger.error(f"Database error on attempt {attempt + 1}: {str(e)}")
                 if attempt == max_retries - 1:  # Last attempt
                     logger.error("Maximum retries reached, raising error")
                     raise
-                time.sleep(retry_delay)
+                time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
                 continue
 
         # This should never be reached due to the raise in the last attempt
@@ -171,12 +189,25 @@ def init_db():
         raise
 
 def get_db():
-    """Get database session"""
-    session = db.SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+    """Get database session with automatic retry on connection failure"""
+    max_retries = 3
+    retry_delay = 0.5  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            session = db.SessionLocal()
+            # Test the connection
+            session.execute(text("SELECT 1"))
+            return session
+        except SQLAlchemyError as e:
+            logger.warning(f"Failed to create database session (attempt {attempt + 1}): {str(e)}")
+            if attempt == max_retries - 1:
+                logger.error("Maximum retries reached, raising error")
+                raise
+            time.sleep(retry_delay * (attempt + 1))
+            continue
+        finally:
+            session.close()
 
 # Export SessionLocal for backward compatibility
 SessionLocal = db.SessionLocal
