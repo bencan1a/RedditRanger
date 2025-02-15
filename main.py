@@ -8,19 +8,23 @@ from utils.text_analyzer import TextAnalyzer
 from utils.scoring import AccountScorer
 from utils.rate_limiter import RateLimiter
 from utils.database import init_db, get_db, AnalysisResult
+from utils.performance_monitor import timing_decorator, PerformanceMonitor
 from sqlalchemy.orm import Session
 import uvicorn
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from config import get_settings, Settings
 import logging
+import time
 
 # Configure application logger
 logger = logging.getLogger(__name__)
 
+@timing_decorator("app_startup")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize application resources"""
+    startup_time = time.time()
     try:
         init_db()
         logger.info("Database initialized successfully")
@@ -32,6 +36,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: CORS Origins configured for {settings.CORS_ORIGINS}")
     logger.info(f"Server running on {settings.HOST}:{settings.PORT}")
+
+    total_startup_time = time.time() - startup_time
+    PerformanceMonitor.record_metric("total_startup_time", total_startup_time)
     yield
 
 app = FastAPI(
@@ -98,6 +105,22 @@ async def check_rate_limit(request: Request):
 
     return headers
 
+@app.middleware("http")
+async def add_performance_metrics(request: Request, call_next):
+    """Middleware to track request performance"""
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+
+    # Record the request duration
+    PerformanceMonitor.record_metric(
+        f"request_{request.method}_{request.url.path}",
+        duration
+    )
+
+    return response
+
+@timing_decorator("analyze_user_endpoint")
 @app.get("/api/v1/analyze/{username}")
 async def analyze_user(
     username: str,
@@ -157,7 +180,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=settings.HOST,
-        port=5000,  # Using port 5000 for deployment compatibility
+        port=5002,  # Changed from 5000 to 5002 to avoid conflict with Streamlit
         reload=True,
         log_level=settings.LOG_LEVEL.lower(),
         workers=1  # Ensure single worker to avoid port conflicts

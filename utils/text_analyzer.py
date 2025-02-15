@@ -9,6 +9,7 @@ import logging
 from typing import List, Dict
 import re
 from datetime import datetime
+from utils.performance_monitor import timing_decorator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +39,7 @@ class TextAnalyzer:
             nltk.data.path.append(self._nltk_data_dir)
             self._initialized = True
 
+    @timing_decorator("nltk_resource_loading")
     def _ensure_nltk_resources(self):
         """Lazy load NLTK resources only when needed"""
         if not self._nltk_initialized:
@@ -66,6 +68,7 @@ class TextAnalyzer:
                 logger.error(f"Error initializing NLTK: {str(e)}")
                 raise
 
+    @timing_decorator("comment_analysis")
     def analyze_comments(self, comments: List[str], timestamps: List[datetime] = None) -> Dict:
         """Analyze comments for bot-like patterns."""
         # Initialize NLTK resources only when analyzing comments

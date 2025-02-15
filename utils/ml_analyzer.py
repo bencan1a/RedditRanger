@@ -4,10 +4,12 @@ from sklearn.preprocessing import StandardScaler
 import logging
 from typing import Dict, List, Tuple, Union
 from datetime import datetime, timezone
+from utils.performance_monitor import timing_decorator
 
 logger = logging.getLogger(__name__)
 
 class MLAnalyzer:
+    @timing_decorator("ml_analyzer_init")
     def __init__(self):
         self.model = RandomForestClassifier(
             n_estimators=100,
@@ -22,24 +24,7 @@ class MLAnalyzer:
         self.training_features = []
         self.training_labels = []
 
-    def add_training_example(self, user_data: Dict, activity_patterns: Dict, 
-                           text_metrics: Dict, is_legitimate: bool = True) -> bool:
-        """Add a new training example to improve the model."""
-        try:
-            features = self.extract_features(user_data, activity_patterns, text_metrics)
-            self.training_features.append(features[0])  # Remove the batch dimension
-            self.training_labels.append(0 if is_legitimate else 1)  # 0 for legitimate, 1 for suspicious
-
-            # Retrain model if we have enough examples
-            if len(self.training_labels) >= 5:  # Minimum examples before training
-                self._train_model()
-
-            logger.info(f"Added new training example. Total examples: {len(self.training_labels)}")
-            return True
-        except Exception as e:
-            logger.error(f"Error adding training example: {str(e)}")
-            return False
-
+    @timing_decorator("model_training")
     def _train_model(self) -> bool:
         """Train the model with collected examples."""
         try:
@@ -63,6 +48,59 @@ class MLAnalyzer:
         except Exception as e:
             logger.error(f"Error training model: {str(e)}")
             return False
+
+    @timing_decorator("feature_extraction")
+    def extract_features(self, user_data: Dict, activity_patterns: Dict, text_metrics: Dict) -> np.ndarray:
+        """Extract and normalize features from user data."""
+        try:
+            # Calculate derived features
+            account_age_days = float((datetime.now(timezone.utc) - user_data['created_utc']).days)
+            karma_ratio = float(user_data['comment_karma']) / float(max(1, user_data['link_karma']))
+
+            features = [
+                float(account_age_days),  # account age in days
+                float(user_data['comment_karma']),
+                float(user_data['link_karma']),
+                float(karma_ratio),  # ratio of comment to link karma
+
+                float(activity_patterns['unique_subreddits']),
+                float(activity_patterns.get('avg_score', 0)),
+                float(len(activity_patterns.get('activity_hours', {}))),  # activity hours diversity
+                float(len(activity_patterns.get('top_subreddits', {}))),  # number of active subreddits
+
+                float(text_metrics.get('vocab_size', 0)),
+                float(text_metrics.get('avg_word_length', 0)),
+                float(text_metrics.get('avg_similarity', 0)),
+                float(len(text_metrics.get('common_words', {})))  # vocabulary diversity
+            ]
+
+            # Reshape and scale features
+            features_array = np.array(features, dtype=np.float64).reshape(1, -1)
+            if self.is_trained:
+                features_array = self.scaler.transform(features_array)
+
+            return features_array
+
+        except Exception as e:
+            logger.error(f"Error extracting features: {str(e)}")
+            return np.zeros((1, 12), dtype=np.float64)  # Return zero features array
+
+    @timing_decorator("risk_prediction")
+    def predict_risk_score(self, features: np.ndarray, user_data: Dict, 
+                          activity_patterns: Dict, text_metrics: Dict) -> float:
+        """Predict risk score for given features."""
+        try:
+            if not self.is_trained:
+                logger.warning("Model not trained yet, using basic rules for prediction")
+                return self._apply_basic_rules(features, user_data, activity_patterns, text_metrics)
+
+            # Get probability of being suspicious (class 1)
+            probabilities = self.model.predict_proba(features)
+            return float(probabilities[0][1])  # Return probability of being suspicious
+
+        except Exception as e:
+            logger.error(f"Error predicting risk score: {str(e)}")
+            return 0.3  # Return lower default risk score
 
     def _setup_basic_rules(self):
         """Set up basic rules for risk assessment when model is untrained."""
@@ -107,56 +145,23 @@ class MLAnalyzer:
             logger.error(f"Error applying basic rules: {str(e)}")
             return 0.3  # Return base risk on error
 
-    def extract_features(self, user_data: Dict, activity_patterns: Dict, text_metrics: Dict) -> np.ndarray:
-        """Extract and normalize features from user data."""
+    def add_training_example(self, user_data: Dict, activity_patterns: Dict, 
+                           text_metrics: Dict, is_legitimate: bool = True) -> bool:
+        """Add a new training example to improve the model."""
         try:
-            # Calculate derived features
-            account_age_days = float((datetime.now(timezone.utc) - user_data['created_utc']).days)
-            karma_ratio = float(user_data['comment_karma']) / float(max(1, user_data['link_karma']))
+            features = self.extract_features(user_data, activity_patterns, text_metrics)
+            self.training_features.append(features[0])  # Remove the batch dimension
+            self.training_labels.append(0 if is_legitimate else 1)  # 0 for legitimate, 1 for suspicious
 
-            features = [
-                float(account_age_days),  # account age in days
-                float(user_data['comment_karma']),
-                float(user_data['link_karma']),
-                float(karma_ratio),  # ratio of comment to link karma
+            # Retrain model if we have enough examples
+            if len(self.training_labels) >= 5:  # Minimum examples before training
+                self._train_model()
 
-                float(activity_patterns['unique_subreddits']),
-                float(activity_patterns.get('avg_score', 0)),
-                float(len(activity_patterns.get('activity_hours', {}))),  # activity hours diversity
-                float(len(activity_patterns.get('top_subreddits', {}))),  # number of active subreddits
-
-                float(text_metrics.get('vocab_size', 0)),
-                float(text_metrics.get('avg_word_length', 0)),
-                float(text_metrics.get('avg_similarity', 0)),
-                float(len(text_metrics.get('common_words', {})))  # vocabulary diversity
-            ]
-
-            # Reshape and scale features
-            features_array = np.array(features, dtype=np.float64).reshape(1, -1)
-            if self.is_trained:
-                features_array = self.scaler.transform(features_array)
-
-            return features_array
-
+            logger.info(f"Added new training example. Total examples: {len(self.training_labels)}")
+            return True
         except Exception as e:
-            logger.error(f"Error extracting features: {str(e)}")
-            return np.zeros((1, 12), dtype=np.float64)  # Return zero features array
-
-    def predict_risk_score(self, features: np.ndarray, user_data: Dict, 
-                          activity_patterns: Dict, text_metrics: Dict) -> float:
-        """Predict risk score for given features."""
-        try:
-            if not self.is_trained:
-                logger.warning("Model not trained yet, using basic rules for prediction")
-                return self._apply_basic_rules(features, user_data, activity_patterns, text_metrics)
-
-            # Get probability of being suspicious (class 1)
-            probabilities = self.model.predict_proba(features)
-            return float(probabilities[0][1])  # Return probability of being suspicious
-
-        except Exception as e:
-            logger.error(f"Error predicting risk score: {str(e)}")
-            return 0.3  # Return lower default risk score
+            logger.error(f"Error adding training example: {str(e)}")
+            return False
 
     def analyze_account(self, user_data: Dict, activity_patterns: Dict, text_metrics: Dict) -> Tuple[float, Dict[str, float]]:
         """Analyze account using ML model and return risk score with feature importances."""
