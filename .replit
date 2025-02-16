@@ -5,11 +5,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = [
-  "sh",
-  "-c",
-  "sh -c 'streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 5000 & python main.py'",
-]
+run = ["sh", "-c", "python main.py"]
 
 [workflows]
 runButton = "Project"
@@ -18,57 +14,6 @@ runButton = "Project"
 name = "Project"
 mode = "parallel"
 author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Reddit Analyzer API"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Streamlit App"
-
-[[workflows.workflow]]
-name = "Reddit Analyzer API"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5002
-
-[[workflows.workflow]]
-name = "Ben Run All"
-mode = "parallel"
-author = 39114837
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Streamlit App"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Reddit Analyzer API"
-
-[[workflows.workflow]]
-name = "Streamlit App"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 5000"
-waitForPort = 5000
 
 [[ports]]
 localPort = 5000
@@ -85,3 +30,7 @@ externalPort = 3001
 [[ports]]
 localPort = 8501
 externalPort = 3002
+
+[[ports]]
+localPort = 8502
+externalPort = 3003

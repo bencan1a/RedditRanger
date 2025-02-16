@@ -1,47 +1,37 @@
 import logging
 import time
 import streamlit as st
+import sys
 
-# Configure startup logging
+# Configure startup logging with more detail
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose output
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger(__name__)
 
-def log_timing(start_time, operation):
-    """Log time taken for operations"""
-    duration = time.time() - start_time
-    logger.info(f"⏱️ {operation} took {duration:.2f} seconds")
-    return time.time()
-
+# Simple app for testing connectivity
 def main():
-    """Minimal startup with timing instrumentation"""
+    """Minimal startup for testing"""
     try:
-        overall_start = time.time()
-        logger.info("🚀 Starting minimal application")
+        logger.info("🚀 Starting minimal test application")
+        logger.debug(f"Python version: {sys.version}")
+        logger.debug(f"Streamlit version: {st.__version__}")
 
-        # Basic streamlit config
-        start_time = time.time()
-        st.set_page_config(
-            page_title="Thinking Machine Detector",
-            layout="wide",
-            initial_sidebar_state="collapsed"
-        )
-        start_time = log_timing(start_time, "Basic Streamlit configuration")
+        st.title("Connection Test")
+        st.write("If you can see this message, the Streamlit app is working!")
 
-        # Just show the input field
-        logger.info("Rendering minimal UI")
-        st.title("Thinking Machine Detector")
-        username = st.text_input("Enter Reddit Username:", "")
-
-        # Log total startup time
-        total_time = time.time() - overall_start
-        logger.info(f"🏁 Total initialization time: {total_time:.2f} seconds")
+        # Add a simple interaction to test WebSocket
+        if st.button("Click me"):
+            st.write("Button clicked!")
 
     except Exception as e:
         logger.error(f"❌ Application error: {str(e)}", exc_info=True)
         st.error(f"Application error: {str(e)}")
 
 if __name__ == "__main__":
+    logger.debug("🔍 Script starting...")
     main()
