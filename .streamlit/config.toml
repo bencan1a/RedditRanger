@@ -15,6 +15,3 @@ enableWebsocketCompression = false
 
 [browser]
 gatherUsageStats = false
-
-[logger]
-level = "debug"

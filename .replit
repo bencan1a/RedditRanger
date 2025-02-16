@@ -5,7 +5,11 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 5000"]
+run = [
+  "sh",
+  "-c",
+  "sh -c 'streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 5000 & python main.py'",
+]
 
 [workflows]
 runButton = "Project"
@@ -17,11 +21,26 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Streamlit App"
+args = "Reddit Analyzer API"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Reddit Analyzer API"
+args = "Streamlit App"
+
+[[workflows.workflow]]
+name = "Reddit Analyzer API"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 5002
 
 [[workflows.workflow]]
 name = "Streamlit App"
@@ -39,19 +58,17 @@ args = "streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 50
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "Reddit Analyzer API"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
+name = "Ben Run All"
+mode = "parallel"
+author = 39114837
 
 [[workflows.workflow.tasks]]
-task = "packager.installForAll"
+task = "workflow.run"
+args = "Streamlit App"
 
 [[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "uvicorn main:app --host 0.0.0.0 --port 5002"
-waitForPort = 5002
+task = "workflow.run"
+args = "Reddit Analyzer API"
 
 [[ports]]
 localPort = 5000
@@ -68,7 +85,3 @@ externalPort = 3001
 [[ports]]
 localPort = 8501
 externalPort = 3002
-
-[[ports]]
-localPort = 8502
-externalPort = 3003
