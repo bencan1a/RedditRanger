@@ -1,21 +1,25 @@
-"""Machine Learning Analyzer for Reddit user behavior."""
+"""Machine Learning Analyzer for Reddit user behavior with optimized loading."""
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 import logging
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 from datetime import datetime, timezone
 from utils.performance_monitor import timing_decorator, performance_monitor
+import joblib
+from pathlib import Path
+import os
 
 logger = logging.getLogger(__name__)
 
 class MLAnalyzer:
-    """Singleton ML Analyzer with improved lazy loading."""
+    """Singleton ML Analyzer with improved lazy loading and memory optimization."""
     _instance = None
     _initialized = False
-    _model = None
-    _scaler = None
+    _model: Optional[RandomForestClassifier] = None
+    _scaler: Optional[StandardScaler] = None
     _is_trained = False
+    _model_cache_dir = Path('model_cache')
 
     def __new__(cls):
         if cls._instance is None:
@@ -28,14 +32,44 @@ class MLAnalyzer:
         if not self._initialized:
             performance_monitor.start_operation("ml_init")
             try:
-                # Initialize training data storage
+                # Initialize minimal required state
                 self.training_features = []
                 self.training_labels = []
                 self._setup_basic_rules()
                 self._initialized = True
+
+                # Create cache directory if it doesn't exist
+                self._model_cache_dir.mkdir(exist_ok=True)
+
                 logger.info("MLAnalyzer base initialization complete")
             finally:
                 performance_monitor.end_operation("ml_init")
+
+    def _load_cached_model(self) -> bool:
+        """Load model and scaler from cache if available."""
+        try:
+            model_path = self._model_cache_dir / 'model.joblib'
+            scaler_path = self._model_cache_dir / 'scaler.joblib'
+
+            if model_path.exists() and scaler_path.exists():
+                self._model = joblib.load(model_path)
+                self._scaler = joblib.load(scaler_path)
+                self._is_trained = True
+                logger.info("Loaded model and scaler from cache")
+                return True
+        except Exception as e:
+            logger.warning(f"Failed to load cached model: {e}")
+        return False
+
+    def _save_model_to_cache(self):
+        """Save current model and scaler to cache."""
+        try:
+            if self._model and self._scaler:
+                joblib.dump(self._model, self._model_cache_dir / 'model.joblib')
+                joblib.dump(self._scaler, self._model_cache_dir / 'scaler.joblib')
+                logger.info("Saved model and scaler to cache")
+        except Exception as e:
+            logger.warning(f"Failed to cache model: {e}")
 
     @property
     def model(self):
@@ -43,12 +77,14 @@ class MLAnalyzer:
         if self._model is None:
             performance_monitor.start_operation("ml_model_init")
             try:
-                logger.info("Initializing RandomForestClassifier")
-                self._model = RandomForestClassifier(
-                    n_estimators=100,
-                    max_depth=10,
-                    random_state=42
-                )
+                if not self._load_cached_model():
+                    logger.info("Initializing new RandomForestClassifier")
+                    self._model = RandomForestClassifier(
+                        n_estimators=100,
+                        max_depth=10,
+                        random_state=42,
+                        n_jobs=-1  # Parallel processing
+                    )
             finally:
                 performance_monitor.end_operation("ml_model_init")
         return self._model
@@ -69,23 +105,29 @@ class MLAnalyzer:
     @is_trained.setter
     def is_trained(self, value: bool):
         self._is_trained = value
+        if value:
+            self._save_model_to_cache()
 
     @timing_decorator("model_training")
     def _train_model(self) -> bool:
-        """Train the model with collected examples."""
+        """Train the model with collected examples using optimized memory usage."""
         try:
             if len(self.training_features) < 5:
                 logger.warning("Not enough training examples to train model")
                 return False
 
-            # Convert lists to numpy arrays
-            X = np.array(self.training_features)
-            y = np.array(self.training_labels)
+            # Convert lists to numpy arrays efficiently
+            X = np.array(self.training_features, dtype=np.float32)  # Use float32 for memory efficiency
+            y = np.array(self.training_labels, dtype=np.int8)
 
             # Scale features and train model
             X_scaled = self.scaler.fit_transform(X)
             self.model.fit(X_scaled, y)
             self.is_trained = True
+
+            # Clear training data after successful training
+            self.training_features = []
+            self.training_labels = []
 
             logger.info("Model successfully trained")
             return True
@@ -95,56 +137,43 @@ class MLAnalyzer:
 
     @timing_decorator("feature_extraction")
     def extract_features(self, user_data: Dict, activity_patterns: Dict, text_metrics: Dict) -> np.ndarray:
-        """Extract and normalize features from user data."""
+        """Extract and normalize features with memory optimization."""
         try:
             # Calculate derived features
             account_age_days = float((datetime.now(timezone.utc) - user_data['created_utc']).days)
             karma_ratio = float(user_data['comment_karma']) / float(max(1, user_data['link_karma']))
 
-            features = [
-                float(account_age_days),  # account age in days
+            # Use memory-efficient data types
+            features = np.array([
+                account_age_days,
                 float(user_data['comment_karma']),
                 float(user_data['link_karma']),
-                float(karma_ratio),  # ratio of comment to link karma
-
+                karma_ratio,
                 float(activity_patterns['unique_subreddits']),
                 float(activity_patterns.get('avg_score', 0)),
-                float(len(activity_patterns.get('activity_hours', {}))),  # activity hours diversity
-                float(len(activity_patterns.get('top_subreddits', {}))),  # number of active subreddits
-
+                float(len(activity_patterns.get('activity_hours', {}))),
+                float(len(activity_patterns.get('top_subreddits', {}))),
                 float(text_metrics.get('vocab_size', 0)),
                 float(text_metrics.get('avg_word_length', 0)),
                 float(text_metrics.get('avg_similarity', 0)),
-                float(len(text_metrics.get('common_words', {})))  # vocabulary diversity
-            ]
+                float(len(text_metrics.get('common_words', {})))
+            ], dtype=np.float32).reshape(1, -1)
 
-            # Reshape and scale features
-            features_array = np.array(features, dtype=np.float64).reshape(1, -1)
             if self.is_trained:
-                features_array = self.scaler.transform(features_array)
+                features = self.scaler.transform(features)
 
-            return features_array
+            return features
 
         except Exception as e:
             logger.error(f"Error extracting features: {str(e)}")
-            return np.zeros((1, 12), dtype=np.float64)  # Return zero features array
+            return np.zeros((1, 12), dtype=np.float32)
 
-    @timing_decorator("risk_prediction")
-    def predict_risk_score(self, features: np.ndarray, user_data: Dict, 
-                          activity_patterns: Dict, text_metrics: Dict) -> float:
-        """Predict risk score for given features."""
-        try:
-            if not self.is_trained:
-                logger.warning("Model not trained yet, using basic rules for prediction")
-                return self._apply_basic_rules(features, user_data, activity_patterns, text_metrics)
-
-            # Get probability of being suspicious (class 1)
-            probabilities = self.model.predict_proba(features)
-            return float(probabilities[0][1])  # Return probability of being suspicious
-
-        except Exception as e:
-            logger.error(f"Error predicting risk score: {str(e)}")
-            return 0.3  # Return lower default risk score
+    def cleanup(self):
+        """Clean up resources and free memory."""
+        self._model = None
+        self._scaler = None
+        self.training_features = []
+        self.training_labels = []
 
     def _setup_basic_rules(self):
         """Set up basic rules for risk assessment when model is untrained."""
@@ -229,3 +258,20 @@ class MLAnalyzer:
         except Exception as e:
             logger.error(f"Error in analyze_account: {str(e)}")
             return 0.3, {}  # Return safe defaults
+
+    @timing_decorator("risk_prediction")
+    def predict_risk_score(self, features: np.ndarray, user_data: Dict, 
+                          activity_patterns: Dict, text_metrics: Dict) -> float:
+        """Predict risk score for given features."""
+        try:
+            if not self.is_trained:
+                logger.warning("Model not trained yet, using basic rules for prediction")
+                return self._apply_basic_rules(features, user_data, activity_patterns, text_metrics)
+
+            # Get probability of being suspicious (class 1)
+            probabilities = self.model.predict_proba(features)
+            return float(probabilities[0][1])  # Return probability of being suspicious
+
+        except Exception as e:
+            logger.error(f"Error predicting risk score: {str(e)}")
+            return 0.3  # Return lower default risk score
